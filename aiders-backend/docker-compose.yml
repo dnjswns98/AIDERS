@@ -1,0 +1,67 @@
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: aiders-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=1234
+      - MYSQL_DATABASE=mydb
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - aiders-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # OpenVidu Development Server
+  openvidu-server:
+    image: openvidu/openvidu-dev:2.31.0
+    container_name: aiders-openvidu
+    ports:
+      - "4443:4443"
+    environment:
+      - OPENVIDU_SECRET=MY_SECRET
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - aiders-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4443/openvidu/info"]
+      timeout: 30s
+      retries: 5
+
+  # Aiders Application Server
+  aiders-app:
+    image: aiders:latest
+    container_name: aiders-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/mydb?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&zeroDateTimeBehavior=convertToNull&rewriteBatchedStatements=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=1234
+      - OPENVIDU_URL=http://openvidu-server:5443/
+      - OPENVIDU_SECRET=MY_SECRET
+    depends_on:
+      mysql:
+        condition: service_healthy
+      openvidu-server:
+        condition: service_healthy
+    networks:
+      - aiders-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/manage/health"]
+      timeout: 30s
+      retries: 3
+
+volumes:
+  mysql_data:
+
+networks:
+  aiders-network:
+    driver: bridge
