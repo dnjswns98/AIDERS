@@ -14,25 +14,37 @@ import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @TestPropertySource(locations = "classpath:application-test.properties")
-@Transactional()
+@Transactional
 class UserTest {
 
     @Autowired EntityManager em;
 
+    private final GeometryFactory geometryFactory = new GeometryFactory();
+
     private void setField(Object target, String fieldName, Object value) {
-        Field field = ReflectionUtils.findField(target.getClass(), fieldName);
+        Class<?> clazz = target.getClass();
+        Field field = null;
+        while (clazz != null) {
+            field = ReflectionUtils.findField(clazz, fieldName);
+            if (field != null) break;
+            clazz = clazz.getSuperclass();
+        }
+        if (field == null) {
+            throw new IllegalArgumentException("Field '" + fieldName + "' not found in class hierarchy.");
+        }
         field.setAccessible(true);
         ReflectionUtils.setField(field, target, value);
     }
 
+
     @Test
-    @Rollback(false)
     void 병원_소방서_엠뷸런스_통합저장_테스트() {
         // ✅ Hospital 저장
         Hospital hospital = new Hospital();
@@ -106,5 +118,30 @@ class UserTest {
         Hospital foundHospital = em.find(Hospital.class, hospital.getId());
         assertThat(foundHospital.getLocation().getX()).isEqualTo(126.9780);
         assertThat(foundHospital.getLocation().getY()).isEqualTo(37.5665);
+    }
+
+    @Test
+    void 삭제_플래그_테스트() {
+        Hospital hospital = new Hospital();
+        setField(hospital, "userKey", "delete-key");
+        setField(hospital, "password", "pw");
+        setField(hospital, "passwordResetKey", "reset-key");
+        setField(hospital, "latitude", 35.0);
+        setField(hospital, "longitude", 128.0);
+        setField(hospital, "address", "부산");
+        setField(hospital, "name", "삭제병원");
+        setField(hospital, "location", new GeometryFactory().createPoint(new Coordinate(128.0, 35.0)));
+        em.persist(hospital);
+
+        em.flush();
+        em.clear();
+
+        Hospital found = em.find(Hospital.class, hospital.getId());
+        setField(found, "isDeleted", true);
+        em.flush();
+        em.clear();
+
+        Hospital deleted = em.find(Hospital.class, hospital.getId());
+        assertThat(deleted.getIsDeleted()).isTrue();
     }
 }
