@@ -20,32 +20,20 @@ public class Ambulance extends User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private AmbCurrentStatus currentStatus;
+    private AmbCurrentStatus currentStatus = AmbCurrentStatus.WAIT;
 
-    @Column(nullable = false)
     private Double pLatitude;
-
-    @Column(nullable = false)
     private Double pLongitude;
-
-    @Column(nullable = false)
     private String pAddress;
-
-    @Column(nullable = false)
     private String pCondition;
-
-    @Column(nullable = false)
     private int pKtas;
 
-    @Column(nullable = false)
     private String pDepartment;
 
-    @Column(nullable = false)
     private int pSex;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PatientAgeRange pAgeRange;
+    private PatientAgeRange pAgeRange = PatientAgeRange.UNDECIDED;
 
     private String pMedicalRecord;
     private String pFamilyHistory;

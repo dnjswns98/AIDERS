@@ -28,6 +28,6 @@ public class Hospital extends User {
     @Column(nullable = false)
     private String name;
 
-    @Column(columnDefinition = "POINT", nullable = false)
+    @Column(columnDefinition = "POINT")
     private Point location;
 }
