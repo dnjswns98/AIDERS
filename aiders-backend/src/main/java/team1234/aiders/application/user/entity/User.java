@@ -22,7 +22,8 @@ public class User {
     @Column(name = "user_id")
     private Long id;
 
-    private Boolean isDeleted;
+    @Column(nullable = false)
+    private Boolean isDeleted = false;
 
     @Column(unique = true, nullable = false)
     private String userKey;
