@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenViduConfig {
 
-    @Value("${openVidu.url}")
+    @Value("${openvidu.url}")
     private String openViduUrl;
 
     @Value("${openvidu.secret}")
