@@ -144,4 +144,58 @@ class UserTest {
         Hospital deleted = em.find(Hospital.class, hospital.getId());
         assertThat(deleted.getIsDeleted()).isTrue();
     }
+
+    @Test
+    void 병원_위치_기반_조회_테스트() {
+        // given
+        Hospital h1 = new Hospital();
+        Hospital h2 = new Hospital();
+
+        setField(h1, "userKey", "hospital-key-1");
+        setField(h1, "password", "pw1234");
+        setField(h1, "passwordResetKey", "reset-key-1");
+        setField(h1, "name", "병원A");
+        setField(h1, "latitude", 37.5665);
+        setField(h1, "longitude", 126.9780);
+        setField(h1, "address", "서울특별시");
+        setField(h1, "location", createPoint(126.9780, 37.5665));
+
+        setField(h2, "userKey", "hospital-key-2");
+        setField(h2, "password", "pw5678");
+        setField(h2, "passwordResetKey", "reset-key-2");
+        setField(h2, "name", "병원B");
+        setField(h2, "latitude", 35.1796);
+        setField(h2, "longitude", 129.0756);
+        setField(h2, "address", "부산광역시");
+        setField(h2, "location", createPoint(129.0756, 35.1796));
+
+        em.persist(h1);
+        em.persist(h2);
+        em.flush();
+        em.clear();
+
+        // when
+        String point = "POINT(37.5665 126.9780)"; // 경도 위도 순서
+        int radius = 5000; // 미터
+
+        List<Hospital> result = em.createNativeQuery("""
+        SELECT u.*, h.*
+        FROM user u
+        JOIN hospital h ON u.user_id = h.hospital_id
+        WHERE ST_Distance_Sphere(h.location, ST_GeomFromText(:point, 4326)) <= :radius
+    """, Hospital.class)
+                .setParameter("point", point)
+                .setParameter("radius", radius)
+                .getResultList();
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getName()).isEqualTo("병원A");
+    }
+
+    private Point createPoint(double longitude, double latitude) {
+        Point point = geometryFactory.createPoint(new Coordinate(longitude, latitude));
+        point.setSRID(4326); // 꼭 설정해줘야 함!
+        return point;
+    }
 }
