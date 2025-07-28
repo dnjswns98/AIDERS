@@ -15,8 +15,7 @@ import java.time.LocalDateTime;
 public class Ambulance extends User {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "firestation_id")
-    @Column(nullable = false)
+    @JoinColumn(name = "firestation_id",  nullable = false)
     private Firestation firestation;
 
     @Enumerated(EnumType.STRING)
