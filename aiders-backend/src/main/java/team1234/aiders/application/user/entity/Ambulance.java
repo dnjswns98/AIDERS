@@ -19,7 +19,7 @@ public class Ambulance extends User {
     private Firestation firestation;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "varchar(20) default 'WAIT'")
     private AmbCurrentStatus currentStatus = AmbCurrentStatus.WAIT;
 
     private Double pLatitude;
@@ -33,6 +33,7 @@ public class Ambulance extends User {
     private Integer pSex;
 
     @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "varchar(20) default 'UNDECIDED'")
     private PatientAgeRange pAgeRange = PatientAgeRange.UNDECIDED;
 
     private String pMedicalRecord;

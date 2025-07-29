@@ -22,7 +22,7 @@ public class User {
     @Column(name = "user_id")
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TINYINT(1) default 0")
     private Boolean isDeleted = false;
 
     @Column(unique = true, nullable = false)
