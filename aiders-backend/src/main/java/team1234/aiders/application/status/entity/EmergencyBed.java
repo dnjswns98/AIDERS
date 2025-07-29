@@ -19,23 +19,23 @@ public class EmergencyBed {
     @JoinColumn(name = "hospital_id")
     private Hospital hospital;
 
-    private int generalAvailableBed;
-    private int generalTotalBed;
+    private Integer generalAvailableBed;
+    private Integer generalTotalBed;
     private Boolean generalIsAvailable;
     private Boolean generalIsExist;
 
-    private int pediatricAvailableBed;
-    private int pediatricTotalBed;
+    private Integer pediatricAvailableBed;
+    private Integer pediatricTotalBed;
     private Boolean pediatricIsAvailable;
     private Boolean pediatricIsExist;
 
-    private int traumaAvailableBed;
-    private int traumaTotalBed;
+    private Integer traumaAvailableBed;
+    private Integer traumaTotalBed;
     private Boolean traumaIsAvailable;
     private Boolean traumaIsExist;
 
-    private int neonatalAvailableBed;
-    private int neonatalTotalBed;
+    private Integer neonatalAvailableBed;
+    private Integer neonatalTotalBed;
     private Boolean neonatalIsAvailable;
     private Boolean neonatalIsExist;
 }

@@ -26,11 +26,11 @@ public class Ambulance extends User {
     private Double pLongitude;
     private String pAddress;
     private String pCondition;
-    private int pKtas;
+    private Integer pKtas;
 
     private String pDepartment;
 
-    private int pSex;
+    private Integer pSex;
 
     @Enumerated(EnumType.STRING)
     private PatientAgeRange pAgeRange = PatientAgeRange.UNDECIDED;

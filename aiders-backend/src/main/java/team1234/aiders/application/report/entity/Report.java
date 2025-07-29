@@ -48,7 +48,7 @@ public class Report {
     private LocalDateTime updatedAt;
 
     @Column(nullable = false)
-    private int ktas;
+    private Integer ktas;
 
     @Column(nullable = false)
     private String hospitalName;

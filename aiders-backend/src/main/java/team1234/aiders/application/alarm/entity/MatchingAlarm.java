@@ -32,7 +32,7 @@ public class MatchingAlarm {
     private String pName;
 
     @Column(nullable = false)
-    private int pKtas;
+    private Integer pKtas;
 
     @Column(nullable = false)
     private String ambulanceKey;
