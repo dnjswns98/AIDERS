@@ -12,10 +12,6 @@ services:
       - mysql_data:/var/lib/mysql
     networks:
       - aiders-network
-    #healthcheck:
-    #  test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-    #  timeout: 20s
-    #  retries: 10
 
   # OpenVidu Development Server
   openvidu-server:
@@ -29,10 +25,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - aiders-network
-    #healthcheck:
-    #  test: ["CMD", "curl", "-f", "http://localhost:4443"]
-    #  timeout: 30s
-    #  retries: 5
 
   # Aiders Application Server
   aiders-app:
@@ -45,13 +37,12 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/mydb?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&zeroDateTimeBehavior=convertToNull&rewriteBatchedStatements=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=1234
-      - OPENVIDU_URL=http://openvidu-server:4443/
       - OPENVIDU_SECRET=MY_SECRET
-    networks:
-      - aiders-network
     depends_on:
       - mysql
       - openvidu-server
+    networks:
+      - aiders-network
 
 volumes:
   mysql_data:
