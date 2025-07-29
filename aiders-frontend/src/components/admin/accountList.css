@@ -1,0 +1,145 @@
+.account-list-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.account-list-header {
+  padding: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.account-list-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.account-list-subtitle {
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.account-list-body {
+  padding: 24px;
+}
+
+.no-accounts-message {
+  text-align: center;
+  padding: 48px 0;
+}
+
+.no-accounts-icon {
+  color: #9ca3af;
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.no-accounts-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.no-accounts-text {
+  color: #9ca3af;
+}
+
+.account-table-container {
+  overflow-x: auto;
+}
+
+.account-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.account-table thead tr {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.account-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.account-table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s;
+}
+
+.account-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.account-table td {
+  padding: 16px;
+}
+
+.account-type-cell {
+  display: flex;
+  align-items: center;
+}
+
+.account-type-icon-spacing {
+  margin-right: 8px;
+}
+
+.account-type-text {
+  font-weight: 500;
+}
+
+.account-id-cell {
+  font-family: monospace;
+  font-size: 14px;
+}
+
+.account-detail-cell {
+  font-size: 14px;
+}
+
+.account-detail-item {
+  color: #6b7280;
+}
+
+.account-detail-label {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.account-password-passkey {
+  font-family: monospace;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.account-temp-password {
+  background-color: #fef3c7;
+}
+
+.account-passkey {
+  background-color: #dbeafe;
+}
+
+.account-actions-cell {
+  text-align: center;
+}
+
+.delete-button {
+  color: #ef4444;
+  padding: 8px;
+  border-radius: 50%;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-button:hover {
+  color: #dc2626;
+  background-color: #fef2f2;
+}
