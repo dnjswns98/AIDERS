@@ -25,4 +25,18 @@ public class VideoCallController {
         TokenResponse tokenResponse = openViduService.createToken(request);
         return ResponseEntity.ok(tokenResponse);
     }
+
+    /**
+     * 방장이 세션을 종료할 수 있는 API
+     * 세션 ID를 전달받아 해당 세션을 종료한다.
+     *
+     * @param sessionId 종료할 세션의 ID
+     */
+    @DeleteMapping("/session/{sessionId}")
+    public ResponseEntity<Void> closeSession(@PathVariable String sessionId) {
+        log.info("세션 종료 요청: {}", sessionId);
+        openViduService.closeSession(sessionId);
+        return ResponseEntity.ok().build();
+    }
+
 }
