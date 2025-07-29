@@ -1,4 +1,4 @@
-package team1234.aiders.config.swagger;
+package team1234.aiders.config;
 
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.security.config.Elements.JWT;
