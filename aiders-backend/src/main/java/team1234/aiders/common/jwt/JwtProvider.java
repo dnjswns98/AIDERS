@@ -43,6 +43,20 @@ public class JwtProvider {
                 .compact();
     }
 
+    public String generateRefreshToken(JwtUserDto user) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7일
+
+        return Jwts.builder()
+                .setSubject(String.valueOf(user.getUserId()))
+                .claim("userKey", user.getUserKey())
+                .setIssuedAt(now)
+                .setExpiration(expiry)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
