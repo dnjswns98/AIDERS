@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(awk:*)",
+      "Bash(sed:*)",
+      "Bash(node:*)"
     ],
     "deny": []
   }
