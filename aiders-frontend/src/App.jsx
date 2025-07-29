@@ -1,3 +1,11 @@
+import "./App.css";
+import { Routes, Route } from "react-router-dom";
+import LoginForm from "./components/login/LoginForm";
+import AdminPage from "./pages/AdminPage";
+import DashboardPage from "./pages/hospital/DashboardPage";
+import EmergencyPatientPage from "./pages/hospital/EmergencyPatientPage";
+import BedManagementPage from "./pages/hospital/BedManagementPage";
+import NotificationPage from "./pages/hospital/NotificationPage";
 
 import React from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
