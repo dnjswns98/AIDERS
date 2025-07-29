@@ -39,4 +39,11 @@ public class DispatchHistory {
 
     @CreatedDate
     private LocalDateTime createdAt;
+
+    public DispatchHistory(Double pLatitude, Double pLongitude, String pAddress, String pCondition) {
+        this.pLatitude = pLatitude;
+        this.pLongitude = pLongitude;
+        this.pAddress = pAddress;
+        this.pCondition = pCondition;
+    }
 }
