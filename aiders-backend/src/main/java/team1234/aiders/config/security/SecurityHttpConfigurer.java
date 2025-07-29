@@ -9,10 +9,10 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SecurityHttpConfigurer extends AbstractHttpConfigurer<SecurityHttpConfigurer, HttpSecurity> {
 
-//    private final CustomAuthenticationFilter customAuthenticationFilter;
+    private final CustomAuthenticationFilter customAuthenticationFilter;
 
     @Override
     public void configure(HttpSecurity http){
-//        http.addFilterBefore(customAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(customAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
     }
 }
