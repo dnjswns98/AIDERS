@@ -42,5 +42,10 @@ public class User {
 
     private String accessToken;
     private String refreshToken;
+
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
 }
 
