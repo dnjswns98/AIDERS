@@ -10,8 +10,7 @@ function HospitalRouters() {
   return (
     <>
       <Routes>
-        
-        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/" element={<DashboardPage />} />
         <Route path="/emergency" element={<EmergencyPatientPage />} />
         <Route path="/beds" element={<BedManagementPage />} />
         <Route path="/notifications" element={<NotificationPage />} />
