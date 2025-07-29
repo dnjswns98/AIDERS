@@ -1,24 +1,34 @@
 package team1234.aiders.config.swagger;
 
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Contact;
-import io.swagger.v3.oas.models.info.Info;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+import static org.springframework.security.config.Elements.JWT;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 
 @Configuration
 public class SwaggerConfig {
 
     @Bean
-    public OpenAPI openAPI() {
+    OpenAPI openAPI() {
+        SecurityScheme securityScheme = new SecurityScheme()
+                .name(JWT)
+                .type(SecurityScheme.Type.HTTP)
+                .in(SecurityScheme.In.HEADER)
+                .scheme("Bearer")
+                .bearerFormat(JWT)
+                .name(AUTHORIZATION)
+                // TODO 이메일에서 JWT 토큰으로 수정하기
+                .description("인증 토큰을 입력해주세요 (Bearer 제외), 지금은 USER DB id");
+
         return new OpenAPI()
-                .info(new Info()
-                        .title("AIDERS API 문서")
-                        .description("응급 이송 시스템 AIDERS의 REST API 명세서입니다.")
-                        .version("v1.0.0")
-                        .contact(new Contact()
-                                .name("채일 김")
-                                .email("chaeil@example.com")
-                                .url("https://github.com/team1234/aiders")));
+                .addSecurityItem(new SecurityRequirement().addList(JWT))
+                .components(new Components().addSecuritySchemes(JWT, securityScheme));
     }
+
 }
