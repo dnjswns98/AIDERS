@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import MapDisplay from '../../components/Emergency/MapDisplay';
-import WebRtcCall from '../../components/Emergency/WebRtcCall';
+import WebRtcCall from '../../components/webRTC/WebRtcCall';
 
 export default function AmbulanceMapPage() {
   const location = useLocation();

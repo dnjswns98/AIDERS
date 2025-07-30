@@ -1,6 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { OpenVidu } from 'openvidu-browser';
-import { useWebRtc } from '../../../context/WebRtcContext';
+import { useWebRtc } from '../context/WebRtcContext';
 
 export const useOpenVidu = ({ sessionName, userName, onError }) => {
   const sessionContextRef = useRef(null);

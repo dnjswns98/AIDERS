@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { useWebRtc } from '../../../context/WebRtcContext';
+import { useWebRtc } from '../context/WebRtcContext';
 
 export const useMediaStream = () => {
   const localVideoRef = useRef(null);
