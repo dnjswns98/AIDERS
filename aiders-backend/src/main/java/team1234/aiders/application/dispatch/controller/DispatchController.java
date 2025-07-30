@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import team1234.aiders.application.dispatch.dto.DispatchRequestDto;
 import team1234.aiders.application.dispatch.service.DispatchService;
+import team1234.aiders.config.security.CustomUserDetails;
 
 @RestController
 @RequiredArgsConstructor
@@ -19,8 +20,8 @@ public class DispatchController {
     private final DispatchService dispatchService;
     @PostMapping("/")
     public ResponseEntity<Void> dispatch(@RequestBody DispatchRequestDto request,
-                                         @AuthenticationPrincipal(expression = "id") Long firestationId) {
-        dispatchService.createDispatch(request, firestationId);
+                                         @AuthenticationPrincipal CustomUserDetails user) {
+        dispatchService.createDispatch(request, user);
         return ResponseEntity.ok().build();
     }
 }

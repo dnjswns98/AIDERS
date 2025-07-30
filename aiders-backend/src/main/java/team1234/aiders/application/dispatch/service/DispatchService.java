@@ -27,8 +27,10 @@ public class DispatchService {
     private final AmbulanceRepository ambulanceRepository;
     private final FirestationRepository firestationRepository;
 
-    public void createDispatch(DispatchRequestDto request, Long firestationId) {
-        Firestation firestation = firestationRepository.findById(firestationId)
+    public void createDispatch(DispatchRequestDto request, CustomUserDetails user) {
+        Long userId = user.getId();
+
+        Firestation firestation = firestationRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("소방서를 찾을 수 없습니다."));
 
         DispatchHistory history = saveDispatchHistory(request, firestation);
