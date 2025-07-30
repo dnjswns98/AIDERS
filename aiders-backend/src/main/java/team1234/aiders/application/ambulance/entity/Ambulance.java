@@ -22,7 +22,7 @@ public class Ambulance extends User {
     private Firestation firestation;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "varchar(20) default 'WAIT'")
+    @Column(columnDefinition = "varchar(20) default 'WAIT'")
     private AmbCurrentStatus currentStatus = AmbCurrentStatus.WAIT;
 
     private Double pLatitude;
@@ -56,6 +56,9 @@ public class Ambulance extends User {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hospital_id")
     private Hospital hospital;
+
+    private String hospitalName;
+    private String hospitalAddress;
 
     public void changeStatus(AmbCurrentStatus status) {
         this.currentStatus = status;
