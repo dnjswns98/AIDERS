@@ -44,7 +44,14 @@ public class DispatchService {
         List<DispatchHistory> histories = dispatchHistoryRepository.findByFirestationId(userId);
 
         return histories.stream()
-                .map(DispatchHistoryResponseDto::fromEntity)
+                .map(history -> {
+                    List<Long> ambulanceIds = dispatchRepository.findByDispatchHistoryId(history.getId())
+                            .stream()
+                            .map(dispatch -> dispatch.getAmbulance().getId())
+                            .toList();
+
+                    return DispatchHistoryResponseDto.fromEntity(history, ambulanceIds);
+                })
                 .toList();
     }
 
