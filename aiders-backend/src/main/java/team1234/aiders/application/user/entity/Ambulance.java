@@ -53,4 +53,8 @@ public class Ambulance extends User {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hospital_id")
     private Hospital hospital;
+
+    public void changeStatus(AmbCurrentStatus status) {
+        this.currentStatus = status;
+    }
 }

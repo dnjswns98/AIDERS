@@ -23,4 +23,9 @@ public class Dispatch {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dispatch_history_id")
     private DispatchHistory dispatchHistory;
+
+    public Dispatch(Ambulance ambulance, DispatchHistory dispatchHistory) {
+        this.ambulance = ambulance;
+        this.dispatchHistory = dispatchHistory;
+    }
 }

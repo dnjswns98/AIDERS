@@ -39,4 +39,14 @@ public class DispatchHistory {
 
     @CreatedDate
     private LocalDateTime createdAt;
+
+    public static DispatchHistory create(Firestation firestation, Double latitude, Double longitude, String address, String condition) {
+        DispatchHistory history = new DispatchHistory();
+        history.firestation = firestation;
+        history.pLatitude = latitude;
+        history.pLongitude = longitude;
+        history.pAddress = address;
+        history.pCondition = condition;
+        return history;
+    }
 }
