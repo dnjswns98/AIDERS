@@ -52,6 +52,12 @@ public class AuthService {
         return new AccessTokenResponseDto(newAccessToken);
     }
 
+    public void logout(String userKey) {
+        User user = findUserByUserKey(userKey);
+        user.updateRefreshToken(null);
+        userRepository.save(user);
+    }
+
     private CustomUserDetails loadUserDetails(String userKey) {
         return (CustomUserDetails) userDetailsService.loadUserByUsername(userKey);
     }
