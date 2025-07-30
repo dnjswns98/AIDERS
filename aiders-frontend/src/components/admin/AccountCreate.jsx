@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useAccountStore } from "../../store/useAccountStore";
+import './accountCreate.css';
+
 
 const accountTypes = [
   { value: "병원", label: "병원" },
@@ -59,81 +61,37 @@ export default function AccountCreate() {
     setCreatedAccount(null);
   };
 
+  
+
   if (step === 1) {
     return (
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
-      }}>
-        <div style={{
-          padding: '24px',
-          borderBottom: '1px solid #e5e7eb'
-        }}>
-          <h2 style={{
-            fontSize: '24px',
-            fontWeight: 'bold',
-            color: '#1f2937'
-          }}>
+      <div className="account-create-card">
+        <div className="account-create-header">
+          <h2 className="account-create-title">
             계정 생성
           </h2>
-          <p style={{
-            color: '#6b7280',
-            marginTop: '4px'
-          }}>
+          <p className="account-create-subtitle">
             새로운 계정을 생성합니다.
           </p>
         </div>
 
-        <div style={{ padding: '24px' }}>
-          <h3 style={{
-            fontSize: '18px',
-            fontWeight: '500',
-            color: '#374151',
-            marginBottom: '16px'
-          }}>
+        <div className="account-create-body">
+          <h3 className="account-create-section-title">
             소속을 선택해주세요
           </h3>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '16px'
-          }}>
+          <div className="account-type-grid">
             {accountTypes.map((type) => (
               <button
                 key={type.value}
                 onClick={() => handleTypeSelect(type.value)}
-                style={{
-                  padding: '24px',
-                  border: '2px solid #e5e7eb',
-                  borderRadius: '8px',
-                  textAlign: 'center',
-                  backgroundColor: 'white',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  outline: 'none'
-                }}
-                onMouseOver={(e) => {
-                  e.target.style.borderColor = '#3b82f6';
-                  e.target.style.backgroundColor = '#eff6ff';
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.borderColor = '#e5e7eb';
-                  e.target.style.backgroundColor = 'white';
-                }}
+                className="account-type-button"
               >
-                <div style={{
-                  fontSize: '32px',
-                  marginBottom: '8px'
-                }}>
+                <div className="account-type-icon">
                   {type.value === "병원" && "🏥"}
                   {type.value === "구급대원" && "🚑"}
                   {type.value === "소방서" && "🚒"}
                 </div>
-                <span style={{
-                  fontWeight: '500',
-                  color: '#374151'
-                }}>
+                <span className="account-type-label">
                   {type.label}
                 </span>
               </button>
@@ -146,72 +104,28 @@ export default function AccountCreate() {
 
   if (step === 2) {
     return (
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
-      }}>
-        <div style={{
-          padding: '24px',
-          borderBottom: '1px solid #e5e7eb'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '8px'
-          }}>
-            <h2 style={{
-              fontSize: '24px',
-              fontWeight: 'bold',
-              color: '#1f2937'
-            }}>
+      <div className="account-create-card">
+        <div className="account-create-header">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="account-create-title">
               {selectedType} 계정 생성
             </h2>
             <button 
               onClick={() => setStep(1)}
-              style={{
-                padding: '8px 12px',
-                backgroundColor: 'transparent',
-                border: '1px solid #d1d5db',
-                color: '#6b7280',
-                cursor: 'pointer',
-                fontSize: '14px',
-                borderRadius: '6px',
-                transition: 'all 0.2s'
-              }}
-              onMouseOver={(e) => {
-                e.target.style.color = '#374151';
-                e.target.style.borderColor = '#9ca3af';
-                e.target.style.backgroundColor = '#f9fafb';
-              }}
-              onMouseOut={(e) => {
-                e.target.style.color = '#6b7280';
-                e.target.style.borderColor = '#d1d5db';
-                e.target.style.backgroundColor = 'transparent';
-              }}
+              className="account-create-back-button"
             >
               ← 뒤로
             </button>
           </div>
-          <p style={{
-            color: '#6b7280',
-            marginTop: '4px'
-          }}>
+          <p className="account-create-subtitle">
             계정 정보를 입력해주세요.
           </p>
         </div>
 
-        <div style={{ padding: '24px' }}>
+        <div className="account-create-body">
           <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '8px'
-              }}>
+            <div className="form-group">
+              <label className="form-label">
                 아이디
               </label>
               <input
@@ -220,36 +134,13 @@ export default function AccountCreate() {
                 onChange={(e) => handleInputChange("accountId", e.target.value)}
                 placeholder="아이디를 입력하세요"
                 required
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '16px',
-                  outline: 'none',
-                  transition: 'border-color 0.2s, box-shadow 0.2s',
-                  boxSizing: 'border-box'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#3b82f6';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#d1d5db';
-                  e.target.style.boxShadow = 'none';
-                }}
+                className="form-input"
               />
             </div>
 
             {selectedType === "구급대원" ? (
-              <div style={{ marginBottom: '24px' }}>
-                <label style={{
-                  display: 'block',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  color: '#374151',
-                  marginBottom: '8px'
-                }}>
+              <div className="form-group">
+                <label className="form-label">
                   차량번호
                 </label>
                 <input
@@ -258,35 +149,12 @@ export default function AccountCreate() {
                   onChange={(e) => handleInputChange("vehicleNumber", e.target.value)}
                   placeholder="차량번호를 입력하세요"
                   required
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    fontSize: '16px',
-                    outline: 'none',
-                    transition: 'border-color 0.2s, box-shadow 0.2s',
-                    boxSizing: 'border-box'
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#3b82f6';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#d1d5db';
-                    e.target.style.boxShadow = 'none';
-                  }}
+                  className="form-input"
                 />
               </div>
             ) : (
-              <div style={{ marginBottom: '24px' }}>
-                <label style={{
-                  display: 'block',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  color: '#374151',
-                  marginBottom: '8px'
-                }}>
+              <div className="form-group">
+                <label className="form-label">
                   주소
                 </label>
                 <input
@@ -295,45 +163,14 @@ export default function AccountCreate() {
                   onChange={(e) => handleInputChange("address", e.target.value)}
                   placeholder="주소를 입력하세요"
                   required
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    fontSize: '16px',
-                    outline: 'none',
-                    transition: 'border-color 0.2s, box-shadow 0.2s',
-                    boxSizing: 'border-box'
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#3b82f6';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#d1d5db';
-                    e.target.style.boxShadow = 'none';
-                  }}
+                  className="form-input"
                 />
               </div>
             )}
 
             <button
               type="submit"
-              style={{
-                width: '100%',
-                backgroundColor: '#3b82f6',
-                color: 'white',
-                padding: '12px 16px',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '16px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s',
-                outline: 'none'
-              }}
-              onMouseOver={(e) => e.target.style.backgroundColor = '#2563eb'}
-              onMouseOut={(e) => e.target.style.backgroundColor = '#3b82f6'}
+              className="submit-button"
             >
               계정 생성
             </button>
@@ -345,125 +182,57 @@ export default function AccountCreate() {
 
   if (step === 3 && createdAccount) {
     return (
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
-      }}>
-        <div style={{
-          padding: '24px',
-          borderBottom: '1px solid #e5e7eb'
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              width: '64px',
-              height: '64px',
-              backgroundColor: '#dcfce7',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 16px',
-              fontSize: '24px'
-            }}>
+      <div className="account-created-success-card">
+        <div className="account-created-header">
+          <div className="account-created-icon-container">
+            <div className="account-created-icon">
               ✅
             </div>
-            <h2 style={{
-              fontSize: '24px',
-              fontWeight: 'bold',
-              color: '#1f2937',
-              marginBottom: '8px'
-            }}>
+            <h2 className="account-created-title">
               계정 생성 완료
             </h2>
-            <p style={{
-              color: '#6b7280'
-            }}>
+            <p className="account-created-subtitle">
               계정이 성공적으로 생성되었습니다.
             </p>
           </div>
         </div>
 
-        <div style={{ padding: '24px' }}>
-          <div style={{
-            backgroundColor: '#f9fafb',
-            borderRadius: '8px',
-            padding: '24px',
-            marginBottom: '24px'
-          }}>
-            <h3 style={{
-              fontWeight: '500',
-              color: '#1f2937',
-              marginBottom: '16px'
-            }}>
+        <div className="account-info-section">
+          <div className="account-info-box">
+            <h3 className="account-info-title">
               생성된 계정 정보
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between'
-              }}>
-                <span style={{ color: '#6b7280' }}>소속:</span>
-                <span style={{ fontWeight: '500' }}>{createdAccount.type}</span>
+            <div className="account-info-details">
+              <div className="account-info-row">
+                <span className="account-info-label">소속:</span>
+                <span className="account-info-value">{createdAccount.type}</span>
               </div>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between'
-              }}>
-                <span style={{ color: '#6b7280' }}>아이디:</span>
-                <span style={{ fontWeight: '500' }}>{createdAccount.accountId}</span>
+              <div className="account-info-row">
+                <span className="account-info-label">아이디:</span>
+                <span className="account-info-value">{createdAccount.accountId}</span>
               </div>
               {createdAccount.address && (
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between'
-                }}>
-                  <span style={{ color: '#6b7280' }}>주소:</span>
-                  <span style={{ fontWeight: '500' }}>{createdAccount.address}</span>
+                <div className="account-info-row">
+                  <span className="account-info-label">주소:</span>
+                  <span className="account-info-value">{createdAccount.address}</span>
                 </div>
               )}
               {createdAccount.vehicleNumber && (
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between'
-                }}>
-                  <span style={{ color: '#6b7280' }}>차량번호:</span>
-                  <span style={{ fontWeight: '500' }}>{createdAccount.vehicleNumber}</span>
+                <div className="account-info-row">
+                  <span className="account-info-label">차량번호:</span>
+                  <span className="account-info-value">{createdAccount.vehicleNumber}</span>
                 </div>
               )}
-              <hr style={{
-                margin: '16px 0',
-                border: 'none',
-                height: '1px',
-                backgroundColor: '#e5e7eb'
-              }} />
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between'
-              }}>
-                <span style={{ color: '#6b7280' }}>임시 비밀번호:</span>
-                <span style={{
-                  fontFamily: 'monospace',
-                  backgroundColor: '#fef3c7',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  fontSize: '14px'
-                }}>
+              <hr className="account-info-hr" />
+              <div className="account-info-row">
+                <span className="account-info-label">임시 비밀번호:</span>
+                <span className="account-info-password-passkey account-info-temp-password">
                   {createdAccount.tempPassword}
                 </span>
               </div>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between'
-              }}>
-                <span style={{ color: '#6b7280' }}>패스키:</span>
-                <span style={{
-                  fontFamily: 'monospace',
-                  backgroundColor: '#dbeafe',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  fontSize: '14px'
-                }}>
+              <div className="account-info-row">
+                <span className="account-info-label">패스키:</span>
+                <span className="account-info-password-passkey account-info-passkey">
                   {createdAccount.passkey}
                 </span>
               </div>
@@ -472,21 +241,7 @@ export default function AccountCreate() {
 
           <button
             onClick={resetForm}
-            style={{
-              width: '100%',
-              backgroundColor: '#3b82f6',
-              color: 'white',
-              padding: '12px 16px',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '16px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s',
-              outline: 'none'
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#2563eb'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#3b82f6'}
+            className="submit-button"
           >
             새 계정 생성
           </button>
