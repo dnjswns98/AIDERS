@@ -1,3 +1,4 @@
+// RedisHandler.java
 package team1234.aiders.redis.handler;
 
 import lombok.RequiredArgsConstructor;
@@ -7,6 +8,7 @@ import team1234.aiders.application.openvidu.dto.VideoSessionInfo;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -43,14 +45,21 @@ public class RedisHandler {
         redisTemplate.opsForList().rightPush(hospitalId, sessionInfo);
     }
 
-    public List<Object> getWaitingListRaw(String hospitalId) {
+    public List<VideoSessionInfo> getWaitingList(String hospitalId) {
         Long size = redisTemplate.opsForList().size(hospitalId);
         if (size == null || size == 0) return List.of();
-        return redisTemplate.opsForList().range(hospitalId, 0, size);
+
+        return redisTemplate.opsForList().range(hospitalId, 0, size).stream()
+                .filter(o -> o instanceof VideoSessionInfo)
+                .map(o -> (VideoSessionInfo) o)
+                .collect(Collectors.toList());
     }
 
-    public void removeFromWaitingListByValue(String hospitalId, VideoSessionInfo sessionInfo) {
-        redisTemplate.opsForList().remove(hospitalId, 1, sessionInfo);
+    public void overwriteWaitingList(String hospitalId, List<VideoSessionInfo> sessions) {
+        redisTemplate.delete(hospitalId);
+        for (VideoSessionInfo session : sessions) {
+            redisTemplate.opsForList().rightPush(hospitalId, session);
+        }
     }
 
     public void clearWaitingList(String hospitalId) {
