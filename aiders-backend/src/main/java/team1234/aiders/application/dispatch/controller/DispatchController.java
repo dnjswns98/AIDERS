@@ -19,7 +19,7 @@ public class DispatchController {
     private final DispatchService dispatchService;
     @PostMapping("/")
     public ResponseEntity<Void> dispatch(@RequestBody DispatchRequestDto request,
-                                         @AuthenticationPrincipal(expression = "userId") Long firestationId) {
+                                         @AuthenticationPrincipal(expression = "id") Long firestationId) {
         dispatchService.createDispatch(request, firestationId);
         return ResponseEntity.ok().build();
     }

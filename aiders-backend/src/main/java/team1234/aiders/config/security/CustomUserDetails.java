@@ -26,6 +26,9 @@ public class CustomUserDetails implements UserDetails {
         this.role = getDiscriminatorRole(user);
     }
 
+    public Long getId() {
+        return id;
+    }
     private String getDiscriminatorRole(User user) {
         if (user.getClass().getSimpleName().equals("Hospital")) return "hospital";
         if (user.getClass().getSimpleName().equals("Firestation")) return "firestation";
