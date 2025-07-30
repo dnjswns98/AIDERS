@@ -10,7 +10,10 @@ import team1234.aiders.application.dispatch.repository.DispatchHistoryRepository
 import team1234.aiders.application.dispatch.repository.DispatchRepository;
 import team1234.aiders.application.user.entity.AmbCurrentStatus;
 import team1234.aiders.application.user.entity.Ambulance;
+import team1234.aiders.application.user.entity.Firestation;
 import team1234.aiders.application.user.repository.AmbulanceRepository;
+import team1234.aiders.application.user.repository.FirestationRepository;
+import team1234.aiders.config.security.CustomUserDetails;
 
 import java.util.List;
 
@@ -22,24 +25,25 @@ public class DispatchService {
     private final DispatchRepository dispatchRepository;
     private final DispatchHistoryRepository dispatchHistoryRepository;
     private final AmbulanceRepository ambulanceRepository;
+    private final FirestationRepository firestationRepository;
 
-    public void createDispatch(DispatchRequestDto dispatchRequestDto) {
-        DispatchHistory history = saveDispatchHistory(dispatchRequestDto);
+    public void createDispatch(DispatchRequestDto request, Long firestationId) {
+        Firestation firestation = firestationRepository.findById(firestationId)
+                .orElseThrow(() -> new IllegalArgumentException("소방서를 찾을 수 없습니다."));
 
-        List<Long> ambulanceIds = dispatchRequestDto.getAmbulanceIds();
-        dispatchAmbulances(ambulanceIds, history);
+        DispatchHistory history = saveDispatchHistory(request, firestation);
+        dispatchAmbulances(request.getAmbulanceIds(), history);
     }
 
-    private DispatchHistory saveDispatchHistory(DispatchRequestDto dispatchRequestDto) {
-        DispatchHistory history = new DispatchHistory(
-                dispatchRequestDto.getLatitude(),
-                dispatchRequestDto.getLongitude(),
-                dispatchRequestDto.getAddress(),
-                dispatchRequestDto.getCondition()
+    private DispatchHistory saveDispatchHistory(DispatchRequestDto dto, Firestation firestation) {
+        DispatchHistory history = DispatchHistory.create(
+                firestation,
+                dto.getLatitude(),
+                dto.getLongitude(),
+                dto.getAddress(),
+                dto.getCondition()
         );
-
-        dispatchHistoryRepository.save(history);
-        return history;
+        return dispatchHistoryRepository.save(history);
     }
 
     private void dispatchAmbulances(List<Long> ambulanceIds, DispatchHistory history) {
