@@ -48,7 +48,6 @@ public class Ambulance extends User {
     private String pNationality;
     private String pVitalSigns;
 
-
     private LocalDateTime dispatchTime;
     private LocalDateTime transferStartTime;
     private LocalDateTime transferEndTime;
@@ -62,5 +61,40 @@ public class Ambulance extends User {
 
     public void changeStatus(AmbCurrentStatus status) {
         this.currentStatus = status;
+    }
+
+    public void transferComplete() {
+        this.transferEndTime = LocalDateTime.now();
+    }
+
+    public void clearPatientInfo() {
+        this.pLatitude = null;
+        this.pLongitude = null;
+        this.pAddress = null;
+        this.pCondition = null;
+        this.pKtas = null;
+        this.pDepartment = null;
+        this.pSex = null;
+        this.pAgeRange = PatientAgeRange.UNDECIDED;
+        this.pMedicalRecord = null;
+        this.pFamilyHistory = null;
+        this.pPastHistory = null;
+        this.pMedicine = null;
+        this.pName = null;
+        this.pRrn = null;
+        this.pNationality = null;
+        this.pVitalSigns = null;
+    }
+
+    public void clearHospitalInfo() {
+        this.hospital = null;
+        this.hospitalName = null;
+        this.hospitalAddress = null;
+    }
+
+    public void clearTransferInfo() {
+        this.dispatchTime = null;
+        this.transferStartTime = null;
+        this.transferEndTime = null;
     }
 }
