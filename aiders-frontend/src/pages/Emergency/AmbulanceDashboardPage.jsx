@@ -17,7 +17,10 @@ export default function AmbulanceDashboardPage() {
   const hospitals = []; // 예시 데이터, 실제로는 스토어나 API에서 가져와야 합니다.
 
   const handleModifyPatientInfo = () => {
-    navigate('/emergency/patient-input');
+    const currentAmbulance = useEmergencyStore.getState().selectedAmbulance;
+    // 이름 대신, 필수 정보인 KTAS 레벨 존재 여부로 수정 모드를 판단합니다.
+    const isEdit = !!currentAmbulance?.patientDetails?.ktasLevel;
+    navigate('/emergency/patient-input', { state: { isEditMode: isEdit } });
   };
 
   const handleStartCall = () => {
@@ -66,27 +69,27 @@ export default function AmbulanceDashboardPage() {
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-md flex-grow flex flex-col">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">병원 정보</h2>
-            {hospitals.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {hospitals.map((hospital) => (
-                  <HospitalCard key={hospital.id} hospital={hospital} />
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-gray-500">매칭된 병원 정보가 없습니다.</p>
-            )}
+            <h2 className="text-xl font-bold text-gray-800 mb-4">지도</h2>
+            <div className="flex-grow h-96 lg:h-auto">
+              {/* 지도 컴포넌트 - 병원 위치 또는 구급차 위치 표시 */}
+              {hospitals.length > 0 && <MapDisplay hospital={hospitals[0]} />}
+            </div>
           </div>
         </div>
 
         {/* Right Column */}
         <div className="flex flex-col gap-6">
           <div className="bg-white p-6 rounded-lg shadow-md flex-grow flex flex-col">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">지도</h2>
-            <div className="flex-grow h-64 lg:h-auto">
-              {/* 지도 컴포넌트 - 병원 위치 또는 구급차 위치 표시 */}
-              {/* <MapDisplay hospital={hospitals[0]} /> */}
-            </div>
+            <h2 className="text-xl font-bold text-gray-800 mb-4">병원 정보</h2>
+            {hospitals.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4">
+                {hospitals.map((hospital) => (
+                  <HospitalCard key={hospital.id} hospital={hospital} simple />
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-gray-500">매칭된 병원 정보가 없습니다.</p>
+            )}
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-md h-full flex flex-col">
@@ -101,7 +104,7 @@ export default function AmbulanceDashboardPage() {
                 </button>
               )}
             </div>
-            <div className="flex-grow bg-gray-200 rounded-lg flex items-center justify-center min-h-[400px]">
+            <div className="flex-grow bg-gray-200 rounded-lg flex items-center justify-center min-h-[300px]">
               {isCalling ? (
                 <WebRtcCall sessionName="hospital-call" userName="ambulance-user" onLeave={handleEndCall} />
               ) : (

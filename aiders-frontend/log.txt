@@ -1,59 +1,380 @@
-[plugin:vite:react-babel] C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\src\components\Emergency\WebRtcCall.jsx: Unexpected token (139:4)
+AmbulancePatientInputPage.jsx?t=1753854341457:131 Uncaught ReferenceError: isDrawing is not defined
+    at AmbulancePatientInputPage (AmbulancePatientInputPage.jsx?t=1753854341457:131:18)
+    at react-stack-bottom-frame (react-dom_client.js?v=6c0d0a94:17424:20)
+    at renderWithHooks (react-dom_client.js?v=6c0d0a94:4206:24)
+    at updateFunctionComponent (react-dom_client.js?v=6c0d0a94:6619:21)
+    at beginWork (react-dom_client.js?v=6c0d0a94:7654:20)
+    at runWithFiberInDEV (react-dom_client.js?v=6c0d0a94:1485:72)
+    at performUnitOfWork (react-dom_client.js?v=6c0d0a94:10868:98)
+    at workLoopSync (react-dom_client.js?v=6c0d0a94:10728:43)
+    at renderRootSync (react-dom_client.js?v=6c0d0a94:10711:13)
+    at performWorkOnRoot (react-dom_client.js?v=6c0d0a94:10359:46)
+AmbulancePatientInputPage @ AmbulancePatientInputPage.jsx?t=1753854341457:131
+react-stack-bottom-frame @ react-dom_client.js?v=6c0d0a94:17424
+renderWithHooks @ react-dom_client.js?v=6c0d0a94:4206
+updateFunctionComponent @ react-dom_client.js?v=6c0d0a94:6619
+beginWork @ react-dom_client.js?v=6c0d0a94:7654
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+performUnitOfWork @ react-dom_client.js?v=6c0d0a94:10868
+workLoopSync @ react-dom_client.js?v=6c0d0a94:10728
+renderRootSync @ react-dom_client.js?v=6c0d0a94:10711
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10359
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRefresh @ react-dom_client.js?v=6c0d0a94:372
+p.scheduleRefresh @ renderer.js:994
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:608Understand this error
+@react-refresh:228 An error occurred in the <AmbulancePatientInputPage> component.
 
-  137 |       </div>
-  138 |     </div>
-> 139 |   );
-      |     ^
-C:/Users/SSAFY/Desktop/S13P11D107/aiders-frontend/src/components/Emergency/WebRtcCall.jsx:139:4
-    at constructor (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:367:19)
-    at JSXParserMixin.raise (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:6627:19)
-    at JSXParserMixin.unexpected (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:6647:16)
-    at JSXParserMixin.parseExprAtom (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:11442:16)
-    at JSXParserMixin.parseExprAtom (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:4794:20)
-    at JSXParserMixin.parseExprSubscripts (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:11076:23)
-    at JSXParserMixin.parseUpdate (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:11061:21)
-    at JSXParserMixin.parseMaybeUnary (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:11041:23)
-    at JSXParserMixin.parseMaybeUnaryOrPrivate (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:10894:61)
-    at JSXParserMixin.parseExprOps (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:10899:23)
-    at JSXParserMixin.parseMaybeConditional (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:10876:23)
-    at JSXParserMixin.parseMaybeAssign (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:10826:21)
-    at JSXParserMixin.parseExpressionBase (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:10779:23)
-    at C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:10775:39
-    at JSXParserMixin.allowInAnd (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:12422:16)
-    at JSXParserMixin.parseExpression (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:10775:17)
-    at JSXParserMixin.parseStatementContent (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:12895:23)
-    at JSXParserMixin.parseStatementLike (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:12767:17)
-    at JSXParserMixin.parseStatementListItem (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:12747:17)
-    at JSXParserMixin.parseBlockOrModuleBlockBody (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:13316:61)
-    at JSXParserMixin.parseBlockBody (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:13309:10)
-    at JSXParserMixin.parseBlock (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:13297:10)
-    at JSXParserMixin.parseFunctionBody (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:12101:24)
-    at JSXParserMixin.parseFunctionBodyAndFinish (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:12087:10)
-    at C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:13445:12
-    at JSXParserMixin.withSmartMixTopicForbiddingContext (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:12404:14)
-    at JSXParserMixin.parseFunction (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:13444:10)
-    at JSXParserMixin.parseExportDefaultExpression (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:13907:19)
-    at JSXParserMixin.parseExport (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:13828:25)
-    at JSXParserMixin.parseStatementContent (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:12878:27)
-    at JSXParserMixin.parseStatementLike (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:12767:17)
-    at JSXParserMixin.parseModuleItem (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:12744:17)
-    at JSXParserMixin.parseBlockOrModuleBlockBody (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:13316:36)
-    at JSXParserMixin.parseBlockBody (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:13309:10)
-    at JSXParserMixin.parseProgram (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:12625:10)
-    at JSXParserMixin.parseTopLevel (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:12615:25)
-    at JSXParserMixin.parse (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:14492:10)
-    at parse (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\parser\lib\index.js:14526:38)
-    at parser (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\core\lib\parser\index.js:41:34)
-    at parser.next (<anonymous>)
-    at normalizeFile (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\core\lib\transformation\normalize-file.js:64:37)
-    at normalizeFile.next (<anonymous>)
-    at run (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\core\lib\transformation\index.js:22:50)
-    at run.next (<anonymous>)
-    at transform (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\@babel\core\lib\transform.js:22:33)
-    at transform.next (<anonymous>)
-    at step (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\gensync\index.js:261:32)
-    at C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\gensync\index.js:273:13
-    at async.call.result.err.err (C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\gensync\index.js:223:11)
-    at C:\Users\SSAFY\Desktop\S13P11D107\aiders-frontend\node_modules\gensync\index.js:189:28
-Click outside, press Esc key, or fix the code to dismiss.
-You can also disable this overlay by setting server.hmr.overlay to false in vite.config.js.
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+overrideMethod @ hook.js:608
+defaultOnUncaughtError @ react-dom_client.js?v=6c0d0a94:6229
+logUncaughtError @ react-dom_client.js?v=6c0d0a94:6283
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+lane.callback @ react-dom_client.js?v=6c0d0a94:6311
+callCallback @ react-dom_client.js?v=6c0d0a94:4097
+commitCallbacks @ react-dom_client.js?v=6c0d0a94:4109
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1487
+commitLayoutEffectOnFiber @ react-dom_client.js?v=6c0d0a94:9029
+flushLayoutEffects @ react-dom_client.js?v=6c0d0a94:11174
+commitRoot @ react-dom_client.js?v=6c0d0a94:11080
+commitRootWhenReady @ react-dom_client.js?v=6c0d0a94:10512
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10457
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRefresh @ react-dom_client.js?v=6c0d0a94:372
+p.scheduleRefresh @ renderer.js:994
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:608Understand this warning
+AmbulancePatientInputPage.jsx?t=1753854348870:131 Uncaught ReferenceError: isDrawing is not defined
+    at AmbulancePatientInputPage (AmbulancePatientInputPage.jsx?t=1753854348870:131:18)
+    at react-stack-bottom-frame (react-dom_client.js?v=6c0d0a94:17424:20)
+    at renderWithHooks (react-dom_client.js?v=6c0d0a94:4206:24)
+    at updateFunctionComponent (react-dom_client.js?v=6c0d0a94:6619:21)
+    at beginWork (react-dom_client.js?v=6c0d0a94:7654:20)
+    at runWithFiberInDEV (react-dom_client.js?v=6c0d0a94:1485:72)
+    at performUnitOfWork (react-dom_client.js?v=6c0d0a94:10868:98)
+    at workLoopSync (react-dom_client.js?v=6c0d0a94:10728:43)
+    at renderRootSync (react-dom_client.js?v=6c0d0a94:10711:13)
+    at performWorkOnRoot (react-dom_client.js?v=6c0d0a94:10359:46)
+AmbulancePatientInputPage @ AmbulancePatientInputPage.jsx?t=1753854348870:131
+react-stack-bottom-frame @ react-dom_client.js?v=6c0d0a94:17424
+renderWithHooks @ react-dom_client.js?v=6c0d0a94:4206
+updateFunctionComponent @ react-dom_client.js?v=6c0d0a94:6619
+beginWork @ react-dom_client.js?v=6c0d0a94:7654
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+performUnitOfWork @ react-dom_client.js?v=6c0d0a94:10868
+workLoopSync @ react-dom_client.js?v=6c0d0a94:10728
+renderRootSync @ react-dom_client.js?v=6c0d0a94:10711
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10359
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRoot @ react-dom_client.js?v=6c0d0a94:360
+(anonymous) @ @react-refresh:208
+performReactRefresh @ @react-refresh:190
+(anonymous) @ @react-refresh:608
+<AmbulancePatientInputPage>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=6c0d0a94:250
+AmbulanceRouters @ AmbulanceRouters.jsx:12
+react-stack-bottom-frame @ react-dom_client.js?v=6c0d0a94:17424
+renderWithHooksAgain @ react-dom_client.js?v=6c0d0a94:4281
+renderWithHooks @ react-dom_client.js?v=6c0d0a94:4217
+updateFunctionComponent @ react-dom_client.js?v=6c0d0a94:6619
+beginWork @ react-dom_client.js?v=6c0d0a94:7654
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+performUnitOfWork @ react-dom_client.js?v=6c0d0a94:10868
+workLoopSync @ react-dom_client.js?v=6c0d0a94:10728
+renderRootSync @ react-dom_client.js?v=6c0d0a94:10711
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10359
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRoot @ react-dom_client.js?v=6c0d0a94:360
+(anonymous) @ @react-refresh:208
+performReactRefresh @ @react-refresh:190
+(anonymous) @ @react-refresh:608
+<AmbulanceRouters>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=6c0d0a94:250
+AppRouters @ AppRouters.jsx:23
+react-stack-bottom-frame @ react-dom_client.js?v=6c0d0a94:17424
+renderWithHooksAgain @ react-dom_client.js?v=6c0d0a94:4281
+renderWithHooks @ react-dom_client.js?v=6c0d0a94:4217
+updateFunctionComponent @ react-dom_client.js?v=6c0d0a94:6619
+beginWork @ react-dom_client.js?v=6c0d0a94:7654
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+performUnitOfWork @ react-dom_client.js?v=6c0d0a94:10868
+workLoopSync @ react-dom_client.js?v=6c0d0a94:10728
+renderRootSync @ react-dom_client.js?v=6c0d0a94:10711
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10359
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRoot @ react-dom_client.js?v=6c0d0a94:360
+(anonymous) @ @react-refresh:208
+performReactRefresh @ @react-refresh:190
+(anonymous) @ @react-refresh:608
+<AppRouters>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=6c0d0a94:250
+AppContent @ App.jsx:36
+react-stack-bottom-frame @ react-dom_client.js?v=6c0d0a94:17424
+renderWithHooksAgain @ react-dom_client.js?v=6c0d0a94:4281
+renderWithHooks @ react-dom_client.js?v=6c0d0a94:4217
+updateFunctionComponent @ react-dom_client.js?v=6c0d0a94:6619
+beginWork @ react-dom_client.js?v=6c0d0a94:7654
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+performUnitOfWork @ react-dom_client.js?v=6c0d0a94:10868
+workLoopSync @ react-dom_client.js?v=6c0d0a94:10728
+renderRootSync @ react-dom_client.js?v=6c0d0a94:10711
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10359
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRoot @ react-dom_client.js?v=6c0d0a94:360
+(anonymous) @ @react-refresh:208
+performReactRefresh @ @react-refresh:190
+(anonymous) @ @react-refresh:608
+<AppContent>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=6c0d0a94:250
+App @ App.jsx:70
+react-stack-bottom-frame @ react-dom_client.js?v=6c0d0a94:17424
+renderWithHooksAgain @ react-dom_client.js?v=6c0d0a94:4281
+renderWithHooks @ react-dom_client.js?v=6c0d0a94:4217
+updateFunctionComponent @ react-dom_client.js?v=6c0d0a94:6619
+beginWork @ react-dom_client.js?v=6c0d0a94:7654
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+performUnitOfWork @ react-dom_client.js?v=6c0d0a94:10868
+workLoopSync @ react-dom_client.js?v=6c0d0a94:10728
+renderRootSync @ react-dom_client.js?v=6c0d0a94:10711
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10359
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRoot @ react-dom_client.js?v=6c0d0a94:360
+(anonymous) @ @react-refresh:208
+performReactRefresh @ @react-refresh:190
+(anonymous) @ @react-refresh:608Understand this error
+@react-refresh:208 An error occurred in the <AmbulancePatientInputPage> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+overrideMethod @ hook.js:608
+defaultOnUncaughtError @ react-dom_client.js?v=6c0d0a94:6229
+logUncaughtError @ react-dom_client.js?v=6c0d0a94:6283
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+lane.callback @ react-dom_client.js?v=6c0d0a94:6311
+callCallback @ react-dom_client.js?v=6c0d0a94:4097
+commitCallbacks @ react-dom_client.js?v=6c0d0a94:4109
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1487
+commitLayoutEffectOnFiber @ react-dom_client.js?v=6c0d0a94:9029
+flushLayoutEffects @ react-dom_client.js?v=6c0d0a94:11174
+commitRoot @ react-dom_client.js?v=6c0d0a94:11080
+commitRootWhenReady @ react-dom_client.js?v=6c0d0a94:10512
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10457
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRoot @ react-dom_client.js?v=6c0d0a94:360
+(anonymous) @ @react-refresh:208
+performReactRefresh @ @react-refresh:190
+(anonymous) @ @react-refresh:608
+<AmbulancePatientInputPage>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=6c0d0a94:250
+AmbulanceRouters @ AmbulanceRouters.jsx:12
+react-stack-bottom-frame @ react-dom_client.js?v=6c0d0a94:17424
+renderWithHooksAgain @ react-dom_client.js?v=6c0d0a94:4281
+renderWithHooks @ react-dom_client.js?v=6c0d0a94:4217
+updateFunctionComponent @ react-dom_client.js?v=6c0d0a94:6619
+beginWork @ react-dom_client.js?v=6c0d0a94:7654
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+performUnitOfWork @ react-dom_client.js?v=6c0d0a94:10868
+workLoopSync @ react-dom_client.js?v=6c0d0a94:10728
+renderRootSync @ react-dom_client.js?v=6c0d0a94:10711
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10359
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRoot @ react-dom_client.js?v=6c0d0a94:360
+(anonymous) @ @react-refresh:208
+performReactRefresh @ @react-refresh:190
+(anonymous) @ @react-refresh:608
+<AmbulanceRouters>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=6c0d0a94:250
+AppRouters @ AppRouters.jsx:23
+react-stack-bottom-frame @ react-dom_client.js?v=6c0d0a94:17424
+renderWithHooksAgain @ react-dom_client.js?v=6c0d0a94:4281
+renderWithHooks @ react-dom_client.js?v=6c0d0a94:4217
+updateFunctionComponent @ react-dom_client.js?v=6c0d0a94:6619
+beginWork @ react-dom_client.js?v=6c0d0a94:7654
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+performUnitOfWork @ react-dom_client.js?v=6c0d0a94:10868
+workLoopSync @ react-dom_client.js?v=6c0d0a94:10728
+renderRootSync @ react-dom_client.js?v=6c0d0a94:10711
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10359
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRoot @ react-dom_client.js?v=6c0d0a94:360
+(anonymous) @ @react-refresh:208
+performReactRefresh @ @react-refresh:190
+(anonymous) @ @react-refresh:608
+<AppRouters>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=6c0d0a94:250
+AppContent @ App.jsx:36
+react-stack-bottom-frame @ react-dom_client.js?v=6c0d0a94:17424
+renderWithHooksAgain @ react-dom_client.js?v=6c0d0a94:4281
+renderWithHooks @ react-dom_client.js?v=6c0d0a94:4217
+updateFunctionComponent @ react-dom_client.js?v=6c0d0a94:6619
+beginWork @ react-dom_client.js?v=6c0d0a94:7654
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+performUnitOfWork @ react-dom_client.js?v=6c0d0a94:10868
+workLoopSync @ react-dom_client.js?v=6c0d0a94:10728
+renderRootSync @ react-dom_client.js?v=6c0d0a94:10711
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10359
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRoot @ react-dom_client.js?v=6c0d0a94:360
+(anonymous) @ @react-refresh:208
+performReactRefresh @ @react-refresh:190
+(anonymous) @ @react-refresh:608
+<AppContent>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=6c0d0a94:250
+App @ App.jsx:70
+react-stack-bottom-frame @ react-dom_client.js?v=6c0d0a94:17424
+renderWithHooksAgain @ react-dom_client.js?v=6c0d0a94:4281
+renderWithHooks @ react-dom_client.js?v=6c0d0a94:4217
+updateFunctionComponent @ react-dom_client.js?v=6c0d0a94:6619
+beginWork @ react-dom_client.js?v=6c0d0a94:7654
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+performUnitOfWork @ react-dom_client.js?v=6c0d0a94:10868
+workLoopSync @ react-dom_client.js?v=6c0d0a94:10728
+renderRootSync @ react-dom_client.js?v=6c0d0a94:10711
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10359
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRoot @ react-dom_client.js?v=6c0d0a94:360
+(anonymous) @ @react-refresh:208
+performReactRefresh @ @react-refresh:190
+(anonymous) @ @react-refresh:608Understand this warning
+AmbulancePatientInputPage.jsx:133 Uncaught ReferenceError: isDrawing is not defined
+    at AmbulancePatientInputPage (AmbulancePatientInputPage.jsx:133:18)
+    at react-stack-bottom-frame (react-dom_client.js?v=6c0d0a94:17424:20)
+    at renderWithHooks (react-dom_client.js?v=6c0d0a94:4206:24)
+    at updateFunctionComponent (react-dom_client.js?v=6c0d0a94:6619:21)
+    at beginWork (react-dom_client.js?v=6c0d0a94:7654:20)
+    at runWithFiberInDEV (react-dom_client.js?v=6c0d0a94:1485:72)
+    at performUnitOfWork (react-dom_client.js?v=6c0d0a94:10868:98)
+    at workLoopSync (react-dom_client.js?v=6c0d0a94:10728:43)
+    at renderRootSync (react-dom_client.js?v=6c0d0a94:10711:13)
+    at performWorkOnRoot (react-dom_client.js?v=6c0d0a94:10359:46)
+AmbulancePatientInputPage @ AmbulancePatientInputPage.jsx:133
+react-stack-bottom-frame @ react-dom_client.js?v=6c0d0a94:17424
+renderWithHooks @ react-dom_client.js?v=6c0d0a94:4206
+updateFunctionComponent @ react-dom_client.js?v=6c0d0a94:6619
+beginWork @ react-dom_client.js?v=6c0d0a94:7654
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+performUnitOfWork @ react-dom_client.js?v=6c0d0a94:10868
+workLoopSync @ react-dom_client.js?v=6c0d0a94:10728
+renderRootSync @ react-dom_client.js?v=6c0d0a94:10711
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10359
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRoot @ react-dom_client.js?v=6c0d0a94:360
+(anonymous) @ @react-refresh:208
+performReactRefresh @ @react-refresh:190
+(anonymous) @ @react-refresh:608
+<AmbulancePatientInputPage>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=6c0d0a94:250
+AmbulanceRouters @ AmbulanceRouters.jsx:12
+react-stack-bottom-frame @ react-dom_client.js?v=6c0d0a94:17424
+renderWithHooksAgain @ react-dom_client.js?v=6c0d0a94:4281
+renderWithHooks @ react-dom_client.js?v=6c0d0a94:4217
+updateFunctionComponent @ react-dom_client.js?v=6c0d0a94:6619
+beginWork @ react-dom_client.js?v=6c0d0a94:7654
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+performUnitOfWork @ react-dom_client.js?v=6c0d0a94:10868
+workLoopSync @ react-dom_client.js?v=6c0d0a94:10728
+renderRootSync @ react-dom_client.js?v=6c0d0a94:10711
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10359
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRoot @ react-dom_client.js?v=6c0d0a94:360
+(anonymous) @ @react-refresh:208
+performReactRefresh @ @react-refresh:190
+(anonymous) @ @react-refresh:608
+<AmbulanceRouters>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=6c0d0a94:250
+AppRouters @ AppRouters.jsx:23
+react-stack-bottom-frame @ react-dom_client.js?v=6c0d0a94:17424
+renderWithHooksAgain @ react-dom_client.js?v=6c0d0a94:4281
+renderWithHooks @ react-dom_client.js?v=6c0d0a94:4217
+updateFunctionComponent @ react-dom_client.js?v=6c0d0a94:6619
+beginWork @ react-dom_client.js?v=6c0d0a94:7654
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+performUnitOfWork @ react-dom_client.js?v=6c0d0a94:10868
+workLoopSync @ react-dom_client.js?v=6c0d0a94:10728
+renderRootSync @ react-dom_client.js?v=6c0d0a94:10711
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10359
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRoot @ react-dom_client.js?v=6c0d0a94:360
+(anonymous) @ @react-refresh:208
+performReactRefresh @ @react-refresh:190
+(anonymous) @ @react-refresh:608
+<AppRouters>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=6c0d0a94:250
+AppContent @ App.jsx:36
+react-stack-bottom-frame @ react-dom_client.js?v=6c0d0a94:17424
+renderWithHooksAgain @ react-dom_client.js?v=6c0d0a94:4281
+renderWithHooks @ react-dom_client.js?v=6c0d0a94:4217
+updateFunctionComponent @ react-dom_client.js?v=6c0d0a94:6619
+beginWork @ react-dom_client.js?v=6c0d0a94:7654
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+performUnitOfWork @ react-dom_client.js?v=6c0d0a94:10868
+workLoopSync @ react-dom_client.js?v=6c0d0a94:10728
+renderRootSync @ react-dom_client.js?v=6c0d0a94:10711
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10359
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRoot @ react-dom_client.js?v=6c0d0a94:360
+(anonymous) @ @react-refresh:208
+performReactRefresh @ @react-refresh:190
+(anonymous) @ @react-refresh:608
+<AppContent>
+exports.jsxDEV @ react_jsx-dev-runtime.js?v=6c0d0a94:250
+App @ App.jsx:70
+react-stack-bottom-frame @ react-dom_client.js?v=6c0d0a94:17424
+renderWithHooksAgain @ react-dom_client.js?v=6c0d0a94:4281
+renderWithHooks @ react-dom_client.js?v=6c0d0a94:4217
+updateFunctionComponent @ react-dom_client.js?v=6c0d0a94:6619
+beginWork @ react-dom_client.js?v=6c0d0a94:7654
+runWithFiberInDEV @ react-dom_client.js?v=6c0d0a94:1485
+performUnitOfWork @ react-dom_client.js?v=6c0d0a94:10868
+workLoopSync @ react-dom_client.js?v=6c0d0a94:10728
+renderRootSync @ react-dom_client.js?v=6c0d0a94:10711
+performWorkOnRoot @ react-dom_client.js?v=6c0d0a94:10359
+performSyncWorkOnRoot @ react-dom_client.js?v=6c0d0a94:11635
+flushSyncWorkAcrossRoots_impl @ react-dom_client.js?v=6c0d0a94:11536
+flushSyncWork$1 @ react-dom_client.js?v=6c0d0a94:10567
+scheduleRoot @ react-dom_client.js?v=6c0d0a94:360
+(anonymous) @ @react-refresh:208
+performReactRefresh @ @react-refresh:190
+(anonymous) @ @react-refresh:608Understand this error
+@react-refresh:208 An error occurred in the <AmbulancePatientInputPage> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries
