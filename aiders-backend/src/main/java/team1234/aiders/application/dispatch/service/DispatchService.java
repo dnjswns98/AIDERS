@@ -3,6 +3,7 @@ package team1234.aiders.application.dispatch.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import team1234.aiders.application.dispatch.dto.DispatchHistoryResponseDto;
 import team1234.aiders.application.dispatch.dto.DispatchRequestDto;
 import team1234.aiders.application.dispatch.entity.Dispatch;
 import team1234.aiders.application.dispatch.entity.DispatchHistory;
@@ -35,6 +36,16 @@ public class DispatchService {
 
         DispatchHistory history = saveDispatchHistory(request, firestation);
         dispatchAmbulances(request.getAmbulanceIds(), history);
+    }
+
+    public List<DispatchHistoryResponseDto> getDispatchHistories(CustomUserDetails user) {
+        Long userId = user.getId();
+
+        List<DispatchHistory> histories = dispatchHistoryRepository.findByFirestationId(userId);
+
+        return histories.stream()
+                .map(DispatchHistoryResponseDto::fromEntity)
+                .toList();
     }
 
     private DispatchHistory saveDispatchHistory(DispatchRequestDto dto, Firestation firestation) {
