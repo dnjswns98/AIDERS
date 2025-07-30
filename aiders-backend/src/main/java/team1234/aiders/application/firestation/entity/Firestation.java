@@ -1,4 +1,4 @@
-package team1234.aiders.application.user.entity;
+package team1234.aiders.application.firestation.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
@@ -7,14 +7,14 @@ import jakarta.persistence.PrimaryKeyJoinColumn;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.locationtech.jts.geom.Point;
+import team1234.aiders.application.user.entity.User;
 
 @Entity
-@DiscriminatorValue("hospital")
-@PrimaryKeyJoinColumn(name = "hospital_id")
+@DiscriminatorValue("firestation")
+@PrimaryKeyJoinColumn(name = "firestation_id")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Hospital extends User {
+public class Firestation extends User {
 
     @Column(nullable = false)
     private Double latitude;
@@ -27,7 +27,4 @@ public class Hospital extends User {
 
     @Column(nullable = false)
     private String name;
-
-    @Column(columnDefinition = "POINT")
-    private Point location;
 }

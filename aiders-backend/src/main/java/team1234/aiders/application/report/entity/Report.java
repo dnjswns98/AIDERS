@@ -9,8 +9,8 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import team1234.aiders.application.dispatch.entity.Dispatch;
 import team1234.aiders.application.dispatch.entity.DispatchHistory;
-import team1234.aiders.application.user.entity.Ambulance;
-import team1234.aiders.application.user.entity.Firestation;
+import team1234.aiders.application.ambulance.entity.Ambulance;
+import team1234.aiders.application.firestation.entity.Firestation;
 
 import java.time.LocalDateTime;
 

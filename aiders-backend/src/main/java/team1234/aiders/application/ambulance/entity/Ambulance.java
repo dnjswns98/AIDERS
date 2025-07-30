@@ -1,9 +1,12 @@
-package team1234.aiders.application.user.entity;
+package team1234.aiders.application.ambulance.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import team1234.aiders.application.hospital.entity.Hospital;
+import team1234.aiders.application.firestation.entity.Firestation;
+import team1234.aiders.application.user.entity.User;
 
 import java.time.LocalDateTime;
 

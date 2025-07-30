@@ -9,11 +9,11 @@ import team1234.aiders.application.dispatch.entity.Dispatch;
 import team1234.aiders.application.dispatch.entity.DispatchHistory;
 import team1234.aiders.application.dispatch.repository.DispatchHistoryRepository;
 import team1234.aiders.application.dispatch.repository.DispatchRepository;
-import team1234.aiders.application.user.entity.AmbCurrentStatus;
-import team1234.aiders.application.user.entity.Ambulance;
-import team1234.aiders.application.user.entity.Firestation;
-import team1234.aiders.application.user.repository.AmbulanceRepository;
-import team1234.aiders.application.user.repository.FirestationRepository;
+import team1234.aiders.application.ambulance.entity.AmbCurrentStatus;
+import team1234.aiders.application.ambulance.entity.Ambulance;
+import team1234.aiders.application.firestation.entity.Firestation;
+import team1234.aiders.application.ambulance.repository.AmbulanceRepository;
+import team1234.aiders.application.firestation.repository.FirestationRepository;
 import team1234.aiders.config.security.CustomUserDetails;
 
 import java.util.List;

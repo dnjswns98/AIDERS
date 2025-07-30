@@ -7,17 +7,20 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ReflectionUtils;
+import team1234.aiders.application.ambulance.entity.AmbCurrentStatus;
+import team1234.aiders.application.ambulance.entity.Ambulance;
+import team1234.aiders.application.ambulance.entity.PatientAgeRange;
+import team1234.aiders.application.firestation.entity.Firestation;
+import team1234.aiders.application.hospital.entity.Hospital;
 
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @TestPropertySource(locations = "classpath:application-test.properties")

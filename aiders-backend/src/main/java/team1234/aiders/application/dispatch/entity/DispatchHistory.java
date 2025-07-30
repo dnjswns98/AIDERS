@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import team1234.aiders.application.user.entity.Firestation;
+import team1234.aiders.application.firestation.entity.Firestation;
 
 import java.time.LocalDateTime;
 
