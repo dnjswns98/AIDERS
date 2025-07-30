@@ -61,8 +61,4 @@ public class RedisHandler {
             redisTemplate.opsForList().rightPush(hospitalId, session);
         }
     }
-
-    public void clearWaitingList(String hospitalId) {
-        redisTemplate.delete(hospitalId);
-    }
 }
