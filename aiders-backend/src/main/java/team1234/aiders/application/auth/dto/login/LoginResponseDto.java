@@ -1,4 +1,4 @@
-package team1234.aiders.application.auth.dto;
+package team1234.aiders.application.auth.dto.login;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

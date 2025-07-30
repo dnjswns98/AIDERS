@@ -6,10 +6,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import team1234.aiders.application.auth.dto.AccessTokenResponseDto;
-import team1234.aiders.application.auth.dto.LoginRequestDto;
-import team1234.aiders.application.auth.dto.LoginResponseDto;
-import team1234.aiders.application.auth.dto.RefreshRequestDto;
+import team1234.aiders.application.auth.dto.token.AccessTokenResponseDto;
+import team1234.aiders.application.auth.dto.login.LoginRequestDto;
+import team1234.aiders.application.auth.dto.login.LoginResponseDto;
+import team1234.aiders.application.auth.dto.token.RefreshRequestDto;
 import team1234.aiders.application.auth.service.AuthService;
 
 @RestController
