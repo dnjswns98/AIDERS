@@ -28,6 +28,7 @@ services:
 
   # Aiders Application Server
   aiders-app:
+    build: .
     image: aiders:latest
     container_name: aiders-backend
     ports:
