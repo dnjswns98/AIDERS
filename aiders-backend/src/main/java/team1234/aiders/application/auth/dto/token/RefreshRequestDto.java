@@ -1,4 +1,4 @@
-package team1234.aiders.application.auth.dto;
+package team1234.aiders.application.auth.dto.token;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

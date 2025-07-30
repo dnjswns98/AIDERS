@@ -40,7 +40,6 @@ public class User {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    private String accessToken;
     private String refreshToken;
 
     public void updateRefreshToken(String refreshToken) {
