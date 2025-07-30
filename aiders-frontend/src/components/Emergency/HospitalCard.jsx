@@ -13,7 +13,22 @@ const getStatusText = (status) => {
     return '확인 중';
 };
 
-const HospitalCard = ({ hospital, isSelected, onSelect, onCallClick, onShowMap }) => {
+const HospitalCard = ({ hospital, isSelected, onSelect, onCallClick, onShowMap, simple = false }) => {
+    if (simple) {
+        return (
+            <div
+                className={`border rounded-lg p-4 transition-all duration-200 ${
+                    isSelected ? 'border-red-500 bg-red-50' : 'border-gray-200'
+                }`}
+            >
+                <h3 className="font-bold text-md text-gray-800 truncate">
+                    {hospital.name}
+                </h3>
+                <p className="text-sm text-gray-500 truncate">{hospital.address}</p>
+            </div>
+        );
+    }
+
     return (
         <div
             className={`border rounded-lg p-4 cursor-pointer transition-all duration-200 ${

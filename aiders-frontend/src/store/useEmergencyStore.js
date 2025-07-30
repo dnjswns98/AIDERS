@@ -57,7 +57,8 @@ const initialAmbulances = [
         departureTime: "오후 1시 30분",
         hospitalArrival: "오후 1시 35분 (5분 소요)",
         totalDistance: "4.0km (현장까지 2.8km + 병원까지 1.2km)"
-      }
+      },
+      treatmentDetails: ""
     },
     // 응급처치 기록
     treatmentRecords: [
@@ -216,20 +217,22 @@ const useEmergencyStore = create((set, get) => ({
   },
 
   // 환자 정보 업데이트
-  updatePatientInfo: (ambulanceId, patientInfo) => {
+  updatePatientInfo: (ambulanceId, newPatientInfo) => {
     set((state) => ({
       ambulances: state.ambulances.map(ambulance =>
         ambulance.id === ambulanceId
           ? { 
               ...ambulance, 
-              patientDetails: { ...ambulance.patientDetails, ...patientInfo }
+              patientInfo: { ...ambulance.patientInfo, ...newPatientInfo.patientInfo },
+              patientDetails: { ...ambulance.patientDetails, ...newPatientInfo.patientDetails }
             }
           : ambulance
       ),
       selectedAmbulance: state.selectedAmbulance?.id === ambulanceId
         ? { 
             ...state.selectedAmbulance, 
-            patientDetails: { ...state.selectedAmbulance.patientDetails, ...patientInfo }
+            patientInfo: { ...state.selectedAmbulance.patientInfo, ...newPatientInfo.patientInfo },
+            patientDetails: { ...state.selectedAmbulance.patientDetails, ...newPatientInfo.patientDetails }
           }
         : state.selectedAmbulance
     }));
