@@ -100,8 +100,8 @@ export default function AmbulancePatientInfoPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-500">과거력</label>
-                {patientDetails.pastHistory?.hypertension && patientDetails.pastHistory.hypertension.startsWith('data:image') ? (
-                  <img src={patientDetails.pastHistory.hypertension} alt="과거력 필기" className="mt-1 w-full border rounded-md" />
+                {patientDetails.pastHistory && typeof patientDetails.pastHistory === 'string' && patientDetails.pastHistory.startsWith('data:image') ? (
+                  <img src={patientDetails.pastHistory} alt="과거력 필기" className="mt-1 w-full border rounded-md" />
                 ) : (
                   <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">
                     {patientDetails.pastHistory ? Object.entries(patientDetails.pastHistory).map(([key, value]) => `${key}: ${value}`).join(', ') : '-'}
@@ -110,8 +110,8 @@ export default function AmbulancePatientInfoPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">가족력</label>
-                {patientDetails.familyHistory?.father && patientDetails.familyHistory.father.startsWith('data:image') ? (
-                  <img src={patientDetails.familyHistory.father} alt="가족력 필기" className="mt-1 w-full border rounded-md" />
+                {patientDetails.familyHistory && typeof patientDetails.familyHistory === 'string' && patientDetails.familyHistory.startsWith('data:image') ? (
+                  <img src={patientDetails.familyHistory} alt="가족력 필기" className="mt-1 w-full border rounded-md" />
                 ) : (
                   <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">
                     {patientDetails.familyHistory ? Object.entries(patientDetails.familyHistory).map(([key, value]) => `${key}: ${value}`).join(', ') : '-'}
@@ -121,8 +121,8 @@ export default function AmbulancePatientInfoPage() {
             </div>
             <div>
                 <label className="block text-sm font-medium text-gray-500">복용중인 약</label>
-                {patientDetails.medications && patientDetails.medications.length > 0 && patientDetails.medications[0].name.startsWith('data:image') ? (
-                  <img src={patientDetails.medications[0].name} alt="복용중인 약 필기" className="mt-1 w-full border rounded-md" />
+                {patientDetails.medications && typeof patientDetails.medications === 'string' && patientDetails.medications.startsWith('data:image') ? (
+                  <img src={patientDetails.medications} alt="복용중인 약 필기" className="mt-1 w-full border rounded-md" />
                 ) : (
                   <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientDetails.medications?.map(m => m.name).join(', ') || '-'}</p>
                 )}
