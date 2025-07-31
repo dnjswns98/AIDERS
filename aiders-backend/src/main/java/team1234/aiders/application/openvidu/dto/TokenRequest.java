@@ -7,6 +7,9 @@ import lombok.Data;
  */
 @Data
 public class TokenRequest {
-    private String sessionId;     // OpenVidu 세션 ID
-    private String participantName; // 참가자 이름 (추후 사용 가능)
+    private String sessionId;
+    private Long ambulanceId;
+    private Long hospitalId;
+    private Integer ktas;
+    private String patientName;
 }
