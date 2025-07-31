@@ -16,7 +16,7 @@ public class AmbulanceController {
 
     private AmbulanceService ambulanceService;
 
-    @PostMapping("/transfer-to-wait")
+    @PostMapping("/transfer/wait")
     public ResponseEntity<Void> transferToWait(@AuthenticationPrincipal CustomUserDetails user) {
         ambulanceService.transferToWait(user);
         return ResponseEntity.ok().build();
