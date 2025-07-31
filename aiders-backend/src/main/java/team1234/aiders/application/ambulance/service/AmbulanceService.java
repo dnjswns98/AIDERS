@@ -23,6 +23,12 @@ public class AmbulanceService {
         ambulance.clearHospitalInfo();
     }
 
+    public void dispatchToTransfer(CustomUserDetails user) {
+        Ambulance ambulance = findAmbulanceUser(user);
+
+        ambulance.changeStatus(AmbCurrentStatus.TRANSFER);
+    }
+
     private Ambulance findAmbulanceUser(CustomUserDetails user) {
         Long ambulanceId = user.getId();
 

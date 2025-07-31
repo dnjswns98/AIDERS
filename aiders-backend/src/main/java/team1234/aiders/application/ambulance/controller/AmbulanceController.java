@@ -21,4 +21,10 @@ public class AmbulanceController {
         ambulanceService.transferToWait(user);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/transfer")
+    public ResponseEntity<Void> dispatchToTransfer(@AuthenticationPrincipal CustomUserDetails user) {
+        ambulanceService.dispatchToTransfer(user);
+        return ResponseEntity.ok().build();
+    }
 }
