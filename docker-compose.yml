@@ -39,9 +39,9 @@ services:
     networks:
       - aiders-network
 
-  # Aiders Application Server
+  # Aiders Backend Application
   aiders-app:
-    build: .
+    build: ./aiders-backend
     image: aiders:latest
     container_name: aiders-backend
     ports:
@@ -53,9 +53,26 @@ services:
       - SPRING_DATASOURCE_PASSWORD=1234
       - OPENVIDU_SECRET=MY_SECRET
     depends_on:
-      - mysql
-      - redis
-      - openvidu-server
+      mysql:
+        condition: service_started
+      redis:
+        condition: service_started
+      openvidu-server:
+        condition: service_started
+    networks:
+      - aiders-network
+    restart: on-failure
+
+  # Aiders Frontend Application
+  aiders-frontend:
+    build: ./aiders-frontend
+    image: aiders-frontend:latest
+    container_name: aiders-frontend
+    ports:
+      - "3000:4173"
+    command: sh -c "cd /app && npm run preview -- --host 0.0.0.0"
+    depends_on:
+      - aiders-app
     networks:
       - aiders-network
 
