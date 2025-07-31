@@ -5,9 +5,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import team1234.aiders.application.openvidu.dto.StartCallRequest;
 import team1234.aiders.application.openvidu.dto.TokenRequest;
 import team1234.aiders.application.openvidu.dto.TokenResponse;
 import team1234.aiders.application.openvidu.service.OpenViduService;
+import team1234.aiders.redis.service.RedisService;
 
 @RestController
 @RequestMapping("/api/video-call") // 추후 수정
@@ -16,12 +18,20 @@ import team1234.aiders.application.openvidu.service.OpenViduService;
 @CrossOrigin(origins = "*")
 public class VideoCallController {
     private final OpenViduService openViduService;
+    private final RedisService redisService;
 
     @Operation(summary = "세션 생성 + 토큰 발급 + Redis 등록", description = "구급차가 화상 통화 세션을 생성하고 병원 대기열에 등록합니다.")
     @PostMapping("/token-register")
     public ResponseEntity<TokenResponse> createTokenAndRegister(@RequestBody TokenRequest request) {
         TokenResponse response = openViduService.createTokenAndRegister(request);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "병원 통화 시작", description = "병원이 특정 구급차 세션을 선택하여 통화를 시작합니다. 기존 통화 중인 세션은 모두 대기 상태로 변경됩니다.")
+    @PutMapping("/start-call")
+    public ResponseEntity<Void> startCall(@RequestBody StartCallRequest request) {
+        boolean success = redisService.startCall(request.getHospitalId(), request.getSessionId());
+        return success ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 
     /**
