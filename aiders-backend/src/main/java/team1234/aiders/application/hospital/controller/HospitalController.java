@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import team1234.aiders.application.hospital.dto.DepartmentUpdateRequestDto;
+import team1234.aiders.application.hospital.dto.EmergencyBedUpdateRequestDto;
 import team1234.aiders.application.hospital.entity.Hospital;
 import team1234.aiders.application.hospital.service.HospitalService;
 import team1234.aiders.application.hospital.util.BedType;
@@ -15,7 +16,7 @@ import team1234.aiders.config.security.CustomUserDetails;
 @RequestMapping("/api/v1/hospital")
 public class HospitalController {
 
-    private HospitalService hospitalService;
+    private final HospitalService hospitalService;
 
     @PatchMapping("/department")
     public ResponseEntity<Void> updateDepartment(
@@ -23,6 +24,14 @@ public class HospitalController {
             @RequestBody DepartmentUpdateRequestDto dto) {
         hospitalService.updateDepartmentStatus(user, dto);
 
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/bed")
+    public ResponseEntity<Void> updateBedInfo(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestBody EmergencyBedUpdateRequestDto request) {
+        hospitalService.updateEmergencyBed(user, request);
         return ResponseEntity.ok().build();
     }
 
