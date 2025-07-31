@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/redis")
 @RequiredArgsConstructor
-public class RedisTestController {
+public class RedisController {
 
     private final RedisService redisService;
     
