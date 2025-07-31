@@ -1,10 +1,9 @@
-package team1234.aiders.application.status.entity;
+package team1234.aiders.application.hospital.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import team1234.aiders.application.hospital.entity.Hospital;
 
 @Entity
 @Getter
