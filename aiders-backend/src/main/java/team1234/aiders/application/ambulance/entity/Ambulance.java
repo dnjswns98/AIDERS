@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import team1234.aiders.application.ambulance.dto.PatientOptionalInfoRequestDto;
+import team1234.aiders.application.ambulance.dto.PatientRequiredInfoRequestDto;
 import team1234.aiders.application.hospital.entity.Hospital;
 import team1234.aiders.application.firestation.entity.Firestation;
 import team1234.aiders.application.user.entity.User;
@@ -58,6 +60,27 @@ public class Ambulance extends User {
 
     private String hospitalName;
     private String hospitalAddress;
+
+    public void updateRequiredPatientInfo(PatientRequiredInfoRequestDto dto) {
+        this.pKtas = dto.getKtas();
+        this.pDepartment = dto.getDepartment();
+    }
+
+    public void updateOptionalPatientInfo(PatientOptionalInfoRequestDto dto) {
+        dto.getKtas().ifPresent(v -> this.pKtas = v);
+        dto.getDepartment().ifPresent(v -> this.pDepartment = v);
+        dto.getSex().ifPresent(v -> this.pSex = v);
+        dto.getAgeRange().ifPresent(v -> this.pAgeRange = v);
+        dto.getMedicalRecord().ifPresent(v -> this.pMedicalRecord = v);
+        dto.getFamilyHistory().ifPresent(v -> this.pFamilyHistory = v);
+        dto.getPastHistory().ifPresent(v -> this.pPastHistory = v);
+        dto.getMedicine().ifPresent(v -> this.pMedicine = v);
+        dto.getName().ifPresent(v -> this.pName = v);
+        dto.getRrn().ifPresent(v -> this.pRrn = v);
+        dto.getNationality().ifPresent(v -> this.pNationality = v);
+        dto.getVitalSigns().ifPresent(v -> this.pVitalSigns = v);
+    }
+
 
     public void changeStatus(AmbCurrentStatus status) {
         this.currentStatus = status;
