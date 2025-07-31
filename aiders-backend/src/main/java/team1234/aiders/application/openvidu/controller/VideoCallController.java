@@ -1,6 +1,8 @@
 package team1234.aiders.application.openvidu.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -43,17 +45,28 @@ public class VideoCallController {
     }
 
 
-    /**
-     * 방장이 세션을 종료할 수 있는 API
-     * 세션 ID를 전달받아 해당 세션을 종료한다.
-     *
-     * @param sessionId 종료할 세션의 ID
-     */
-    @DeleteMapping("/session/{sessionId}")
-    public ResponseEntity<Void> closeSession(@PathVariable String sessionId) {
-        log.info("세션 종료 요청: {}", sessionId);
-        openViduService.closeSession(sessionId);
-        return ResponseEntity.ok().build();
+    @DeleteMapping("/session/{sessionId}/complete")
+    @Operation(summary = "환자 이송 완료 처리", description = "세션 및 대기열, OpenVidu 세션을 함께 삭제합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "이송 완료 처리 성공"),
+            @ApiResponse(responseCode = "404", description = "세션 없음 또는 삭제 실패")
+    })
+    public ResponseEntity<Void> completeTransport(
+            @PathVariable String sessionId,
+            @RequestParam String hospitalId) {
+
+        if (!redisService.exists(sessionId)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Redis 삭제 처리
+        boolean removed = redisService.completeTransport(sessionId, hospitalId);
+
+        // OpenVidu 세션 삭제
+        openViduService.closeSessionIfExists(sessionId);
+
+        return removed ? ResponseEntity.ok().build() : ResponseEntity.status(500).build();
     }
+
 
 }

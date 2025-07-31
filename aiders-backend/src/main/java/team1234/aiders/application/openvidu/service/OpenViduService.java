@@ -64,28 +64,19 @@ public class OpenViduService {
         }
     }
 
-    /**
-     * 세션 ID를 기반으로 OpenVidu 세션을 종료한다.
-     * 세션에 연결된 모든 클라이언트는 연결이 끊어진다.
-     *
-     * @param sessionId 종료할 세션의 ID
-     */
-    public void closeSession(String sessionId) {
-        try {
-            // 현재 활성화된 세션 목록 중 sessionId에 해당하는 세션을 찾음
-            Optional<Session> sessionOpt = openVidu.getActiveSessions().stream()
-                    .filter(s -> s.getSessionId().equals(sessionId))
-                    .findFirst();
+    public void closeSessionIfExists(String sessionId) {
+        Session session = openVidu.getActiveSessions().stream()
+                .filter(s -> s.getSessionId().equals(sessionId))
+                .findFirst()
+                .orElse(null);
 
-            if (sessionOpt.isPresent()) {
-                sessionOpt.get().close();  // 모든 참가자 연결 종료
-            } else {
-                throw new RuntimeException("세션이 존재하지 않습니다.");
+        if (session != null) {
+            try {
+                session.close();
+                log.info("OpenVidu 세션 '{}' 종료됨", sessionId);
+            } catch (Exception e) {
+                log.error("OpenVidu 세션 종료 실패: {}", e.getMessage());
             }
-        } catch (OpenViduJavaClientException | OpenViduHttpException e) {
-            log.error("세션 종료 실패", e);
-            throw new RuntimeException("세션 종료 중 오류 발생");
         }
     }
-
 }
