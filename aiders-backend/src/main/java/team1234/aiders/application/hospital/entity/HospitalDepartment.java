@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
 @Entity
 @Getter
@@ -91,8 +92,8 @@ public class HospitalDepartment {
     }
 
     private void apply(Optional<Boolean> isExist, Optional<Boolean> isAvailable,
-                       java.util.function.Consumer<Boolean> existSetter,
-                       java.util.function.Consumer<Boolean> availableSetter) {
+                       Consumer<Boolean> existSetter,
+                       Consumer<Boolean> availableSetter) {
         isExist.ifPresent(existSetter);
         isAvailable.ifPresent(availableSetter);
     }
