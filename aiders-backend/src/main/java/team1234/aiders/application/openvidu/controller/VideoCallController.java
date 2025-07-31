@@ -23,8 +23,8 @@ public class VideoCallController {
     private final OpenViduService openViduService;
     private final RedisService redisService;
 
-    @Operation(summary = "세션 생성 + 토큰 발급 + Redis 등록", description = "구급차가 화상 통화 세션을 생성하고 병원 대기열에 등록합니다.")
-    @PostMapping("/token-register")
+    @Operation(summary = "구급차용 세션 생성 + 토큰 발급 + Redis 등록", description = "구급차가 화상 통화 세션을 생성하고 병원 대기열에 등록합니다.")
+    @PostMapping("/ambulance/token")
     public ResponseEntity<TokenResponse> createTokenAndRegister(@RequestBody TokenRequest request) {
         TokenResponse response = openViduService.createTokenAndRegister(request);
         return ResponseEntity.ok(response);
