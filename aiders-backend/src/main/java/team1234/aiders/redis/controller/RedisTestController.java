@@ -1,11 +1,9 @@
 package team1234.aiders.redis.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import team1234.aiders.application.openvidu.dto.VideoSessionInfo;
@@ -19,7 +17,7 @@ import java.util.List;
 public class RedisTestController {
 
     private final RedisService redisService;
-    private static final long SESSION_TTL_SECONDS = 600;
+    private static final long SESSION_TTL_SECONDS = 300;
 
     @PostMapping("/session")
     @Operation(summary = "세션 등록", description = "구급차가 병원 자동 매칭 후 세션 정보를 Redis에 등록합니다.")
