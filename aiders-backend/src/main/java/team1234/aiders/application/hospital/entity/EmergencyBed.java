@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import team1234.aiders.application.hospital.util.BedType;
 
 @Entity
 @Getter
@@ -37,4 +38,22 @@ public class EmergencyBed {
     private Integer neonatalTotalBed;
     private Boolean neonatalIsAvailable;
     private Boolean neonatalIsExist;
+
+    public void decreaseAvailableBed(BedType type) {
+        switch (type) {
+            case GENERAL -> this.generalAvailableBed -= 1;
+            case PEDIATRIC -> this.pediatricAvailableBed -= 1;
+            case TRAUMA -> this.traumaAvailableBed -= 1;
+            case NEONATAL -> this.neonatalAvailableBed -= 1;
+        }
+    }
+
+    public void increaseAvailableBed(BedType type) {
+        switch (type) {
+            case GENERAL -> this.generalAvailableBed += 1;
+            case PEDIATRIC -> this.pediatricAvailableBed += 1;
+            case TRAUMA -> this.traumaAvailableBed += 1;
+            case NEONATAL -> this.neonatalAvailableBed += 1;
+        }
+    }
 }
