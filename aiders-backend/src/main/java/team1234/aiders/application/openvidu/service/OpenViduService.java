@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import team1234.aiders.application.openvidu.dto.TokenRequest;
 import team1234.aiders.application.openvidu.dto.TokenResponse;
+import team1234.aiders.application.openvidu.dto.VideoSessionInfo;
+import team1234.aiders.redis.service.RedisService;
 
 import java.util.Optional;
 
@@ -19,35 +21,46 @@ import java.util.Optional;
 public class OpenViduService {
 
     private final OpenVidu openVidu;
+    private final RedisService redisService;
+
+    private static final long SESSION_TTL_SECONDS = 300;
 
     /**
      * 세션이 존재하지 않으면 새로 생성하고, 세션 토큰을 발급한다.
      */
-    public TokenResponse createToken(TokenRequest request) {
+    public TokenResponse createTokenAndRegister(TokenRequest request) {
         try {
-            Session session;
-            if (openVidu.getActiveSessions().stream().anyMatch(s -> s.getSessionId().equals(request.getSessionId()))) {
-                session = openVidu.getActiveSessions().stream()
-                        .filter(s -> s.getSessionId().equals(request.getSessionId()))
-                        .findFirst()
-                        .orElseThrow();
-            } else {
-                session = openVidu.createSession(new SessionProperties.Builder()
-                        .customSessionId(request.getSessionId())
-                        .build());
-            }
+            Session session = openVidu.getActiveSessions().stream()
+                    .filter(s -> s.getSessionId().equals(request.getSessionId()))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        try {
+                            return openVidu.createSession(new SessionProperties.Builder()
+                                    .customSessionId(request.getSessionId())
+                                    .build());
+                        } catch (OpenViduJavaClientException | OpenViduHttpException e) {
+                            throw new RuntimeException("세션 생성 실패", e);
+                        }
+                    });
 
-            ConnectionProperties connectionProperties = new ConnectionProperties.Builder()
-                    .type(ConnectionType.WEBRTC)
-                    .role(OpenViduRole.PUBLISHER) // 필요 시 SUBSCRIBER, MODERATOR 설정 가능
+            ConnectionProperties properties = new ConnectionProperties.Builder().build();
+            String token = session.createConnection(properties).getToken();
+
+            VideoSessionInfo sessionInfo = VideoSessionInfo.builder()
+                    .sessionId(request.getSessionId())
+                    .ambulanceId(request.getAmbulanceId())
+                    .hospitalId(request.getHospitalId())
+                    .ktas(request.getKtas())
+                    .patientName(request.getPatientName())
+                    .isInCall(false)
+                    .createdAt(System.currentTimeMillis())
                     .build();
 
-            String token = session.createConnection(connectionProperties).getToken();
-            return new TokenResponse(token, request.getSessionId());
+            redisService.registerSession(sessionInfo, SESSION_TTL_SECONDS);
 
-        } catch (OpenViduJavaClientException | OpenViduHttpException e) {
-            log.error("OpenVidu 토큰 생성 실패", e);
-            throw new RuntimeException("토큰 생성 중 오류 발생");
+            return new TokenResponse(token, session.getSessionId());
+        } catch (Exception e) {
+            throw new RuntimeException("토큰 생성 및 세션 등록 실패", e);
         }
     }
 

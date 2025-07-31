@@ -1,5 +1,6 @@
 package team1234.aiders.application.openvidu.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -16,14 +17,11 @@ import team1234.aiders.application.openvidu.service.OpenViduService;
 public class VideoCallController {
     private final OpenViduService openViduService;
 
-    /**
-     * 클라이언트가 세션 ID를 전달하면 OpenVidu 토큰을 생성하여 반환
-     */
-    @PostMapping("/token")
-    public ResponseEntity<TokenResponse> createToken(@RequestBody TokenRequest request) {
-        log.info("Received token request for session: {}", request.getSessionId());
-        TokenResponse tokenResponse = openViduService.createToken(request);
-        return ResponseEntity.ok(tokenResponse);
+    @Operation(summary = "세션 생성 + 토큰 발급 + Redis 등록", description = "구급차가 화상 통화 세션을 생성하고 병원 대기열에 등록합니다.")
+    @PostMapping("/token-register")
+    public ResponseEntity<TokenResponse> createTokenAndRegister(@RequestBody TokenRequest request) {
+        TokenResponse response = openViduService.createTokenAndRegister(request);
+        return ResponseEntity.ok(response);
     }
 
     /**
