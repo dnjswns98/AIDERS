@@ -39,6 +39,31 @@ public class RedisServiceImpl implements RedisService {
         return true;
     }
 
+    @Override
+    public boolean startCall(Long hospitalId, String selectedSessionId) {
+        List<VideoSessionInfo> waitingList = redisHandler.getWaitingList(hospitalId.toString());
+        boolean found = false;
+
+        for (VideoSessionInfo session : waitingList) {
+            if (!redisHandler.exists(session.getSessionId())) continue;
+
+            if (session.getSessionId().equals(selectedSessionId)) {
+                session.setInCall(true);
+                found = true;
+            } else {
+                session.setInCall(false);
+            }
+
+            redisHandler.overwriteSession(session.getSessionId(), session);
+        }
+
+        if (found) {
+            redisHandler.overwriteWaitingList(hospitalId.toString(), waitingList);
+        }
+
+        return found;
+    }
+
 
     @Override
     public boolean completeTransport(String sessionId, String hospitalId) {

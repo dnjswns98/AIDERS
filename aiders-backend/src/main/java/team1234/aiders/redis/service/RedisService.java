@@ -8,6 +8,8 @@ public interface RedisService {
 
     void registerSession(VideoSessionInfo sessionInfo, long timeoutSeconds);
 
+    boolean startCall(Long hospitalId, String selectedSessionId);
+
     boolean updateCallStatus(String sessionId, boolean inCall);
 
     boolean completeTransport(String sessionId, String hospitalId);
