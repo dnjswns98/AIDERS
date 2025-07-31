@@ -1,4 +1,17 @@
 services:
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: aiders-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - aiders-network
+    restart: unless-stopped
+
   # MySQL Database
   mysql:
     image: mysql:8.0
@@ -41,12 +54,14 @@ services:
       - OPENVIDU_SECRET=MY_SECRET
     depends_on:
       - mysql
+      - redis
       - openvidu-server
     networks:
       - aiders-network
 
 volumes:
   mysql_data:
+  redis_data:
 
 networks:
   aiders-network:
