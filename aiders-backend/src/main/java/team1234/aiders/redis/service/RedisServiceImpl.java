@@ -70,6 +70,18 @@ public class RedisServiceImpl implements RedisService {
 
     @Override
     public List<VideoSessionInfo> getWaitingList(String hospitalId) {
-        return redisHandler.getWaitingList(hospitalId);
+        List<VideoSessionInfo> current = redisHandler.getWaitingList(hospitalId);
+
+        // 살아있는 세션만 필터링
+        List<VideoSessionInfo> validSessions = current.stream()
+                .filter(info -> redisHandler.exists(info.getSessionId()))
+                .toList();
+
+        // 대기열 정리 (만료된 세션 제거)
+        if (validSessions.size() < current.size()) {
+            redisHandler.overwriteWaitingList(hospitalId, validSessions);
+        }
+
+        return validSessions;
     }
 }

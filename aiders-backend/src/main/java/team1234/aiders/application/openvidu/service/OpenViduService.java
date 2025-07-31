@@ -43,7 +43,7 @@ public class OpenViduService {
                     .build();
 
             String token = session.createConnection(connectionProperties).getToken();
-            return new TokenResponse(token);
+            return new TokenResponse(token, request.getSessionId());
 
         } catch (OpenViduJavaClientException | OpenViduHttpException e) {
             log.error("OpenVidu 토큰 생성 실패", e);
