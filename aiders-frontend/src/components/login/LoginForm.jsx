@@ -1,37 +1,75 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
-import { useUserStore } from "../../store/useUserStore";
+import axios from "axios";
 import './login.css';
 
 
 
 export default function LoginForm() {
   const navigate = useNavigate();
-  const { login } = useAuthStore();
-  const { authenticateUser } = useUserStore();
+  const { login, loginAdmin } = useAuthStore();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('로그인 버튼 클릭됨');
     
     if (!username || !password) {
       alert("아이디와 비밀번호를 입력해주세요.");
       return;
     }
 
-    // 사용자 인증
-    const authenticatedUser = authenticateUser(username, password);
-    
-    if (authenticatedUser) {
-      const loginResponse = {
-        accessToken: "mockToken",
-        user: authenticatedUser,
-        userType: authenticatedUser.userType,
+    console.log('로그인 시도:', { userKey: username, password: password });
+    setLoading(true);
+
+    // admin 계정 먼저 확인 (임시)
+    if (loginAdmin(username, password)) {
+      console.log('Admin 로그인 성공');
+      navigate("/admin");
+      setLoading(false);
+      return;
+    }
+
+    // 일반 사용자 API 로그인
+    try {
+      console.log('API 요청 시작');
+      const response = await axios.post('http://localhost:8080/api/v1/auth/login', {
+        userKey: username,
+        password: password
+      });
+
+      console.log('API 응답:', response.data);
+      const { accessToken, refreshToken } = response.data;
+      
+      // JWT 토큰에서 사용자 정보 추출 (임시 방편)
+      const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+      console.log('토큰 페이로드:', tokenPayload);
+      
+      // 사용자 정보 구성
+      const userInfo = {
+        userKey: tokenPayload.userKey || username,
+        userId: tokenPayload.sub
       };
-      login(loginResponse);
+      
+      // userKey 패턴으로 역할 판단
+      let userType = 'user';
+      if (username.startsWith('AMB-')) {
+        userType = 'ambulance';
+      } else if (username.startsWith('A')) {
+        userType = 'hospital';
+      } else if (/^\d+$/.test(username)) {
+        userType = 'firestation';
+      }
+      
+      login({ 
+        user: userInfo,
+        accessToken: accessToken, 
+        userType: userType 
+      });
       
       // 역할에 따른 자동 라우팅
       const routeMap = { 
@@ -40,9 +78,15 @@ export default function LoginForm() {
         ambulance: "/emergency/patient-input", 
         firestation: "/firestation" 
       };
-      navigate(routeMap[authenticatedUser.userType] || "/");
-    } else {
+      console.log('사용자 타입:', userType, '라우팅:', routeMap[userType]);
+      navigate(routeMap[userType] || "/");
+      
+    } catch (error) {
+      console.error('로그인 실패:', error);
+      console.error('에러 상세:', error.response?.data);
       alert("아이디 또는 비밀번호가 올바르지 않습니다.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -93,8 +137,9 @@ export default function LoginForm() {
             <button
               type="submit"
               className="login-button"
+              disabled={loading}
             >
-              로그인
+              {loading ? "로그인 중..." : "로그인"}
             </button>
           </div>
         </form>
@@ -106,9 +151,9 @@ export default function LoginForm() {
           </div>
           <div className="login-test-account-details">
             <div>👮 관리자: admin / admin123</div>
-            <div>🏥 병원: hospital001 / hospital123</div>
-            <div>🚒 소방서: fire001 / fire123</div>
-            <div>🚑 구급대원: amb001 / amb123</div>
+            <div>🚒 소방서: 1 / b18eb822-485c-4963-910f-ba26c1aa9d49</div>
+            <div>🏥 병원: A1700023 / 9f561545-2aee-4065-9e42-9c3765621c4e</div>
+            <div>🚑 구급차: AMB-1fa26dce / 7d7c54d6-e65b-4cf8-9857-5af9d19bc2e7</div>
           </div>
         </div>
 
