@@ -135,80 +135,82 @@ export default function AmbulancePatientInputPage() {
         <h1 className="text-2xl font-bold mb-6 text-gray-800">
           {isEditMode ? "환자 상세 정보 수정" : "환자 필수 정보 입력"}
         </h1>
+        {!isEditMode && (
+          <div className="absolute top-4 right-4">
+            <button
+              type="submit"
+              form="patient-form" // 폼의 id와 연결
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+            >
+              병원 매칭하기 (저장)
+            </button>
+          </div>
+        )}
         {isEditMode && (
           <InputModeToggle inputMode={inputMode} toggleInputMode={toggleInputMode} />
         )}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" id="patient-form">
           {/* 필수 정보 섹션 */}
           <PatientBasicInfoForm formData={formData} handleInputChange={handleInputChange} />
 
-          {/* 상세 정보 섹션 (수정 모드) */}
-          {isEditMode && (
-            <div className="space-y-6 pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <PatientDetailInput
-                  label="이름"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  inputMode={inputMode}
-                  canvasHeight={50}
-                />
-                <PatientDetailInput
-                  label="바이탈 사인 (혈압)"
-                  name="vitalSigns"
-                  value={formData.vitalSigns}
-                  onChange={handleInputChange}
-                  inputMode={inputMode}
-                  canvasHeight={50}
-                />
-              </div>
+          {/* 상세 정보 섹션 */}
+          <div className="space-y-6 pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <PatientDetailInput
-                label="주요 증상 (상세)"
-                name="chiefComplaint"
-                value={formData.chiefComplaint}
+                label="이름"
+                name="name"
+                value={formData.name}
                 onChange={handleInputChange}
                 inputMode={inputMode}
-                canvasHeight={150}
-                isTextArea={true}
               />
               <PatientDetailInput
-                label="처치 내용"
-                name="treatmentDetails"
-                value={formData.treatmentDetails}
+                label="바이탈 사인 (혈압)"
+                name="vitalSigns"
+                value={formData.vitalSigns}
                 onChange={handleInputChange}
                 inputMode={inputMode}
-                canvasHeight={150}
-                isTextArea={true}
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <PatientDetailInput
-                  label="과거력"
-                  name="pastHistory"
-                  value={formData.pastHistory}
-                  onChange={handleInputChange}
-                  inputMode={inputMode}
-                  canvasHeight={50}
-                />
-                <PatientDetailInput
-                  label="가족력"
-                  name="familyHistory"
-                  value={formData.familyHistory}
-                  onChange={handleInputChange}
-                  inputMode={inputMode}
-                  canvasHeight={50}
-                />
-              </div>
-              <PatientDetailInput
-                label="복용중인 약"
-                name="medications"
-                value={formData.medications}
-                onChange={handleInputChange}
-                inputMode={inputMode}
-                canvasHeight={50}
               />
             </div>
-          )}
+            <PatientDetailInput
+              label="주요 증상 (상세)"
+              name="chiefComplaint"
+              value={formData.chiefComplaint}
+              onChange={handleInputChange}
+              inputMode={inputMode}
+              isTextArea={true}
+            />
+            <PatientDetailInput
+              label="처치 내용"
+              name="treatmentDetails"
+              value={formData.treatmentDetails}
+              onChange={handleInputChange}
+              inputMode={inputMode}
+              isTextArea={true}
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <PatientDetailInput
+                label="과거력"
+                name="pastHistory"
+                value={formData.pastHistory}
+                onChange={handleInputChange}
+                inputMode={inputMode}
+              />
+              <PatientDetailInput
+                label="가족력"
+                name="familyHistory"
+                value={formData.familyHistory}
+                onChange={handleInputChange}
+                inputMode={inputMode}
+              />
+            </div>
+            <PatientDetailInput
+              label="복용중인 약"
+              name="medications"
+              value={formData.medications}
+              onChange={handleInputChange}
+              inputMode={inputMode}
+            />
+          </div>
 
           <div className="flex justify-end pt-4">
             <button
