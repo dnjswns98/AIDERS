@@ -42,7 +42,6 @@ services:
   # Aiders Backend Application
   aiders-app:
     build: ./aiders-backend
-    image: aiders:latest
     container_name: aiders-backend
     ports:
       - "8080:8080"
@@ -66,7 +65,6 @@ services:
   # Aiders Frontend Application
   aiders-frontend:
     build: ./aiders-frontend
-    image: aiders-frontend:latest
     container_name: aiders-frontend
     ports:
       - "3000:4173"
