@@ -1,17 +1,30 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAppContext } from '../../../hooks/useAppContext';
+import useEmergencyStore from '../../../store/useEmergencyStore';
 
-const PatientModal = ({ report, onClose }) => {
-    const { ambulances } = useAppContext();
+const PatientModal = ({ report, onClose, onSave }) => {
+    const { ambulances, updateReport, setAmbulances } = useAppContext();
+    const { updatePatientInfo } = useEmergencyStore();
     const [formData, setFormData] = useState({
         patientName: '',
         gender: '',
         ageGroup: '',
         symptoms: report.content || '',
         transportStartTime: '',
-        ambulanceId: ''
+        ambulanceId: report.ambulanceId || ''
     });
+
+    useEffect(() => {
+        setFormData({
+            patientName: report.patientInfo?.name || '',
+            gender: report.patientInfo?.gender || '',
+            ageGroup: report.patientInfo?.ageGroup || '',
+            symptoms: report.condition || report.content || '',
+            transportStartTime: report.callTime || '',
+            ambulanceId: report.ambulanceId || ''
+        });
+    }, [report]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -21,7 +34,38 @@ const PatientModal = ({ report, onClose }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         // Handle patient data submission
-        console.log("Patient Info Submitted:", { reportId: report.id, ...formData });
+        const updatedReport = {
+            ...report,
+            patientInfo: {
+                name: formData.patientName,
+                gender: formData.gender,
+                ageGroup: formData.ageGroup,
+                basicInfo: `${formData.gender}, ${formData.ageGroup}` // 예시로 basicInfo 추가
+            },
+            condition: formData.symptoms,
+            callTime: formData.transportStartTime,
+            ambulanceId: formData.ambulanceId
+        };
+        updateReport(updatedReport);
+
+        // 구급차의 환자 정보도 업데이트
+        if (report.ambulanceId) {
+            updatePatientInfo(report.ambulanceId, {
+                patientInfo: {
+                    name: formData.patientName,
+                    gender: formData.gender,
+                    ageGroup: formData.ageGroup,
+                    basicInfo: `${formData.gender}, ${formData.ageGroup}`
+                },
+                patientDetails: { // 필요하다면 여기에 상세 정보 추가
+                    chiefComplaint: formData.symptoms,
+                    callTime: formData.transportStartTime
+                }
+            }, setAmbulances);
+        }
+
+        console.log("Patient Info Submitted:", updatedReport);
+        onSave(updatedReport);
         onClose();
     };
 
@@ -70,12 +114,21 @@ const PatientModal = ({ report, onClose }) => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">구급차 번호</label>
-                            <select name="ambulanceId" value={formData.ambulanceId} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                                <option value="">선택</option>
-                                {ambulances.map(ambulance => (
-                                    <option key={ambulance.id} value={ambulance.id}>{ambulance.number}</option>
-                                ))}
-                            </select>
+                            {report.isDispatched ? (
+                                <input
+                                    type="text"
+                                    value={ambulances.find(amb => amb.id === report.ambulanceId)?.number || '배차 정보 없음'}
+                                    readOnly
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm"
+                                />
+                            ) : (
+                                <select name="ambulanceId" value={formData.ambulanceId} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                    <option value="">선택</option>
+                                    {ambulances.map(ambulance => (
+                                        <option key={ambulance.id} value={ambulance.id}>{ambulance.number}</option>
+                                    ))}
+                                </select>
+                            )}
                         </div>
                     </div>
                     <div className="flex space-x-3 pt-4">

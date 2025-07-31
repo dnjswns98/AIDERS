@@ -25,7 +25,7 @@ export const getStatusText = (status) => {
     case "transporting":
       return "이송중";
     case "completed":
-      return "이송완료";
+      return "대기중";
     case "maintenance":
       return "정비중";
     default:

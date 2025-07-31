@@ -15,22 +15,25 @@ const Header = () => {
 
     return (
         <header className="bg-blue-800 text-white shadow-lg">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
-                    <div className="flex items-center space-x-4">
+                    <NavLink to="/firestation" className="flex items-center space-x-4">
                         <i className="fas fa-fire text-red-400 text-2xl"></i>
                         <h1 className="text-base sm:text-lg md:text-xl font-bold">구미소방센터 구급차 관리 시스템</h1>
-                    </div>
+                    </NavLink>
                     <nav className="flex items-center space-x-2 sm:space-x-4 md:space-x-8">
-                        <NavLink to="/" className={({ isActive }) => `px-4 py-2 rounded-md transition-colors duration-200 !rounded-button whitespace-nowrap ${isActive ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
+                        <NavLink to="/firestation/situation-board" className={({ isActive }) => `px-4 py-2 rounded-md transition-colors duration-200 !rounded-button whitespace-nowrap ${isActive ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
                             상황판
                         </NavLink>
-                        <NavLink to="/reports" className={({ isActive }) => `px-4 py-2 rounded-md transition-colors duration-200 !rounded-button whitespace-nowrap ${isActive ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
+                        <NavLink to="/firestation/reports" className={({ isActive }) => `px-4 py-2 rounded-md transition-colors duration-200 !rounded-button whitespace-nowrap ${isActive ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
                             신고 관리
                         </NavLink>
-                        <NavLink to="/dispatch" className={({ isActive }) => `px-4 py-2 rounded-md transition-colors duration-200 !rounded-button whitespace-nowrap ${isActive ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
+                        <NavLink to="/firestation/dispatch" className={({ isActive }) => `px-4 py-2 rounded-md transition-colors duration-200 !rounded-button whitespace-nowrap ${isActive ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
                             <i className="fas fa-ambulance mr-2"></i>
                             배차 관리
+                        </NavLink>
+                        <NavLink to="/firestation/reports-list" className={({ isActive }) => `px-4 py-2 rounded-md transition-colors duration-200 !rounded-button whitespace-nowrap ${isActive ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
+                            보고서
                         </NavLink>
                     </nav>
                     <div className="flex items-center space-x-4">
