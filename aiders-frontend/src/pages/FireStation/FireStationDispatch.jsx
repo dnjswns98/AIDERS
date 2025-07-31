@@ -2,17 +2,28 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../../hooks/useAppContext';
 import { getStatusColor, getStatusText } from "../../utils/statusUtils";
+import ReportSelectionModal from "../../components/FireStation/modals/ReportSelectionModal";
 import DispatchFormModal from "../../components/FireStation/modals/DispatchFormModal";
 
 const Dispatch = () => {
     const { ambulances } = useAppContext();
-    const [showDispatchForm, setShowDispatchForm] = useState(false);
+    const [showReportSelectionModal, setShowReportSelectionModal] = useState(false);
+    const [selectedReport, setSelectedReport] = useState(null);
+
+    const handleReportSelected = (report) => {
+        setSelectedReport(report);
+        setShowReportSelectionModal(false);
+    };
+
+    const handleDispatchFormClose = () => {
+        setSelectedReport(null);
+    };
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-gray-900">배차 관리</h2>
-                <button onClick={() => setShowDispatchForm(true)} className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors !rounded-button whitespace-nowrap">
+                <button onClick={() => setShowReportSelectionModal(true)} className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors !rounded-button whitespace-nowrap">
                     <i className="fas fa-plus mr-2"></i>
                     배차 신청
                 </button>
@@ -52,7 +63,8 @@ const Dispatch = () => {
                     </table>
                 </div>
             </div>
-            {showDispatchForm && <DispatchFormModal onClose={() => setShowDispatchForm(false)} />}
+            {showReportSelectionModal && <ReportSelectionModal onClose={() => setShowReportSelectionModal(false)} onReportSelected={handleReportSelected} />}
+            {selectedReport && <DispatchFormModal report={selectedReport} onClose={handleDispatchFormClose} />}
         </div>
     );
 };
