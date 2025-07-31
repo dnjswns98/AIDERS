@@ -30,9 +30,9 @@ const AppContent = () => {
     const shouldShowPip = isCallActive && isPipMode && location.pathname !== '/emergency/map';
 
     return (
-        <div className="min-h-screen bg-gray-50 relative" style={{ fontFamily: 'NanumGothic, sans-serif' }}>
+        <div className="h-screen bg-gray-50 relative overflow-hidden flex flex-col" style={{ fontFamily: 'NanumGothic, sans-serif' }}>
             {showToast && <Toast message="구급차 정보가 업데이트되었습니다" />}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="px-4 sm:px-6 lg:px-8 flex-grow">
                 <AppRouters />
             </main>
             {shouldShowPip && (
