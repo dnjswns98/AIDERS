@@ -30,6 +30,13 @@ public class VideoCallController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "🏥 병원용: 기존 세션의 토큰만 발급")
+    @GetMapping("/hospital/token")
+    public ResponseEntity<TokenResponse> getTokenForHospital(@RequestParam String sessionId) {
+        TokenResponse response = openViduService.createTokenOnly(sessionId);
+        return ResponseEntity.ok(response);
+    }
+
     @Operation(summary = "병원 통화 시작", description = "병원이 특정 구급차 세션을 선택하여 통화를 시작합니다. 기존 통화 중인 세션은 모두 대기 상태로 변경됩니다.")
     @PutMapping("/start-call")
     public ResponseEntity<Void> startCall(@RequestBody StartCallRequest request) {

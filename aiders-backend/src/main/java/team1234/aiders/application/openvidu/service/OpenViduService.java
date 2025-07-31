@@ -64,6 +64,24 @@ public class OpenViduService {
         }
     }
 
+    public TokenResponse createTokenOnly(String sessionId) {
+        try {
+            // 이미 생성된 세션이어야 함
+            Session session = openVidu.getActiveSessions().stream()
+                    .filter(s -> s.getSessionId().equals(sessionId))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 세션입니다: " + sessionId));
+
+            // 토큰 발급
+            ConnectionProperties properties = new ConnectionProperties.Builder().build();
+            String token = session.createConnection(properties).getToken();
+
+            return new TokenResponse(token, session.getSessionId());
+        } catch (Exception e) {
+            throw new RuntimeException("병원용 토큰 발급 실패", e);
+        }
+    }
+
     public void closeSessionIfExists(String sessionId) {
         Session session = openVidu.getActiveSessions().stream()
                 .filter(s -> s.getSessionId().equals(sessionId))
