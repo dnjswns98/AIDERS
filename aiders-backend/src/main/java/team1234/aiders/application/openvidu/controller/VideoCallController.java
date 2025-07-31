@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import team1234.aiders.application.openvidu.dto.EndCallRequest;
 import team1234.aiders.application.openvidu.dto.StartCallRequest;
 import team1234.aiders.application.openvidu.dto.TokenRequest;
 import team1234.aiders.application.openvidu.dto.TokenResponse;
@@ -33,6 +34,14 @@ public class VideoCallController {
         boolean success = redisService.startCall(request.getHospitalId(), request.getSessionId());
         return success ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
+
+    @Operation(summary = "병원 통화 종료", description = "병원이 선택한 세션(구급차)과의 통화를 종료합니다.")
+    @PutMapping("/end-call")
+    public ResponseEntity<Void> endCall(@RequestBody EndCallRequest request) {
+        boolean success = redisService.updateCallStatus(request.getSessionId(), false);
+        return success ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
+    }
+
 
     /**
      * 방장이 세션을 종료할 수 있는 API

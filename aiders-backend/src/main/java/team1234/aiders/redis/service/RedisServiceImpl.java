@@ -36,6 +36,17 @@ public class RedisServiceImpl implements RedisService {
 
         session.setInCall(inCall);
         redisHandler.overwriteSession(sessionId, session);
+
+        // 병원 대기열 목록도 수정 필요
+        String hospitalId = String.valueOf(session.getHospitalId());
+        List<VideoSessionInfo> waitingList = redisHandler.getWaitingList(hospitalId);
+
+        List<VideoSessionInfo> updatedList = waitingList.stream()
+                .map(info -> info.getSessionId().equals(sessionId) ? session : info)
+                .toList();
+
+        redisHandler.overwriteWaitingList(hospitalId, updatedList); // 대기열 수정
+
         return true;
     }
 
