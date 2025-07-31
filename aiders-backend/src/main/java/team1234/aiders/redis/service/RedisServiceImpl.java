@@ -30,24 +30,15 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
-    public boolean startCall(String sessionId) {
+    public boolean updateCallStatus(String sessionId, boolean inCall) {
         VideoSessionInfo session = redisHandler.getSession(sessionId);
         if (session == null) return false;
 
-        session.setInCall(true);
+        session.setInCall(inCall);
         redisHandler.overwriteSession(sessionId, session);
         return true;
     }
 
-    @Override
-    public boolean endCall(String sessionId) {
-        VideoSessionInfo session = redisHandler.getSession(sessionId);
-        if (session == null) return false;
-
-        session.setInCall(false);
-        redisHandler.overwriteSession(sessionId, session);
-        return true;
-    }
 
     @Override
     public boolean completeTransport(String sessionId, String hospitalId) {

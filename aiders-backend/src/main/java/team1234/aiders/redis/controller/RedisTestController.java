@@ -42,9 +42,7 @@ public class RedisTestController {
     public ResponseEntity<Void> updateCallStatus(
             @PathVariable String sessionId,
             @RequestParam boolean inCall) {
-        boolean result = inCall
-                ? redisService.startCall(sessionId)
-                : redisService.endCall(sessionId);
+        boolean result = redisService.updateCallStatus(sessionId, inCall);
 
         return result ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
