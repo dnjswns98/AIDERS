@@ -8,15 +8,17 @@ public interface RedisService {
 
     void registerSession(VideoSessionInfo sessionInfo, long timeoutSeconds);
 
-    boolean startCall(String sessionId);
+    boolean startCall(Long hospitalId, String selectedSessionId);
 
-    boolean endCall(String sessionId);
+    boolean updateCallStatus(String sessionId, boolean inCall);
 
-    void completeTransport(String sessionId, String hospitalId);
+    boolean completeTransport(String sessionId, String hospitalId);
 
-    void removeFromWaitingList(String hospitalId, String sessionId);
+    boolean removeFromWaitingList(String hospitalId, String sessionId);
 
     List<VideoSessionInfo> getWaitingList(String hospitalId);
 
     VideoSessionInfo getSession(String sessionId);
+
+    boolean exists(String sessionId);
 }
