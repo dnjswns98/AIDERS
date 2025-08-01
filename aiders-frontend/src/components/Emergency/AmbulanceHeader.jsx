@@ -30,9 +30,7 @@ const AmbulanceHeader = () => {
                         <NavLink to="/emergency/patient-info" className={({ isActive }) => `px-4 py-2 rounded-md transition-colors duration-200 !rounded-button whitespace-nowrap ${isActive ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
                             환자 정보 조회
                         </NavLink>
-                        <NavLink to="/emergency/hospitals" className={({ isActive }) => `px-4 py-2 rounded-md transition-colors duration-200 !rounded-button whitespace-nowrap ${isActive ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
-                            병원 조회
-                        </NavLink>
+                        
                     </nav>
                     <div className="flex items-center space-x-4">
                         <div className="text-sm">{currentTime.toLocaleString('ko-KR')}</div>
