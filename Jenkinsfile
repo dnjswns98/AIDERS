@@ -5,7 +5,7 @@ pipeline {
         PROJECT_NAME = 'aiders'
         COMPOSE_PROJECT_NAME = 'aiders'
     }
-
+    
     stages {
         stage('Checkout') {
             steps {
@@ -14,113 +14,104 @@ pipeline {
                 sh 'echo "Current commit: $(git rev-parse --short HEAD)"'
             }
         }
-
+        
         stage('Environment Check') {
             steps {
                 echo "🔍 Checking Docker environment..."
                 sh '''
                     echo "Working directory: $(pwd)"
-                    echo "Docker version: $(sudo docker --version)"
-                    echo "Docker Compose version: $(sudo docker-compose --version)"
+                    echo "Docker version: $(docker --version)"
+                    echo "Docker Compose version: $(docker-compose --version)"
                     echo "Available disk space:"
                     df -h | head -2
                     echo "Memory usage:"
                     free -h | head -2
+                    echo "User: $(whoami)"
+                    echo "Groups: $(groups)"
                 '''
             }
         }
-
-        stage('Clean Previous Build') {
+        
+        stage('Current Status Check') {
             steps {
-                echo "🧹 Cleaning previous containers and images..."
+                echo "📊 Checking current application status..."
                 sh '''
-                    # 기존 컨테이너 정리 (에러 무시)
-                    sudo docker-compose down --remove-orphans || true
-
-                    # 사용하지 않는 이미지 정리
-                    sudo docker image prune -f || true
-
-                    echo "✅ Cleanup completed"
+                    echo "Current running containers:"
+                    docker ps
+                    
+                    echo ""
+                    echo "Application health check:"
+                    curl -s http://localhost:8080/actuator/health || echo "Backend not accessible"
+                    curl -s http://localhost:3000 > /dev/null && echo "Frontend is accessible" || echo "Frontend not accessible"
                 '''
             }
         }
-
+        
         stage('Docker Build') {
             steps {
-                echo "🏗️ Building Docker images..."
+                echo "🏗️ Building fresh Docker images..."
                 sh '''
-                    # Docker Compose로 모든 이미지 빌드
-                    sudo docker-compose build --no-cache
-
+                    # 기존 컨테이너 정리
+                    docker-compose down
+                    
+                    # 새로운 이미지 빌드
+                    docker-compose build --no-cache
+                    
                     # 빌드된 이미지 확인
                     echo "📋 Built images:"
-                    sudo docker images | grep aiders || echo "No aiders images found"
+                    docker images | grep aiders
                 '''
             }
         }
-
+        
         stage('Deploy Services') {
             steps {
                 echo "🚀 Starting services with Docker Compose..."
                 sh '''
                     # 모든 서비스 시작
-                    sudo docker-compose up -d
-
+                    docker-compose up -d
+                    
                     # 컨테이너 상태 확인
                     echo "📊 Container status:"
-                    sudo docker-compose ps
-
-                    # 잠시 기다려서 컨테이너 안정화
-                    sleep 10
-                    echo "📊 Container status after 10 seconds:"
-                    sudo docker-compose ps
+                    docker-compose ps
                 '''
             }
         }
-
+        
         stage('Health Check') {
             steps {
                 echo "🏥 Performing application health checks..."
                 sh '''
                     echo "⏳ Waiting for services to start..."
                     sleep 30
-
-                    # Backend Health Check (30회 시도)
+                    
+                    # Backend Health Check
                     echo "🔍 Checking backend health..."
-                    for i in {1..30}; do
+                    for i in {1..20}; do
                         if curl -f -s http://localhost:8080/actuator/health > /dev/null 2>&1; then
                             echo "✅ Backend is healthy!"
-                            echo "Backend health details:"
-                            curl -s http://localhost:8080/actuator/health | head -5 || echo "Could not get health details"
+                            curl -s http://localhost:8080/actuator/health | head -5
                             break
                         fi
-                        echo "⏳ Backend not ready yet... ($i/30)"
+                        echo "⏳ Backend not ready yet... ($i/20)"
                         sleep 10
                     done
-
+                    
                     # Frontend Health Check
                     echo "🔍 Checking frontend accessibility..."
-                    if curl -f -s http://localhost:3000 > /dev/null 2>&1; then
-                        echo "✅ Frontend is accessible!"
-                    else
-                        echo "⚠️ Frontend check failed, but continuing..."
-                    fi
-
+                    curl -f -s http://localhost:3000 > /dev/null 2>&1 && echo "✅ Frontend is accessible!" || echo "⚠️ Frontend check failed"
+                    
                     # Database Health Check
                     echo "🔍 Checking MySQL connectivity..."
-                    sudo docker-compose exec -T mysql mysqladmin ping -h localhost -u root -p1234 2>/dev/null && echo "✅ MySQL is healthy!" || echo "⚠️ MySQL check failed"
-
-                    # Redis Health Check
+                    docker-compose exec -T mysql mysqladmin ping -h localhost -u root -p1234 2>/dev/null && echo "✅ MySQL is healthy!" || echo "⚠️ MySQL check failed"
+                    
+                    # Redis Health Check  
                     echo "🔍 Checking Redis connectivity..."
-                    sudo docker-compose exec -T redis redis-cli ping 2>/dev/null | grep PONG && echo "✅ Redis is healthy!" || echo "⚠️ Redis check failed"
-
-                    # OpenVidu Health Check
-                    echo "🔍 Checking OpenVidu status..."
-                    curl -f -s http://localhost:4443 > /dev/null 2>&1 && echo "✅ OpenVidu is accessible!" || echo "⚠️ OpenVidu check failed"
+                    docker-compose exec -T redis redis-cli ping 2>/dev/null | grep PONG && echo "✅ Redis is healthy!" || echo "⚠️ Redis check failed"
                 '''
             }
         }
-
+        
         stage('Final Status') {
             steps {
                 echo "📋 Deployment summary..."
@@ -135,75 +126,42 @@ pipeline {
                     echo "  - OpenVidu: http://i13d107.p.ssafy.io:4443"
                     echo ""
                     echo "📊 Final container status:"
-                    sudo docker-compose ps
-                    echo ""
-                    echo "💾 System resource usage:"
-                    df -h | head -2
-                    free -h | head -2
+                    docker-compose ps
                 '''
             }
         }
     }
-
+    
     post {
         always {
             echo "🔍 Pipeline execution completed"
             sh '''
-                echo "💾 Final system status:"
-                sudo docker-compose ps || echo "Could not get container status"
-
-                echo "📈 Resource usage:"
+                echo "📊 Final system status:"
+                docker-compose ps
                 df -h | head -2
                 free -h | head -2
             '''
         }
         success {
-            echo "✅ Pipeline completed successfully!"
+            echo "✅ CI/CD Pipeline completed successfully!"
             sh '''
-                echo "🎊 SUCCESS! All services are running!"
+                echo "🎊 SUCCESS! Your Aiders application is now live!"
                 echo ""
-                echo "🚀 Your application is now live at:"
-                echo "   Frontend: http://i13d107.p.ssafy.io:3000"
-                echo "   Backend:  http://i13d107.p.ssafy.io:8080"
+                echo "🚀 Access your application at:"
+                echo "   👉 Frontend: http://i13d107.p.ssafy.io:3000"
+                echo "   👉 Backend:  http://i13d107.p.ssafy.io:8080"
                 echo ""
-                echo "📊 Running containers:"
-                sudo docker-compose ps
+                echo "📊 All containers are running:"
+                docker-compose ps
             '''
         }
         failure {
             echo "❌ Pipeline failed!"
             sh '''
                 echo "🔍 Debugging information:"
-                echo ""
-                echo "📋 Container logs (last 20 lines each):"
-
-                echo "=== Backend Logs ==="
-                sudo docker-compose logs --tail=20 aiders-app 2>/dev/null || echo "Backend logs not available"
-
-                echo "=== Frontend Logs ==="
-                sudo docker-compose logs --tail=20 aiders-frontend 2>/dev/null || echo "Frontend logs not available"
-
-                echo "=== MySQL Logs ==="
-                sudo docker-compose logs --tail=10 mysql 2>/dev/null || echo "MySQL logs not available"
-
-                echo "=== Redis Logs ==="
-                sudo docker-compose logs --tail=10 redis 2>/dev/null || echo "Redis logs not available"
-
-                echo "=== OpenVidu Logs ==="
-                sudo docker-compose logs --tail=10 openvidu-server 2>/dev/null || echo "OpenVidu logs not available"
-
-                echo ""
-                echo "📊 Current container status:"
-                sudo docker-compose ps || echo "Could not get container status"
-
-                echo ""
-                echo "🖥 System status:"
-                df -h | head -2
-                free -h | head -2
+                docker-compose logs --tail=20
+                docker-compose ps
             '''
-        }
-        cleanup {
-            echo "🧹 Pipeline cleanup completed"
         }
     }
 }
