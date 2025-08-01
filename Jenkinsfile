@@ -61,12 +61,16 @@ pipeline {
                         # Backend만 새로 빌드하고 재시작 (가장 자주 변경되는 부분)
                         echo "🔄 Rebuilding and restarting Backend..."
                         docker-compose build aiders-app
-                        docker-compose up -d --force-recreate aiders-app
+                        docker stop aiders-backend
+                        docker rm aiders-backend
+                        docker-compose up -d --no-deps aiders-app
                         
                         # Frontend 새로 빌드하고 재시작
                         echo "🔄 Rebuilding and restarting Frontend..."
-                        docker-compose build aiders-frontend  
-                        docker-compose up -d --force-recreate aiders-frontend
+                        docker-compose build aiders-frontend
+                        docker stop aiders-frontend
+                        docker rm aiders-frontend
+                        docker-compose up -d --no-deps aiders-frontend
                         
                         echo "✅ Rolling restart completed - Database and other services kept running"
                     else
