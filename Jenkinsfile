@@ -47,32 +47,37 @@ pipeline {
             }
         }
         
-        stage('Docker Build') {
+        stage('Smart Deploy') {
             steps {
-                echo "🏗️ Building fresh Docker images..."
+                echo "🔍 Checking current containers and deploying smartly..."
                 sh '''
-                    # 기존 컨테이너 정리
-                    docker-compose down
+                    echo "Current running containers:"
+                    docker ps
                     
-                    # 새로운 이미지 빌드
-                    docker-compose build --no-cache
+                    # 실행 중인 컨테이너가 있으면 재시작, 없으면 새로 시작
+                    if docker ps | grep -q "aiders-"; then
+                        echo "⚡ Containers already running, performing rolling restart..."
+                        
+                        # Backend만 새로 빌드하고 재시작 (가장 자주 변경되는 부분)
+                        echo "🔄 Rebuilding and restarting Backend..."
+                        docker-compose build aiders-app
+                        docker-compose up -d --force-recreate aiders-app
+                        
+                        # Frontend 새로 빌드하고 재시작
+                        echo "🔄 Rebuilding and restarting Frontend..."
+                        docker-compose build aiders-frontend  
+                        docker-compose up -d --force-recreate aiders-frontend
+                        
+                        echo "✅ Rolling restart completed - Database and other services kept running"
+                    else
+                        echo "🚀 No containers running, starting fresh..."
+                        # 전체 새로 빌드
+                        docker-compose build --no-cache
+                        docker-compose up -d
+                    fi
                     
-                    # 빌드된 이미지 확인
-                    echo "📋 Built images:"
-                    docker images | grep aiders
-                '''
-            }
-        }
-        
-        stage('Deploy Services') {
-            steps {
-                echo "🚀 Starting services with Docker Compose..."
-                sh '''
-                    # 모든 서비스 시작
-                    docker-compose up -d
-                    
-                    # 컨테이너 상태 확인
-                    echo "📊 Container status:"
+                    # 최종 상태 확인
+                    echo "📊 Container status after deployment:"
                     docker-compose ps
                 '''
             }
