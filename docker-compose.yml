@@ -69,8 +69,8 @@ services:
     build: ./aiders-frontend
     container_name: aiders-frontend
     ports:
-      - "3000:4173"
-    command: sh -c "cd /app && npm run preview -- --host 0.0.0.0"
+      - "3000:5173"
+    command: sh -c "cd /app && npm run dev -- --host 0.0.0.0"
     depends_on:
       - aiders-app
     networks:
