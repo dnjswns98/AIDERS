@@ -1,6 +1,7 @@
 import { useRef, useCallback } from 'react';
 import { OpenVidu } from 'openvidu-browser';
 import { useWebRtc } from '../context/WebRtcContext';
+import { createAmbulanceToken, getHospitalToken } from '../api/api'; // 새로 추가된 API 함수 임포트
 
 export const useOpenVidu = ({ sessionName, userName, onError }) => {
   const sessionContextRef = useRef(null);
@@ -9,28 +10,15 @@ export const useOpenVidu = ({ sessionName, userName, onError }) => {
   // 토큰 획득 함수
   const getToken = useCallback(async () => {
     try {
-      if (process.env.NODE_ENV === "production") {
-        const response = await fetch(`${process.env.REACT_APP_SERVER_URL || ''}/api/sessions/${sessionName}/connections`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            metadata: JSON.stringify({ clientData: userName })
-          })
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        return data.token;
-      } else {
-        // 개발 환경에서는 백엔드 연동 후 실제 토큰 사용
-        return new Promise((resolve) =>
-          setTimeout(() => resolve("mock_token_dev"), 500)
-        );
+      // 백엔드 API에 따라 구급차 또는 병원용 토큰을 요청합니다.
+      // 여기서는 userName에 'hospital'이 포함되면 병원용으로 가정합니다.
+      // 실제 애플리케이션에서는 사용자 역할(role)에 따라 분기하는 것이 더 정확합니다.
+      if (userName.includes('hospital')) { // 병원용 토큰 요청
+        const response = await getHospitalToken(sessionName);
+        return response.token;
+      } else { // 구급차용 토큰 요청 (또는 일반 사용자)
+        const response = await createAmbulanceToken({ sessionName, userName });
+        return response.token;
       }
     } catch (error) {
       console.error("Error getting token:", error);

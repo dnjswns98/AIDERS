@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AmbulanceLayout from '../../components/Emergency/Layout/AmbulanceLayout';
 import MapDisplay from '../../components/Emergency/MapDisplay';
@@ -9,8 +9,12 @@ import HospitalCard from '../../components/Emergency/HospitalCard';
 
 export default function AmbulanceDashboardPage() {
   const navigate = useNavigate();
-  const { selectedAmbulance } = useEmergencyStore();
+  const { selectedAmbulance, fetchAmbulances } = useEmergencyStore();
   const [isCalling, setIsCalling] = useState(false);
+
+  useEffect(() => {
+    fetchAmbulances();
+  }, [fetchAmbulances]);
 
   // 이 페이지에서는 더 이상 병원 목록을 직접 관리하지 않습니다.
   // 필요하다면 useEmergencyStore에서 가져옵니다.
