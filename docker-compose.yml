@@ -25,6 +25,7 @@ services:
       - mysql_data:/var/lib/mysql
     networks:
       - aiders-network
+    restart: unless-stopped
 
   # OpenVidu Development Server
   openvidu-server:
@@ -38,11 +39,11 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - aiders-network
+    restart: unless-stopped
 
   # Aiders Backend Application
   aiders-app:
     build: ./aiders-backend
-    image: aiders:latest
     container_name: aiders-backend
     ports:
       - "8080:8080"
@@ -61,20 +62,20 @@ services:
         condition: service_started
     networks:
       - aiders-network
-    restart: on-failure
+    restart: unless-stopped
 
   # Aiders Frontend Application
   aiders-frontend:
     build: ./aiders-frontend
-    image: aiders-frontend:latest
     container_name: aiders-frontend
     ports:
-      - "3000:4173"
-    command: sh -c "cd /app && npm run preview -- --host 0.0.0.0"
+      - "3000:5173"
+    command: sh -c "cd /app && npm run dev -- --host 0.0.0.0"
     depends_on:
       - aiders-app
     networks:
       - aiders-network
+    restart: unless-stopped
 
 volumes:
   mysql_data:

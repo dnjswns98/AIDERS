@@ -152,8 +152,8 @@ export default function LoginForm() {
           <div className="login-test-account-details">
             <div>👮 관리자: admin / admin123</div>
             <div>🚒 소방서: 1 / b18eb822-485c-4963-910f-ba26c1aa9d49</div>
-            <div>🏥 병원: A1700023 / 9f561545-2aee-4065-9e42-9c3765621c4e</div>
-            <div>🚑 구급차: AMB-1fa26dce / 7d7c54d6-e65b-4cf8-9857-5af9d19bc2e7</div>
+            <div>🏥 병원: A1700023 / ad567afe-ce4c-445e-8538-4bddcdca2bff</div>
+            <div>🚑 구급차: AMB-1fa26dce / 3c82e08e-5d64-4476-b0b0-c21650b9fac1</div>
           </div>
         </div>
 
