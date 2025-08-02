@@ -1,15 +1,15 @@
 package team1234.aiders.application.alarm.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import team1234.aiders.application.ambulance.entity.Ambulance;
 import team1234.aiders.application.hospital.entity.Hospital;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class RequestAlarm {
 
     @Id
