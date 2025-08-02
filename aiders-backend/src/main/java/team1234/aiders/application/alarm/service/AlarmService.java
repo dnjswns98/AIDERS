@@ -3,6 +3,7 @@ package team1234.aiders.application.alarm.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import team1234.aiders.application.alarm.dto.AlarmMessage;
+import team1234.aiders.application.alarm.entity.EditAlarm;
 import team1234.aiders.application.alarm.entity.MatchingAlarm;
 import team1234.aiders.application.alarm.entity.RequestAlarm;
 import team1234.aiders.application.alarm.repository.EditAlarmRepository;
@@ -45,7 +46,11 @@ public class AlarmService {
                 requestAlarmRepository.save(alarm);
             }
             case EDIT -> {
-                // EditAlarm 생성 후 저장
+                EditAlarm alarm = EditAlarm.builder()
+                        .hospital(hospital)
+                        .ambulance(ambulance)
+                        .build();
+                editAlarmRepository.save(alarm);
             }
         }
     }
