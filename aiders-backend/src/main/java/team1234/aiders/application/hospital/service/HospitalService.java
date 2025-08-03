@@ -25,14 +25,12 @@ public class HospitalService {
 
     @Transactional(readOnly = true)
     public DepartmentResponseDto getDepartmentStatus(CustomUserDetails user) {
-        HospitalDepartment department = departmentRepository.findById(user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("진료과목 정보를 찾을 수 없습니다."));
+        HospitalDepartment department = findDepartmentByUser(user);
         return DepartmentResponseDto.fromEntity(department);
     }
 
     public void updateDepartmentStatus(CustomUserDetails user, DepartmentUpdateRequestDto request) {
-        HospitalDepartment dept = departmentRepository.findById(user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("진료과목 정보를 찾을 수 없습니다."));
+        HospitalDepartment dept = findDepartmentByUser(user);
 
         dept.updateDepartment(request.getDepartmentCode(), request.getIsExist(), request.getIsAvailable());
     }
@@ -56,6 +54,12 @@ public class HospitalService {
     public void increaseBedManually(CustomUserDetails user, BedType bedType) {
         EmergencyBed bed = findBedByUser(user);
         bed.increaseAvailableBed(bedType);
+    }
+
+    private HospitalDepartment findDepartmentByUser(CustomUserDetails user) {
+        HospitalDepartment department = departmentRepository.findById(user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("진료과목 정보를 찾을 수 없습니다."));
+        return department;
     }
 
     private EmergencyBed findBedByUser(CustomUserDetails user) {
