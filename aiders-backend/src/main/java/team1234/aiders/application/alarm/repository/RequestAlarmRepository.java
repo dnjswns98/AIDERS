@@ -10,5 +10,9 @@ import java.util.List;
 public interface RequestAlarmRepository extends JpaRepository<RequestAlarm, Long> {
     void deleteByAmbulanceAndHospital(Ambulance ambulance, Hospital hospital);
 
+    void deleteByHospitalId(Long hospitalId);
+
     List<RequestAlarm> findByHospitalId(Long hospitalId);
+
+    boolean existsByHospitalId(Long hospitalId);
 }

@@ -12,5 +12,9 @@ import java.util.Optional;
 public interface EditAlarmRepository extends JpaRepository<EditAlarm, Long> {
     void deleteByAmbulanceAndHospital(Ambulance ambulance, Hospital hospital);
 
+    void deleteByHospitalId(Long hospitalId);
+
     List<EditAlarm> findByHospitalId(Long hospitalId);
+
+    boolean existsByHospitalId(Long hospitalId);
 }

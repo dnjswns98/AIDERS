@@ -8,5 +8,9 @@ import java.util.List;
 public interface MatchingAlarmRepository extends JpaRepository<MatchingAlarm, Long> {
     void deleteByAmbulanceKeyAndHospitalId(String ambulanceKey, Long hospitalId);
 
+    void deleteByHospitalId(Long hospitalId);
+
     List<MatchingAlarm> findByHospitalId(Long hospitalId);
+
+    boolean existsByHospitalId(Long hospitalId);
 }
