@@ -5,8 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import team1234.aiders.application.hospital.dto.DepartmentUpdateRequestDto;
+import team1234.aiders.application.hospital.dto.EmergencyBedResponseDto;
 import team1234.aiders.application.hospital.dto.EmergencyBedUpdateRequestDto;
-import team1234.aiders.application.hospital.entity.Hospital;
 import team1234.aiders.application.hospital.service.HospitalService;
 import team1234.aiders.application.hospital.util.BedType;
 import team1234.aiders.config.security.CustomUserDetails;
@@ -27,6 +27,12 @@ public class HospitalController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/bed")
+    public ResponseEntity<EmergencyBedResponseDto> getBedInfo(@AuthenticationPrincipal CustomUserDetails user) {
+        EmergencyBedResponseDto response = hospitalService.getBedInfo(user);
+        return ResponseEntity.ok().body(response);
+    }
+
     @PatchMapping("/bed")
     public ResponseEntity<Void> updateBedInfo(
             @AuthenticationPrincipal CustomUserDetails user,
@@ -36,15 +42,17 @@ public class HospitalController {
     }
 
     @PostMapping("/bed/decrease/manual")
-    public ResponseEntity<Void> decreaseBedManually(@AuthenticationPrincipal CustomUserDetails user,
-                                                    @RequestParam BedType type) {
+    public ResponseEntity<Void> decreaseBedManually(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestParam BedType type) {
         hospitalService.decreaseBedManually(user, type);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/bed/increase/manual")
-    public ResponseEntity<Void> increaseBedManually(@AuthenticationPrincipal CustomUserDetails user,
-                                                    @RequestParam BedType type) {
+    public ResponseEntity<Void> increaseBedManually(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestParam BedType type) {
         hospitalService.increaseBedManually(user, type);
         return ResponseEntity.ok().build();
     }

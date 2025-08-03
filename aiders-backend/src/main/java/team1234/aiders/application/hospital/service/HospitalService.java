@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team1234.aiders.application.ambulance.entity.Ambulance;
 import team1234.aiders.application.hospital.dto.DepartmentUpdateRequestDto;
+import team1234.aiders.application.hospital.dto.EmergencyBedResponseDto;
 import team1234.aiders.application.hospital.dto.EmergencyBedUpdateRequestDto;
 import team1234.aiders.application.hospital.entity.EmergencyBed;
 import team1234.aiders.application.hospital.entity.HospitalDepartment;
@@ -28,6 +29,12 @@ public class HospitalService {
                 .orElseThrow(() -> new IllegalArgumentException("Department not found"));
 
         dept.updateDepartment(request.getDepartmentCode(), request.getIsExist(), request.getIsAvailable());
+    }
+
+    @Transactional(readOnly = true)
+    public EmergencyBedResponseDto getBedInfo(CustomUserDetails user) {
+        EmergencyBed bed = findBedByUser(user);
+        return EmergencyBedResponseDto.fromEntity(bed);
     }
 
     public void updateEmergencyBed(CustomUserDetails user ,EmergencyBedUpdateRequestDto request) {
