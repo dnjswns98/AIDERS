@@ -4,6 +4,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import team1234.aiders.application.alarm.dto.AlarmMessage;
+import team1234.aiders.application.alarm.dto.AlarmResponse;
+import team1234.aiders.application.alarm.dto.AlarmType;
 import team1234.aiders.application.alarm.entity.EditAlarm;
 import team1234.aiders.application.alarm.entity.MatchingAlarm;
 import team1234.aiders.application.alarm.entity.RequestAlarm;
@@ -13,6 +15,9 @@ import team1234.aiders.application.alarm.repository.RequestAlarmRepository;
 import team1234.aiders.application.ambulance.entity.Ambulance;
 import team1234.aiders.application.ambulance.repository.AmbulanceRepository;
 import team1234.aiders.application.hospital.entity.Hospital;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -60,6 +65,41 @@ public class AlarmService {
         return ambulanceRepository.findByUserKey(ambulanceKey)
                 .orElseThrow()
                 .getHospital().getId();
+    }
+
+    public List<AlarmResponse> getAllAlarmsByHospitalId(Long hospitalId) {
+        List<AlarmResponse> result = new ArrayList<>();
+
+        matchingAlarmRepository.findByHospitalId(hospitalId).forEach(m -> result.add(
+                AlarmResponse.builder()
+                        .type(AlarmType.MATCHING)
+                        .ambulanceKey(m.getAmbulanceKey())
+                        .patientName(m.getPName())
+                        .ktas(m.getPKtas())
+                        .createdAt(m.getCreatedAt())
+                        .message("환자 " + m.getPName() + " 매칭 완료")
+                        .build()
+        ));
+
+        requestAlarmRepository.findByHospitalId(hospitalId).forEach(r -> result.add(
+                AlarmResponse.builder()
+                        .type(AlarmType.REQUEST)
+                        .ambulanceKey(r.getAmbulance().getUserKey())
+                        .createdAt(null)
+                        .message("구급차의 통화 요청 알림")
+                        .build()
+        ));
+
+        editAlarmRepository.findByHospitalId(hospitalId).forEach(e -> result.add(
+                AlarmResponse.builder()
+                        .type(AlarmType.EDIT)
+                        .ambulanceKey(e.getAmbulance().getUserKey())
+                        .createdAt(null)
+                        .message("환자 정보가 수정되었습니다.")
+                        .build()
+        ));
+
+        return result;
     }
 
     @Transactional
