@@ -41,12 +41,6 @@ public class AlarmTestController {
         return ResponseEntity.ok("알림 저장 및 전송 성공");
     }
 
-    @DeleteMapping("/all/{ambulanceKey}")
-    public ResponseEntity<Void> deleteAllAlarms(@PathVariable String ambulanceKey) {
-        alarmService.deleteAlarmsByAmbulanceKey(ambulanceKey);
-        return ResponseEntity.ok().build();
-    }
-
     @ResponseBody
     @GetMapping("{hospitalId}")
     public List<AlarmResponse> getAlarms(@PathVariable Long hospitalId) {
@@ -66,6 +60,30 @@ public class AlarmTestController {
     @GetMapping("/edit/{hospitalId}")
     public List<AlarmResponse> getEditAlarms(@PathVariable Long hospitalId) {
         return alarmService.getEditAlarmResponses(hospitalId);
+    }
+
+    @DeleteMapping("/matching/{id}")
+    public ResponseEntity<Void> deleteMatchingAlarm(@PathVariable Long id) {
+        alarmService.deleteMatchingAlarmById(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/request/{id}")
+    public ResponseEntity<Void> deleteRequestAlarm(@PathVariable Long id) {
+        alarmService.deleteRequestAlarmById(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/edit/{id}")
+    public ResponseEntity<Void> deleteEditAlarm(@PathVariable Long id) {
+        alarmService.deleteEditAlarmById(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/all/{ambulanceKey}")
+    public ResponseEntity<Void> deleteAllAlarms(@PathVariable String ambulanceKey) {
+        alarmService.deleteAlarmsByAmbulanceKey(ambulanceKey);
+        return ResponseEntity.ok().build();
     }
 }
 

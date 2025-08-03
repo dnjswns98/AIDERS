@@ -1,5 +1,6 @@
 package team1234.aiders.application.alarm.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -137,6 +138,25 @@ public class AlarmService {
 
         return result;
     }
+
+    public void deleteMatchingAlarmById(Long id) {
+        MatchingAlarm alarm = matchingAlarmRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("해당 알림이 존재하지 않습니다."));
+        matchingAlarmRepository.delete(alarm);
+    }
+
+    public void deleteRequestAlarmById(Long id) {
+        RequestAlarm alarm = requestAlarmRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("해당 알림이 존재하지 않습니다."));
+        requestAlarmRepository.delete(alarm);
+    }
+
+    public void deleteEditAlarmById(Long id) {
+        EditAlarm alarm = editAlarmRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("해당 알림이 존재하지 않습니다."));
+        editAlarmRepository.delete(alarm);
+    }
+
 
     @Transactional
     public void deleteAlarmsByAmbulanceKey(String ambulanceKey) {
