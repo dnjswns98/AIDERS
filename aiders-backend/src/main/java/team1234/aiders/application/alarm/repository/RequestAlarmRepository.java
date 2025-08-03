@@ -5,6 +5,10 @@ import team1234.aiders.application.alarm.entity.RequestAlarm;
 import team1234.aiders.application.ambulance.entity.Ambulance;
 import team1234.aiders.application.hospital.entity.Hospital;
 
+import java.util.List;
+
 public interface RequestAlarmRepository extends JpaRepository<RequestAlarm, Long> {
     void deleteByAmbulanceAndHospital(Ambulance ambulance, Hospital hospital);
+
+    List<RequestAlarm> findByHospitalId(Long hospitalId);
 }
