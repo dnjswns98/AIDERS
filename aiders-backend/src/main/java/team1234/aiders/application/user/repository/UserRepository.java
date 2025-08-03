@@ -5,6 +5,6 @@ import team1234.aiders.application.user.entity.User;
 
 import java.util.Optional;
 
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, CustomUserRepository {
     Optional<User> findByUserKey(String userKey);
 }
