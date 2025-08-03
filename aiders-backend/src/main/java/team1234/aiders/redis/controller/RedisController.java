@@ -12,7 +12,7 @@ import team1234.aiders.redis.service.RedisService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/redis")
+@RequestMapping("/api/v1/redis")
 @RequiredArgsConstructor
 public class RedisController {
 

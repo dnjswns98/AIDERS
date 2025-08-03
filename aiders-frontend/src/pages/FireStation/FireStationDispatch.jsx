@@ -1,14 +1,39 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAppContext } from '../../hooks/useAppContext';
 import { getStatusColor, getStatusText } from "../../utils/statusUtils";
 import ReportSelectionModal from "../../components/FireStation/modals/ReportSelectionModal";
 import DispatchFormModal from "../../components/FireStation/modals/DispatchFormModal";
+import { useAuthStore } from '../../store/useAuthStore';
 
 const Dispatch = () => {
     const { ambulances } = useAppContext();
     const [showReportSelectionModal, setShowReportSelectionModal] = useState(false);
     const [selectedReport, setSelectedReport] = useState(null);
+    const [dispatchHistory, setDispatchHistory] = useState([]);
+    const {accessToken} = useAuthStore();
+
+
+    useEffect(() => {
+        fetch('/api/v1/dispatch/history', {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (Array.isArray(data)) {
+                setDispatchHistory(data);
+            } else {
+                console.error('Received data is not an array:', data);
+                setDispatchHistory([]); // 크래시를 방지하기 위해 빈 배열로 설정
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching dispatch history:', error)
+            setDispatchHistory([]); // 에러 발생 시 빈 배열로 설정
+        });
+    }, []);
 
     const handleReportSelected = (report) => {
         setSelectedReport(report);
@@ -44,16 +69,16 @@ const Dispatch = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {ambulances.map((ambulance) => (
-                                <tr key={ambulance.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{ambulance.number}</td>
+                            {dispatchHistory.map((dispatch) => (
+                                <tr key={dispatch.id} className="hover:bg-gray-50">
+                                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{dispatch.ambulance.carNumber}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 text-xs font-medium rounded-full text-white ${getStatusColor(ambulance.status)}`}>
-                                            {getStatusText(ambulance.status)}
+                                        <span className={`px-2 py-1 text-xs font-medium rounded-full text-white ${getStatusColor(dispatch.ambulance.status)}`}>
+                                            {getStatusText(dispatch.ambulance.status)}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-gray-500">{ambulance.location}</td>
-                                    <td className="px-6 py-4 text-sm text-gray-500">{ambulance.status === 'dispatched' ? '13:22' : '-'}</td>
+                                    <td className="px-6 py-4 text-sm text-gray-500">{dispatch.address}</td>
+                                    <td className="px-6 py-4 text-sm text-gray-500">{new Date(dispatch.dispatchTime).toLocaleString()}</td>
                                     <td className="px-6 py-4 text-sm font-medium">
                                         <button className="text-blue-600 hover:text-blue-900"><i className="fas fa-map-marker-alt mr-1"></i>위치추적</button>
                                     </td>
