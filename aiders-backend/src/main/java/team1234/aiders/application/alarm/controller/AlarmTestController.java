@@ -1,6 +1,7 @@
 package team1234.aiders.application.alarm.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -14,6 +15,7 @@ import team1234.aiders.application.alarm.service.AlarmService;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequiredArgsConstructor
@@ -94,5 +96,18 @@ public class AlarmTestController {
         alarmService.deleteAlarmsByAmbulanceKey(ambulanceKey);
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/hospital/{hospitalId}")
+    @Operation(summary = "해당 병원의 모든 알림 삭제", description = "병원 ID를 기반으로 매칭, 요청, 수정 알림을 모두 삭제")
+    public ResponseEntity<Void> deleteAllAlarmsByHospital(@PathVariable Long hospitalId) {
+        try {
+            alarmService.deleteAlarmsByHospitalId(hospitalId);
+            return ResponseEntity.ok().build();
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+
 }
 

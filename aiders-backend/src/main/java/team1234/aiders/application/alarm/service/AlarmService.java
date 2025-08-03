@@ -20,6 +20,7 @@ import team1234.aiders.application.hospital.entity.Hospital;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -157,7 +158,6 @@ public class AlarmService {
         editAlarmRepository.delete(alarm);
     }
 
-
     @Transactional
     public void deleteAlarmsByAmbulanceKey(String ambulanceKey) {
         Ambulance ambulance = ambulanceRepository.findByUserKey(ambulanceKey)
@@ -167,6 +167,21 @@ public class AlarmService {
         matchingAlarmRepository.deleteByAmbulanceKeyAndHospitalId(ambulanceKey, hospital.getId());
         requestAlarmRepository.deleteByAmbulanceAndHospital(ambulance, hospital);
         editAlarmRepository.deleteByAmbulanceAndHospital(ambulance, hospital);
+    }
+
+    @Transactional
+    public void deleteAlarmsByHospitalId(Long hospitalId) {
+        boolean hasAlarms = matchingAlarmRepository.existsByHospitalId(hospitalId)
+                || requestAlarmRepository.existsByHospitalId(hospitalId)
+                || editAlarmRepository.existsByHospitalId(hospitalId);
+
+        if (!hasAlarms) {
+            throw new NoSuchElementException("해당 병원에 대한 알림이 존재하지 않습니다.");
+        }
+
+        matchingAlarmRepository.deleteByHospitalId(hospitalId);
+        requestAlarmRepository.deleteByHospitalId(hospitalId);
+        editAlarmRepository.deleteByHospitalId(hospitalId);
     }
 
 }
