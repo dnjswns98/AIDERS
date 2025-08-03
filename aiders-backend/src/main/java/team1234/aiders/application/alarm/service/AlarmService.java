@@ -1,5 +1,6 @@
 package team1234.aiders.application.alarm.service;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import team1234.aiders.application.alarm.dto.AlarmMessage;
@@ -60,4 +61,16 @@ public class AlarmService {
                 .orElseThrow()
                 .getHospital().getId();
     }
+
+    @Transactional
+    public void deleteAlarmsByAmbulanceKey(String ambulanceKey) {
+        Ambulance ambulance = ambulanceRepository.findByUserKey(ambulanceKey)
+                .orElseThrow(() -> new IllegalArgumentException("구급차를 찾을 수 없습니다."));
+        Hospital hospital = ambulance.getHospital();
+
+        matchingAlarmRepository.deleteByAmbulanceKeyAndHospitalId(ambulanceKey, hospital.getId());
+        requestAlarmRepository.deleteByAmbulanceAndHospital(ambulance, hospital);
+        editAlarmRepository.deleteByAmbulanceAndHospital(ambulance, hospital);
+    }
+
 }
