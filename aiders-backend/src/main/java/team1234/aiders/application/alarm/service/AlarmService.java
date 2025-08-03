@@ -16,6 +16,7 @@ import team1234.aiders.application.ambulance.entity.Ambulance;
 import team1234.aiders.application.ambulance.repository.AmbulanceRepository;
 import team1234.aiders.application.hospital.entity.Hospital;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,6 +66,41 @@ public class AlarmService {
         return ambulanceRepository.findByUserKey(ambulanceKey)
                 .orElseThrow()
                 .getHospital().getId();
+    }
+
+    public List<AlarmResponse> getMatchingAlarmResponses(Long hospitalId) {
+        return matchingAlarmRepository.findByHospitalId(hospitalId).stream()
+                .map(alarm -> AlarmResponse.builder()
+                        .type(AlarmType.MATCHING)
+                        .ambulanceKey(alarm.getAmbulanceKey())
+                        .patientName(alarm.getPName())
+                        .ktas(alarm.getPKtas())
+                        .createdAt(alarm.getCreatedAt())
+                        .message("환자 " + alarm.getPName() + "가 병원에 자동 매칭되었습니다.")
+                        .build())
+                .toList();
+    }
+
+    public List<AlarmResponse> getRequestAlarmResponses(Long hospitalId) {
+        return requestAlarmRepository.findByHospitalId(hospitalId).stream()
+                .map(alarm -> AlarmResponse.builder()
+                        .type(AlarmType.REQUEST)
+                        .ambulanceKey(alarm.getAmbulance().getUserKey())
+                        .createdAt(alarm.getAmbulance().getTransferStartTime())
+                        .message("구급차가 통화를 요청했습니다.")
+                        .build())
+                .toList();
+    }
+
+    public List<AlarmResponse> getEditAlarmResponses(Long hospitalId) {
+        return editAlarmRepository.findByHospitalId(hospitalId).stream()
+                .map(alarm -> AlarmResponse.builder()
+                        .type(AlarmType.EDIT)
+                        .ambulanceKey(alarm.getAmbulance().getUserKey())
+                        .createdAt(LocalDateTime.now()) // 따로 없다면 현재시간
+                        .message("환자 정보가 수정되었습니다.")
+                        .build())
+                .toList();
     }
 
     public List<AlarmResponse> getAllAlarmsByHospitalId(Long hospitalId) {

@@ -6,6 +6,9 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import team1234.aiders.application.alarm.dto.AlarmMessage;
 import team1234.aiders.application.alarm.dto.AlarmResponse;
+import team1234.aiders.application.alarm.entity.EditAlarm;
+import team1234.aiders.application.alarm.entity.MatchingAlarm;
+import team1234.aiders.application.alarm.entity.RequestAlarm;
 import team1234.aiders.application.alarm.service.AlarmService;
 
 import java.time.LocalDateTime;
@@ -48,6 +51,21 @@ public class AlarmTestController {
     @GetMapping("{hospitalId}")
     public List<AlarmResponse> getAlarms(@PathVariable Long hospitalId) {
         return alarmService.getAllAlarmsByHospitalId(hospitalId);
+    }
+
+    @GetMapping("/matching/{hospitalId}")
+    public List<AlarmResponse> getMatchingAlarms(@PathVariable Long hospitalId) {
+        return alarmService.getMatchingAlarmResponses(hospitalId);
+    }
+
+    @GetMapping("/request/{hospitalId}")
+    public List<AlarmResponse> getRequestAlarms(@PathVariable Long hospitalId) {
+        return alarmService.getRequestAlarmResponses(hospitalId);
+    }
+
+    @GetMapping("/edit/{hospitalId}")
+    public List<AlarmResponse> getEditAlarms(@PathVariable Long hospitalId) {
+        return alarmService.getEditAlarmResponses(hospitalId);
     }
 }
 
