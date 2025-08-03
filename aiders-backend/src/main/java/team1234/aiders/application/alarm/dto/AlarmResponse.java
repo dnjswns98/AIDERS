@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 public class AlarmResponse {
+    private Long id;
     private AlarmType type;
     private String ambulanceKey;
     private String patientName;

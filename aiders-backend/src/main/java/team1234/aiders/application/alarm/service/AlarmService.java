@@ -73,6 +73,7 @@ public class AlarmService {
     public List<AlarmResponse> getMatchingAlarmResponses(Long hospitalId) {
         return matchingAlarmRepository.findByHospitalId(hospitalId).stream()
                 .map(alarm -> AlarmResponse.builder()
+                        .id(alarm.getId())
                         .type(AlarmType.MATCHING)
                         .ambulanceKey(alarm.getAmbulanceKey())
                         .patientName(alarm.getPName())
@@ -86,6 +87,7 @@ public class AlarmService {
     public List<AlarmResponse> getRequestAlarmResponses(Long hospitalId) {
         return requestAlarmRepository.findByHospitalId(hospitalId).stream()
                 .map(alarm -> AlarmResponse.builder()
+                        .id(alarm.getId())
                         .type(AlarmType.REQUEST)
                         .ambulanceKey(alarm.getAmbulance().getUserKey())
                         .createdAt(alarm.getAmbulance().getTransferStartTime())
@@ -97,6 +99,7 @@ public class AlarmService {
     public List<AlarmResponse> getEditAlarmResponses(Long hospitalId) {
         return editAlarmRepository.findByHospitalId(hospitalId).stream()
                 .map(alarm -> AlarmResponse.builder()
+                        .id(alarm.getId())
                         .type(AlarmType.EDIT)
                         .ambulanceKey(alarm.getAmbulance().getUserKey())
                         .createdAt(LocalDateTime.now()) // 따로 없다면 현재시간
@@ -110,6 +113,7 @@ public class AlarmService {
 
         matchingAlarmRepository.findByHospitalId(hospitalId).forEach(m -> result.add(
                 AlarmResponse.builder()
+                        .id(m.getId())
                         .type(AlarmType.MATCHING)
                         .ambulanceKey(m.getAmbulanceKey())
                         .patientName(m.getPName())
@@ -121,6 +125,7 @@ public class AlarmService {
 
         requestAlarmRepository.findByHospitalId(hospitalId).forEach(r -> result.add(
                 AlarmResponse.builder()
+                        .id(r.getId())
                         .type(AlarmType.REQUEST)
                         .ambulanceKey(r.getAmbulance().getUserKey())
                         .createdAt(null)
@@ -130,6 +135,7 @@ public class AlarmService {
 
         editAlarmRepository.findByHospitalId(hospitalId).forEach(e -> result.add(
                 AlarmResponse.builder()
+                        .id(e.getId())
                         .type(AlarmType.EDIT)
                         .ambulanceKey(e.getAmbulance().getUserKey())
                         .createdAt(null)
