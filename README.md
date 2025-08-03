@@ -82,3 +82,11 @@ git push origin develop
 **Last updated**: 2025-01-01  
 **Pipeline Status**: 🚀 Jenkins CI/CD 구축 중  
 **Team**: SSAFY 13기 D107팀
+
+
+
+
+안녕하세요 Jenkins test입니다. (오후 10: 56)
+안녕하세요 Jenkins test입니다. (오후 11:21)
+안녕하세요 Jenkins test입니다 (오후 11:34)
+안녕하세요 Jenkins test입니다 merge test (오후 11:38)
