@@ -29,7 +29,7 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/auth/**",
-            "/api/video-call/**",  // 모든 video-call API 허용
+            "/api/v1/video-call/**",  // 모든 video-call API 허용
             "/api/**",  // 임시로 모든 API 허용
             "/ws/**",              // WebSocket 연결 허용
             "/ws"
