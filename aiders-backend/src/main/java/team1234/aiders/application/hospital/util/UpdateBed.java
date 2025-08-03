@@ -1,6 +1,6 @@
 package team1234.aiders.application.hospital.util;
 
-import team1234.aiders.application.hospital.dto.EmergencyBedUpdateRequestDto;
+import team1234.aiders.application.hospital.dto.emergencybed.EmergencyBedUpdateRequestDto;
 import team1234.aiders.application.hospital.entity.EmergencyBed;
 
 public class UpdateBed {

@@ -1,13 +1,11 @@
 package team1234.aiders.application.hospital.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import team1234.aiders.application.ambulance.entity.Ambulance;
-import team1234.aiders.application.hospital.dto.DepartmentUpdateRequestDto;
-import team1234.aiders.application.hospital.dto.EmergencyBedResponseDto;
-import team1234.aiders.application.hospital.dto.EmergencyBedUpdateRequestDto;
+import team1234.aiders.application.hospital.dto.department.DepartmentUpdateRequestDto;
+import team1234.aiders.application.hospital.dto.emergencybed.EmergencyBedResponseDto;
+import team1234.aiders.application.hospital.dto.emergencybed.EmergencyBedUpdateRequestDto;
 import team1234.aiders.application.hospital.entity.EmergencyBed;
 import team1234.aiders.application.hospital.entity.HospitalDepartment;
 import team1234.aiders.application.hospital.repository.EmergencyBedRepository;

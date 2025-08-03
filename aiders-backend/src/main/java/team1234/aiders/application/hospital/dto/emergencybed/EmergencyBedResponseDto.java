@@ -1,4 +1,4 @@
-package team1234.aiders.application.hospital.dto;
+package team1234.aiders.application.hospital.dto.emergencybed;
 
 import lombok.Getter;
 import team1234.aiders.application.hospital.entity.EmergencyBed;
