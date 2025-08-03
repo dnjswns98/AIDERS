@@ -37,6 +37,6 @@ public class JwtHandshakeInterceptor extends HttpSessionHandshakeInterceptor {
             return true;
         }
 
-        return false;
+        return true;
     }
 }

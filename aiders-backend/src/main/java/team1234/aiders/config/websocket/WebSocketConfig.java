@@ -17,7 +17,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*") // 프론트 도메인 명시 가능
-                .addInterceptors(jwtHandshakeInterceptor)
+                //.addInterceptors(jwtHandshakeInterceptor);
                 .withSockJS(); // 또는 .withSockJS() 제거 시 웹소켓 전용
     }
 
