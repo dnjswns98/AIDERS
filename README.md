@@ -86,4 +86,5 @@ git push origin develop
 
 
 안녕하세요 Jenkins test입니다. (오후 10: 56)
+안녕하세요 Jenkins test입니다. (오후 11:21)
 
