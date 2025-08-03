@@ -3,13 +3,13 @@ package team1234.aiders.application.hospital.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import team1234.aiders.application.hospital.dto.DepartmentUpdateRequestDto;
-import team1234.aiders.application.hospital.entity.Hospital;
+import org.springframework.web.bind.annotation.*;
+import team1234.aiders.application.hospital.dto.department.DepartmentResponseDto;
+import team1234.aiders.application.hospital.dto.department.DepartmentUpdateRequestDto;
+import team1234.aiders.application.hospital.dto.emergencybed.EmergencyBedResponseDto;
+import team1234.aiders.application.hospital.dto.emergencybed.EmergencyBedUpdateRequestDto;
 import team1234.aiders.application.hospital.service.HospitalService;
+import team1234.aiders.application.hospital.util.BedType;
 import team1234.aiders.config.security.CustomUserDetails;
 
 @RestController
@@ -17,7 +17,13 @@ import team1234.aiders.config.security.CustomUserDetails;
 @RequestMapping("/api/v1/hospital")
 public class HospitalController {
 
-    private HospitalService hospitalService;
+    private final HospitalService hospitalService;
+
+    @GetMapping("/department")
+    public ResponseEntity<DepartmentResponseDto> getDepartments(@AuthenticationPrincipal CustomUserDetails user) {
+        DepartmentResponseDto response = hospitalService.getDepartmentStatus(user);
+        return ResponseEntity.ok(response);
+    }
 
     @PatchMapping("/department")
     public ResponseEntity<Void> updateDepartment(
@@ -25,6 +31,36 @@ public class HospitalController {
             @RequestBody DepartmentUpdateRequestDto dto) {
         hospitalService.updateDepartmentStatus(user, dto);
 
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/bed")
+    public ResponseEntity<EmergencyBedResponseDto> getBedInfo(@AuthenticationPrincipal CustomUserDetails user) {
+        EmergencyBedResponseDto response = hospitalService.getBedInfo(user);
+        return ResponseEntity.ok().body(response);
+    }
+
+    @PatchMapping("/bed")
+    public ResponseEntity<Void> updateBedInfo(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestBody EmergencyBedUpdateRequestDto request) {
+        hospitalService.updateEmergencyBed(user, request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/bed/decrease/manual")
+    public ResponseEntity<Void> decreaseBedManually(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestParam BedType type) {
+        hospitalService.decreaseBedManually(user, type);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/bed/increase/manual")
+    public ResponseEntity<Void> increaseBedManually(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestParam BedType type) {
+        hospitalService.increaseBedManually(user, type);
         return ResponseEntity.ok().build();
     }
 }
