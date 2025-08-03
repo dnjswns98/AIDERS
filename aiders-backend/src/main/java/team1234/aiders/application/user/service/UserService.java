@@ -19,4 +19,8 @@ public class UserService {
     public Page<UserResponseDto> getUsers(Pageable pageable, String search, String role) {
         return userRepository.searchUsers(pageable, search, role);
     }
+
+    public void deleteUser(Long id) {
+        userRepository.softDeleteById(id);
+    }
 }
