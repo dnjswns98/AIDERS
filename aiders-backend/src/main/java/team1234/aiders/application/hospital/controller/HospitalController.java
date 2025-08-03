@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import team1234.aiders.application.hospital.dto.department.DepartmentResponseDto;
 import team1234.aiders.application.hospital.dto.department.DepartmentUpdateRequestDto;
 import team1234.aiders.application.hospital.dto.emergencybed.EmergencyBedResponseDto;
 import team1234.aiders.application.hospital.dto.emergencybed.EmergencyBedUpdateRequestDto;
@@ -17,6 +18,12 @@ import team1234.aiders.config.security.CustomUserDetails;
 public class HospitalController {
 
     private final HospitalService hospitalService;
+
+    @GetMapping("/department")
+    public ResponseEntity<DepartmentResponseDto> getDepartments(@AuthenticationPrincipal CustomUserDetails user) {
+        DepartmentResponseDto response = hospitalService.getDepartmentStatus(user);
+        return ResponseEntity.ok(response);
+    }
 
     @PatchMapping("/department")
     public ResponseEntity<Void> updateDepartment(
