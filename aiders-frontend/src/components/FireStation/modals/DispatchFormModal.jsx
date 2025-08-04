@@ -2,13 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useAppContext } from "../../../hooks/useAppContext";
 import useEmergencyStore from "../../../store/useEmergencyStore";
 import useBedStore from "../../../store/useBedStore";
+import useFireStationStore from "../../../store/useFireStationStore";
 import AddressSearchModal from "./AddressSearchModal";
-import { useAuthStore } from "../../../store/useAuthStore";
 
 const DispatchFormModal = ({ report, onClose }) => {
-  const { ambulances, setAmbulances, updateReport } = useAppContext();
+  const { ambulances, updateReport } = useAppContext();
   const { getHospitals } = useBedStore();
   const { updateAmbulanceStatus, getAvailableAmbulances } = useEmergencyStore();
+  const { dispatchAmbulance } = useFireStationStore();
 
   const [isMapModalOpen, setMapModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -17,8 +18,6 @@ const DispatchFormModal = ({ report, onClose }) => {
     reportContent: "",
     hospitalId: "",
   });
-
-  const { accessToken } = useAuthStore();
 
   useEffect(() => {
     if (report) {
@@ -41,47 +40,33 @@ const DispatchFormModal = ({ report, onClose }) => {
       latitude: report.latitude,
       longitude: report.longitude,
       address: formData.location,
-      condition: formData.reportContent,
+      condition: formData.content,
       hospitalId: parseInt(formData.hospitalId, 10),
     };
 
     console.log("Dispatching data:", dispatchData);
 
     try {
-      const response = await fetch("/api/v1/dispatch/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(dispatchData),
-      });
+      await dispatchAmbulance(dispatchData);
 
-      if (response.ok) {
-        updateAmbulanceStatus(
-          parseInt(formData.ambulanceId, 10),
-          "dispatched",
-          setAmbulances
-        );
-        updateReport({
-          ...report,
-          isDispatched: true,
-          ambulanceId: parseInt(formData.ambulanceId, 10),
-        });
-        console.log(
-          "Dispatching ambulance:",
-          formData.ambulanceId,
-          "for report:",
-          report.id,
-          "to hospital:",
-          formData.hospitalId
-        );
-        onClose();
-      } else {
-        const errorText = await response.text();
-        alert(`배차에 실패했습니다: ${errorText}`);
-        console.error("Server response:", response.status, errorText);
-      }
+      updateAmbulanceStatus(
+        parseInt(formData.ambulanceId, 10),
+        "dispatched"
+      );
+      updateReport({
+        ...report,
+        isDispatched: true,
+        ambulanceId: parseInt(formData.ambulanceId, 10),
+      });
+      console.log(
+        "Dispatching ambulance:",
+        formData.ambulanceId,
+        "for report:",
+        report.id,
+        "to hospital:",
+        formData.hospitalId
+      );
+      onClose();
     } catch (error) {
       console.error("Dispatch failed:", error);
       alert("배차 중 오류가 발생했습니다.");
