@@ -38,6 +38,7 @@ public class DispatchService {
         dispatchAmbulances(request.getAmbulanceIds(), history);
     }
 
+    @Transactional(readOnly = true)
     public List<DispatchHistoryResponseDto> getDispatchHistories(CustomUserDetails user) {
         Long userId = user.getId();
 
