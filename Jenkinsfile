@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         PROJECT_NAME = 'aiders'
-        COMPOSE_PROJECT_NAME = 'aiders'
+        COMPOSE_PROJECT_NAME = 's13p11d107'
 
         REDIS_PORT = '6379'
         MYSQL_PORT = '3306'
@@ -15,6 +15,7 @@ pipeline {
         MYSQL_DATABASE = 'mydb'
         OPENVIDU_SECRET = 'MY_SECRET'
         SPRING_PROFILES_ACTIVE = 'docker'
+        VITE_API_BASE_URL = 'https://i13d107.p.ssafy.io'
     }
 
     stages {
@@ -67,23 +68,24 @@ pipeline {
 
                     # 실행 중인 컨테이너가 있으면 재시작, 없으면 새로 시작
                     if docker ps | grep -q "aiders-"; then
-                        echo "⚡ Containers already running, performing rolling restart..."
-
-                        # Backend만 새로 빌드하고 재시작 (가장 자주 변경되는 부분)
-                        echo "🔄 Rebuilding and restarting Backend..."
-                        docker-compose build aiders-app
-                        docker stop aiders-backend
-                        docker rm aiders-backend
-                        docker-compose up -d --no-deps aiders-app
-
-                        # Frontend 새로 빌드하고 재시작
-                        echo "🔄 Rebuilding and restarting Frontend..."
-                        docker-compose build aiders-frontend
-                        docker stop aiders-frontend
-                        docker rm aiders-frontend
-                        docker-compose up -d --no-deps aiders-frontend
-
-                        echo "✅ Rolling restart completed - Database and other services kept running"
+                        echo "⚡ Containers already running, performing clean restart..."
+                        
+                        # 모든 aiders 관련 컨테이너 강제 정리 (프로젝트명 무관)
+                        echo "🔄 Stopping and removing all aiders containers..."
+                        docker ps -a | grep "aiders-" | awk '{print $1}' | xargs -r docker stop
+                        docker ps -a | grep "aiders-" | awk '{print $1}' | xargs -r docker rm
+                        
+                        # 전체 중지 후 재시작 (네트워크 문제 방지)
+                        echo "🔄 Stopping remaining services..."
+                        docker-compose down
+                        
+                        echo "🔄 Rebuilding changed services..."
+                        docker-compose build aiders-app aiders-frontend
+                        
+                        echo "🚀 Starting all services..."
+                        docker-compose up -d
+                        
+                        echo "✅ Clean restart completed"
                     else
                         echo "🚀 No containers running, starting fresh..."
                         # 전체 새로 빌드
