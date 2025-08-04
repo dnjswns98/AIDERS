@@ -4,6 +4,17 @@ pipeline {
     environment {
         PROJECT_NAME = 'aiders'
         COMPOSE_PROJECT_NAME = 'aiders'
+
+        REDIS_PORT = '6379'
+        MYSQL_PORT = '3306'
+        OPENVIDU_PORT = '4443'
+        BACKEND_PORT = '8080'
+        FRONTEND_PORT = '3000'
+        FRONTEND_INTERNAL_PORT = '5173'
+        MYSQL_ROOT_PASSWORD = '1234'
+        MYSQL_DATABASE = 'mydb'
+        OPENVIDU_SECRET = 'MY_SECRET'
+        SPRING_PROFILES_ACTIVE = 'docker'
     }
 
     stages {
@@ -12,12 +23,6 @@ pipeline {
                 echo "🔄 Checking out code from repository..."
                 checkout scm
                 sh 'echo "Current commit: $(git rev-parse --short HEAD)"'
-            }
-        }
-        stage('Prepare Environment') {
-            steps {
-                echo "Loading environment variables from .env file ..."
-                load '.env'
             }
         }
 
