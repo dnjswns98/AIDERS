@@ -74,6 +74,18 @@ public class Ambulance extends User {
         this.firestation = firestation;
     }
 
+    public void setHospital(Hospital hospital) {
+        this.hospital = hospital;
+    }
+
+    public void setHospitalName(String name) {
+        this.hospitalName = name;
+    }
+
+    public void setHospitalAddress(String address) {
+        this.hospitalAddress = address;
+    }
+
     public void updateRequiredPatientInfo(PatientRequiredInfoRequestDto dto) {
         this.pKtas = dto.getKtas();
         this.pDepartment = dto.getDepartment();
