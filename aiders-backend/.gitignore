@@ -38,4 +38,4 @@ out/
 
 ## personal
 /dump
-*-local.properties
+application-local.properties
