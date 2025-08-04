@@ -6,7 +6,7 @@ import "./login.css";
 
 export default function LoginForm() {
   const navigate = useNavigate();
-  const { login, loginAdmin } = useAuthStore();
+  const { login } = useAuthStore();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -24,15 +24,6 @@ export default function LoginForm() {
     console.log("로그인 시도:", { userKey: username, password: password });
     setLoading(true);
 
-    // admin 계정 먼저 확인 (임시)
-    if (loginAdmin(username, password)) {
-      console.log("Admin 로그인 성공");
-      navigate("/admin");
-      setLoading(false);
-      return;
-    }
-
-    // 일반 사용자 API 로그인
     try {
       console.log("API 요청 시작");
       const response = await axios.post(
@@ -46,7 +37,7 @@ export default function LoginForm() {
       console.log("API 응답:", response.data);
       const { accessToken, refreshToken } = response.data;
 
-      // JWT 토큰에서 사용자 정보 추출 (임시 방편)
+      // JWT 토큰에서 사용자 정보 추출
       const tokenPayload = JSON.parse(atob(accessToken.split(".")[1]));
       console.log("토큰 페이로드:", tokenPayload);
 
@@ -54,11 +45,14 @@ export default function LoginForm() {
       const userInfo = {
         userKey: tokenPayload.userKey || username,
         userId: tokenPayload.sub,
+        role: tokenPayload.role,
       };
 
       // userKey 패턴으로 역할 판단
       let userType = 'user';
-      if (username.startsWith('A')) {
+      if (username === 'admin') {
+        userType = 'admin';
+      } else if (username.startsWith('A')) {
         userType = 'hospital';
       } else if (/[가-힣]/.test(username)) {
         userType = 'ambulance';
@@ -69,6 +63,7 @@ export default function LoginForm() {
       login({
         user: userInfo,
         accessToken: accessToken,
+        refreshToken: refreshToken,
         userType: userType,
       });
 

@@ -1,43 +1,21 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-// 임시 admin 계정 정보
-const TEMP_ADMIN_ACCOUNTS = [
-  { userKey: 'admin', password: 'admin123', userType: 'admin', name: '시스템 관리자' },
-  { userKey: 'superadmin', password: 'super123', userType: 'admin', name: '최고 관리자' }
-];
-
 export const useAuthStore = create(
   persist(
     (set, get) => ({
       user: null,
       accessToken: null,
+      refreshToken: null,
       userType: null,
       
-      // API 로그인 (기존)
-      login: ({ user, accessToken, userType }) => 
-        set({ user, accessToken, userType }),
-        
-      // 임시 admin 로그인
-      loginAdmin: (userKey, password) => {
-        const adminAccount = TEMP_ADMIN_ACCOUNTS.find(
-          account => account.userKey === userKey && account.password === password
-        );
-        
-        if (adminAccount) {
-          set({
-            user: { userKey: adminAccount.userKey, name: adminAccount.name },
-            accessToken: 'temp-admin-token-' + Date.now(),
-            userType: adminAccount.userType
-          });
-          return true;
-        }
-        return false;
-      },
+      // API 로그인
+      login: ({ user, accessToken, refreshToken, userType }) => 
+        set({ user, accessToken, refreshToken, userType }),
       
       // 로그아웃
       logout: () => 
-        set({ user: null, accessToken: null, userType: null }),
+        set({ user: null, accessToken: null, refreshToken: null, userType: null }),
         
       // 현재 사용자가 admin인지 확인
       isAdmin: () => {
@@ -52,7 +30,7 @@ export const useAuthStore = create(
       }
     }),
     {
-      name: 'auth-storage', // localStorage에 저장될 때 사용될 키
+      name: 'auth-storage',
     }
   )
 );
