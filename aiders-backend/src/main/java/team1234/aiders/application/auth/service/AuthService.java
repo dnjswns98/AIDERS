@@ -34,7 +34,7 @@ public class AuthService {
 
         updateRefreshToken(userDetails.getUserKey(), refreshToken);
 
-        return new LoginResponseDto(accessToken, refreshToken);
+        return new LoginResponseDto(userDetails.getRole(), accessToken, refreshToken);
     }
 
     public AccessTokenResponseDto reissue(RefreshRequestDto request) {
