@@ -17,9 +17,7 @@ pipeline {
         stage('Prepare Environment') {
             steps {
                 echo "Loading environment variables from .env file ..."
-                script {
-                    properties(file: '.env')
-                }
+                load '.env'
             }
         }
 
