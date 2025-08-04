@@ -46,6 +46,13 @@ public abstract class User {
 
     private String refreshToken;
 
+    public User(String userKey, String role, String password, String passwordResetKey) {
+        this.userKey = userKey;
+        this.role = role;
+        this.password = password;
+        this.passwordResetKey = passwordResetKey;
+    }
+
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
     }
@@ -53,6 +60,10 @@ public abstract class User {
     @Transient
     public String getRole() {
       return this.role;
+    }
+
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
     }
 }
 

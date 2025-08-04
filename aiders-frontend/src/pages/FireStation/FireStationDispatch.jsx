@@ -4,36 +4,17 @@ import { useAppContext } from '../../hooks/useAppContext';
 import { getStatusColor, getStatusText } from "../../utils/statusUtils";
 import ReportSelectionModal from "../../components/FireStation/modals/ReportSelectionModal";
 import DispatchFormModal from "../../components/FireStation/modals/DispatchFormModal";
-import { useAuthStore } from '../../store/useAuthStore';
+import useFireStationStore from '../../store/useFireStationStore';
 
 const Dispatch = () => {
     const { ambulances } = useAppContext();
     const [showReportSelectionModal, setShowReportSelectionModal] = useState(false);
     const [selectedReport, setSelectedReport] = useState(null);
-    const [dispatchHistory, setDispatchHistory] = useState([]);
-    const {accessToken} = useAuthStore();
-
+    const { dispatchHistory, fetchDispatchHistory } = useFireStationStore();
 
     useEffect(() => {
-        fetch('/api/v1/dispatch/history', {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (Array.isArray(data)) {
-                setDispatchHistory(data);
-            } else {
-                console.error('Received data is not an array:', data);
-                setDispatchHistory([]); // 크래시를 방지하기 위해 빈 배열로 설정
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching dispatch history:', error)
-            setDispatchHistory([]); // 에러 발생 시 빈 배열로 설정
-        });
-    }, []);
+        fetchDispatchHistory();
+    }, [fetchDispatchHistory]);
 
     const handleReportSelected = (report) => {
         setSelectedReport(report);
@@ -42,6 +23,7 @@ const Dispatch = () => {
 
     const handleDispatchFormClose = () => {
         setSelectedReport(null);
+        fetchDispatchHistory(); // 배차 후 목록 새로고침
     };
 
     return (

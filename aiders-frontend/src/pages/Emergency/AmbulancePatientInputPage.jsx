@@ -308,7 +308,7 @@ export default function AmbulancePatientInputPage() {
       </div>
 
       {/* 고정된 "다음 필기 공간" 버튼 - 그리기 모드이고, 스크롤이 하단에 도달하지 않았을 때 렌더링 */}
-      {inputMode === 'drawing' && showScrollButton && (
+      {inputMode === "drawing" && showScrollButton && (
         <button
           onClick={scrollToNextDrawingArea}
           className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-full shadow-lg z-50 opacity-60 hover:opacity-100 transition-all duration-300"

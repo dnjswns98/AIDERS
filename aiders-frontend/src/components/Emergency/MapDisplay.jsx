@@ -25,6 +25,8 @@ const MapDisplay = ({ hospital }) => {
 
   useEffect(() => {
     const KAKAO_KEY = import.meta.env.VITE_KAKAO_MAP_API_KEY;
+    console.log('KAKAO_KEY:', KAKAO_KEY ? 'Loaded' : 'Not Loaded'); // 1. API 키 로드 확인
+
     if (!KAKAO_KEY) {
       alert('카카오 지도 API 키가 .env 파일에 설정되지 않았습니다!');
       return;
@@ -34,18 +36,28 @@ const MapDisplay = ({ hospital }) => {
     script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_KEY}&libraries=services&autoload=false`;
     script.async = true;
     document.head.appendChild(script);
+    console.log('Kakao Maps SDK script added to head.'); // 2. 스크립트 추가 확인
 
     let watchId = null; // watchId를 useEffect 최상단에 선언
 
     script.onload = () => {
+      console.log('Kakao Maps SDK script loaded successfully.'); // 3. 스크립트 로드 완료 확인
       window.kakao.maps.load(() => {
-        if (!mapRef.current) return;
+        console.log('Kakao Maps API loaded and ready.'); // 4. 카카오 API 로드 완료 확인
+
+        if (!mapRef.current) {
+          console.error('mapRef.current is null. Map container not found.'); // 5. mapRef 확인
+          return;
+        }
+        console.log('mapRef.current exists:', mapRef.current); // 5. mapRef 확인
 
         const createMapAndMarkers = (initialUserPos) => {
+          console.log('Creating map with initial position:', initialUserPos); // 6. 지도 생성 시작
           const mapContainer = mapRef.current;
           const mapOption = { center: initialUserPos, level: 4 };
           const map = new window.kakao.maps.Map(mapContainer, mapOption);
           mapInstance.current = map; // 지도 인스턴스 저장
+          console.log('Map instance created:', mapInstance.current); // 7. 지도 인스턴스 생성 확인
 
           // 사용자 마커 초기 생성
           userMarker.current = new window.kakao.maps.Marker({
@@ -88,11 +100,12 @@ const MapDisplay = ({ hospital }) => {
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             (position) => {
+              console.log('Geolocation success:', position); // 8. 현재 위치 가져오기 성공
               const userInitialPos = new window.kakao.maps.LatLng(position.coords.latitude, position.coords.longitude);
               createMapAndMarkers(userInitialPos);
             },
             (error) => {
-              console.error("초기 위치 정보 에러:", error);
+              console.error("초기 위치 정보 에러:", error); // 9. 현재 위치 가져오기 실패
               console.error("현재 위치를 가져올 수 없습니다. 기본 위치(서울 시청)로 지도를 표시합니다.");
               const defaultPos = new window.kakao.maps.LatLng(37.566826, 126.9786567);
               createMapAndMarkers(defaultPos);
@@ -100,7 +113,7 @@ const MapDisplay = ({ hospital }) => {
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
           );
         } else {
-          console.error("이 브라우저는 위치 정보를 지원하지 않습니다. 기본 위치(서울 시청)로 지도를 표시합니다.");
+          console.error("이 브라우저는 위치 정보를 지원하지 않습니다. 기본 위치(서울 시청)로 지도를 표시합니다."); // 10. Geolocation 미지원
           const defaultPos = new window.kakao.maps.LatLng(37.566826, 126.9786567);
           createMapAndMarkers(defaultPos);
         }

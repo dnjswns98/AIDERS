@@ -1,47 +1,50 @@
-import { useRef, useCallback } from 'react';
-import { OpenVidu } from 'openvidu-browser';
-import { useWebRtc } from '../context/WebRtcContext';
+import { useRef, useCallback } from "react";
+import { OpenVidu } from "openvidu-browser";
+import { useWebRtc } from "../context/WebRtcContext";
+import { createAmbulanceToken, getHospitalToken } from "../api/api";
 
-export const useOpenVidu = ({ sessionName, userName, onError }) => {
+export const useOpenVidu = ({
+  sessionId,
+  ambulanceId,
+  hospitalId,
+  ktas,
+  patientName,
+  onError,
+}) => {
   const sessionContextRef = useRef(null);
   const { startCall, endCall } = useWebRtc();
 
+  // ──────────────────────────────────────────────────────────────────────────
   // 토큰 획득 함수
-  const getToken = useCallback(async () => {
-    try {
-      if (process.env.NODE_ENV === "production") {
-        const response = await fetch(`${process.env.REACT_APP_SERVER_URL || ''}/api/sessions/${sessionName}/connections`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            metadata: JSON.stringify({ clientData: userName })
-          })
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+  const getToken = useCallback(
+    async () => {
+      console.log("구급차 ID : ",ambulanceId)
+      try {
+        if (ambulanceId >= 0) {
+          const { token } = await createAmbulanceToken({
+            sessionId,
+            ambulanceId,
+          });
+          return token;
+        } else {
+          const { token } = await getHospitalToken({
+            sessionId,
+            hospitalId,
+          });
+          return token;
         }
-        
-        const data = await response.json();
-        return data.token;
-      } else {
-        // 개발 환경에서는 백엔드 연동 후 실제 토큰 사용
-        return new Promise((resolve) =>
-          setTimeout(() => resolve("mock_token_dev"), 500)
-        );
+      } catch (error) {
+        console.error("Error getting token:", error);
+        throw error;
       }
-    } catch (error) {
-      console.error("Error getting token:", error);
-      throw error;
-    }
-  }, [sessionName, userName]);
+    },
+    // 의존성 배열에 모두 포함
+    [sessionId, ambulanceId, hospitalId]
+  );
 
-  // 세션 컨텍스트 생성
+  // ──────────────────────────────────────────────────────────────────────────
+  // 세션 컨텍스트 생성 (매 joinSession 시마다 새로 만듦)
   const createSessionContext = useCallback(() => {
-    console.log("Creating new session context...");
-    
     const context = {
       OV: null,
       session: null,
@@ -49,220 +52,179 @@ export const useOpenVidu = ({ sessionName, userName, onError }) => {
       subscribers: [],
       isActive: true,
       isConnecting: false,
-    };
-
-    // 세션 정리 함수 (컨텍스트별로 독립적)
-    context.cleanup = async () => {
-      console.log("Cleaning up session context...");
-      context.isActive = false;
-      
-      try {
-        // 구독자들 정리
-        context.subscribers.forEach((subscriber) => {
-          if (subscriber?.stream) {
-            try {
-              subscriber.stream.disposeWebRtcPeer();
-            } catch (err) {
-              console.warn("Error disposing subscriber:", err);
-            }
+      // 세션 정리 함수
+      cleanup: async function () {
+        this.isActive = false;
+        // 1) 구독자 정리
+        this.subscribers.forEach((sub) => {
+          try {
+            sub.stream.disposeWebRtcPeer();
+          } catch (e) {
+            console.warn("Error disposing subscriber:", e);
           }
         });
-        context.subscribers = [];
-
-        // 퍼블리셔 정리
-        if (context.publisher?.stream) {
+        this.subscribers = [];
+        // 2) 퍼블리셔 정리
+        if (this.publisher?.stream) {
           try {
-            context.publisher.stream.disposeWebRtcPeer();
-          } catch (err) {
-            console.warn("Error disposing publisher:", err);
+            this.publisher.stream.disposeWebRtcPeer();
+          } catch (e) {
+            console.warn("Error disposing publisher:", e);
           }
-          context.publisher = null;
+          this.publisher = null;
         }
-
-        // 세션 연결 해제
-        if (context.session && context.isConnecting) {
+        // 3) 세션 연결 해제
+        if (this.session && this.isConnecting) {
           try {
-            await context.session.disconnect();
-          } catch (err) {
-            console.warn("Error disconnecting session:", err);
+            await this.session.disconnect();
+          } catch (e) {
+            console.warn("Error disconnecting session:", e);
           }
         }
-        
-        context.session = null;
-        context.OV = null;
-        context.isConnecting = false;
-        
-      } catch (error) {
-        console.error("Error in context cleanup:", error);
-      }
+        this.session = null;
+        this.OV = null;
+        this.isConnecting = false;
+      },
     };
-
     return context;
   }, []);
 
+  // ──────────────────────────────────────────────────────────────────────────
   // 세션 참가 함수
   const joinSession = useCallback(async () => {
     console.log("Attempting to join session...");
-    
-    const sessionContext = createSessionContext();
-    sessionContextRef.current = sessionContext;
-    
+    const ctx = createSessionContext();
+    sessionContextRef.current = ctx;
+
     try {
-      if (!sessionContext.isActive) {
-        console.log("Session context deactivated during initialization, aborting...");
-        return;
-      }
+      // 이미 비활성화된 컨텍스트면 중단
+      if (!ctx.isActive) return;
 
-      // OpenVidu 및 세션 생성
-      sessionContext.OV = new OpenVidu();
-      sessionContext.session = sessionContext.OV.initSession();
-
-      if (!sessionContext.session) {
+      // 1) OpenVidu 인스턴스 및 세션 초기화
+      ctx.OV = new OpenVidu();
+      ctx.session = ctx.OV.initSession();
+      if (!ctx.session) {
         throw new Error("Failed to initialize OpenVidu session");
       }
+      if (!ctx.isActive) return;
 
-      if (!sessionContext.isActive) {
-        console.log("Session context deactivated after session creation, aborting...");
-        return;
-      }
-
-      // 이벤트 리스너 등록
-      sessionContext.session.on("streamCreated", (event) => {
-        console.log("Stream created event:", event);
-        if (!sessionContext.isActive) return;
-        
-        const subscriber = sessionContext.session.subscribe(event.stream, undefined);
-        sessionContext.subscribers.push(subscriber);
-        
-        if (subscriber.stream && subscriber.stream.hasVideo) {
+      // 2) 이벤트 리스너 등록
+      ctx.session.on("streamCreated", (event) => {
+        if (!ctx.isActive) return;
+        const subscriber = ctx.session.subscribe(event.stream, undefined);
+        ctx.subscribers.push(subscriber);
+        if (subscriber.stream?.hasVideo) {
           startCall(
-            sessionContext.publisher?.stream?.getMediaStream(),
+            ctx.publisher.stream.getMediaStream(),
             subscriber.stream.getMediaStream()
           );
         }
-        console.log("New subscriber added");
+      });
+      ctx.session.on("streamDestroyed", (event) => {
+        if (!ctx.isActive) return;
+        const idx = ctx.subscribers.indexOf(event.stream.streamManager);
+        if (idx > -1) ctx.subscribers.splice(idx, 1);
+      });
+      ctx.session.on("exception", (ex) =>
+        console.warn("OpenVidu exception:", ex)
+      );
+      ctx.session.on("sessionDisconnected", () => {
+        ctx.isConnecting = false;
+        if (ctx.isActive) endCall();
       });
 
-      sessionContext.session.on("streamDestroyed", (event) => {
-        console.log("Stream destroyed event:", event);
-        if (!sessionContext.isActive) return;
-        
-        const index = sessionContext.subscribers.indexOf(event.stream.streamManager);
-        if (index > -1) {
-          sessionContext.subscribers.splice(index, 1);
-        }
-        console.log("Subscriber removed");
-      });
-
-      sessionContext.session.on("exception", (exception) => {
-        console.warn("OpenVidu session exception:", exception);
-      });
-
-      sessionContext.session.on("sessionDisconnected", (event) => {
-        console.log("Session disconnected:", event);
-        sessionContext.isConnecting = false;
-        if (sessionContext.isActive) {
-          endCall();
-        }
-      });
-
-      // 토큰 획득 및 연결
+      // 3) 토큰 획득
       const token = await getToken();
-      if (!token) {
-        throw new Error("Failed to get authentication token");
-      }
-
-      if (!sessionContext.isActive) {
-        console.log("Session context deactivated during token fetch, aborting...");
+      if (!token) throw new Error("Failed to get authentication token");
+      if (!ctx.isActive) {
+        await ctx.cleanup();
         return;
       }
 
-      console.log("Connecting to session with token...");
-      sessionContext.isConnecting = true;
-      await sessionContext.session.connect(token, { clientData: userName });
-
-      if (!sessionContext.isActive) {
-        console.log("Session context deactivated after connection, cleaning up...");
-        await sessionContext.cleanup();
+      // 4) 세션 연결
+      ctx.isConnecting = true;
+      await ctx.session.connect(token, { clientData: `${ambulanceId}` });
+      if (!ctx.isActive) {
+        await ctx.cleanup();
         return;
       }
 
-      // 퍼블리셔 생성
-      console.log("Creating publisher...");
-      sessionContext.publisher = await sessionContext.OV.initPublisher(undefined, {
-        audioSource: undefined,
-        videoSource: undefined,
-        publishAudio: true,
-        publishVideo: true,
-        resolution: "640x480",
-        frameRate: 30,
-        insertMode: "APPEND",
-        mirror: false,
-      });
+      // 5) 퍼블리셔 생성 (미디어 권한 및 SDP 검증)
+      ctx.publisher = await ctx.OV.initPublisher(
+        undefined,
+        {
+          audioSource: undefined,
+          videoSource: undefined,
+          publishAudio: true,
+          publishVideo: true,
+          resolution: "640x480",
+          frameRate: 30,
+          insertMode: "APPEND",
+          mirror: false,
+        },
+        (initErr) => {
+          if (initErr) {
+            console.error("Publisher init failed:", initErr);
+            onError?.({
+              type: "CAMERA_ACCESS_DENIED",
+              message: "카메라/마이크 접근이 거부되었습니다.",
+            });
+          }
+        }
+      );
+      if (!ctx.publisher) throw new Error("Failed to create publisher");
+      if (!ctx.isActive) return;
 
-      if (!sessionContext.publisher) {
-        throw new Error("Failed to create publisher");
-      }
+      // 로컬 스트림 시작
+      const localStream = ctx.publisher.stream.getMediaStream();
+      startCall(localStream, null);
 
-      if (!sessionContext.isActive) {
-        console.log("Session context deactivated during publisher creation, aborting...");
-        return;
-      }
-
-      // localStream 세팅
-      const localMediaStream = sessionContext.publisher.stream?.getMediaStream();
-      if (localMediaStream) {
-        startCall(localMediaStream, null);
-      }
-
-      // 퍼블리셔 발행
+      // 6) 퍼블리셔 발행
       console.log("Publishing stream...");
-      await sessionContext.session.publish(sessionContext.publisher);
-      console.log("Successfully joined session and published stream");
-
+      await ctx.session.publish(ctx.publisher);
+      console.log("Successfully joined and published");
     } catch (error) {
       console.error("Error in joinSession:", error);
-      
+      // 에러 타입 분기
       if (error.code === 1001) {
-        onError?.({ 
-          type: 'CAMERA_ACCESS_DENIED',
-          message: "카메라 또는 마이크 접근이 거부되었습니다. 브라우저 설정을 확인해주세요."
+        onError?.({
+          type: "CAMERA_ACCESS_DENIED",
+          message: "카메라 또는 마이크 접근이 거부되었습니다.",
         });
-      } else if (error.message && error.message.includes('connect')) {
-        onError?.({ 
-          type: 'CONNECTION_FAILED',
-          message: "세션 연결에 실패했습니다. 서버 상태를 확인해주세요."
+      } else if (error.message.includes("connect")) {
+        onError?.({
+          type: "CONNECTION_FAILED",
+          message: "세션 연결에 실패했습니다.",
         });
       } else {
-        onError?.({ 
-          type: 'GENERAL_ERROR',
-          message: `WebRTC 연결 중 오류가 발생했습니다: ${error.message || error}`
+        onError?.({
+          type: "GENERAL_ERROR",
+          message: `WebRTC 연결 중 오류가 발생했습니다: ${error.message}`,
         });
       }
-      
-      if (sessionContext.isActive) {
-        await sessionContext.cleanup();
+      // 정리
+      if (ctx.isActive) {
+        await ctx.cleanup();
         endCall();
       }
     }
-  }, [createSessionContext, getToken, startCall, userName, endCall, onError]);
+  }, [createSessionContext, getToken, startCall, endCall, onError, ambulanceId]);
 
+  // ──────────────────────────────────────────────────────────────────────────
   // 세션 종료 함수
   const leaveSession = useCallback(async () => {
     console.log("Leaving session...");
-    
-    const currentContext = sessionContextRef.current;
-    if (currentContext) {
-      await currentContext.cleanup();
+    const ctx = sessionContextRef.current;
+    if (ctx) {
+      await ctx.cleanup();
       endCall();
     }
-    
     sessionContextRef.current = null;
   }, [endCall]);
 
   return {
     joinSession,
     leaveSession,
-    sessionContext: sessionContextRef.current
+    sessionContext: sessionContextRef.current,
   };
 };
