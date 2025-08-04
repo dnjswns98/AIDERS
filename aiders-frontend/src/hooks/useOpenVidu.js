@@ -18,18 +18,20 @@ export const useOpenVidu = ({
   // 토큰 획득 함수
   const getToken = useCallback(
     async () => {
+      console.log("구급차 ID : ",ambulanceId)
       try {
-        if (ambulanceId !== null) {
-          // 구급차용 토큰 요청
-          const response = await createAmbulanceToken({
+        if (ambulanceId >= 0) {
+          const { token } = await createAmbulanceToken({
             sessionId,
             ambulanceId,
           });
-          return response.token;
+          return token;
         } else {
-          // 병원용 토큰 요청
-          const response = await getHospitalToken({ sessionId, hospitalId });
-          return response.token;
+          const { token } = await getHospitalToken({
+            sessionId,
+            hospitalId,
+          });
+          return token;
         }
       } catch (error) {
         console.error("Error getting token:", error);
@@ -37,7 +39,7 @@ export const useOpenVidu = ({
       }
     },
     // 의존성 배열에 모두 포함
-    [sessionId, ambulanceId, hospitalId, ktas, patientName]
+    [sessionId, ambulanceId, hospitalId]
   );
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -141,7 +143,7 @@ export const useOpenVidu = ({
 
       // 4) 세션 연결
       ctx.isConnecting = true;
-      await ctx.session.connect(token, { clientData: ambulanceId });
+      await ctx.session.connect(token, { clientData: `${ambulanceId}` });
       if (!ctx.isActive) {
         await ctx.cleanup();
         return;
@@ -206,7 +208,7 @@ export const useOpenVidu = ({
         endCall();
       }
     }
-  }, [createSessionContext, getToken, startCall, endCall, onError]);
+  }, [createSessionContext, getToken, startCall, endCall, onError, ambulanceId]);
 
   // ──────────────────────────────────────────────────────────────────────────
   // 세션 종료 함수
