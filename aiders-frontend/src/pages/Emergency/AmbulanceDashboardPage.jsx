@@ -1,11 +1,10 @@
-
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import AmbulanceLayout from '../../components/Emergency/Layout/AmbulanceLayout';
-import MapDisplay from '../../components/Emergency/MapDisplay';
-import WebRtcCall from '../../components/webRTC/WebRtcCall';
-import useEmergencyStore from '../../store/useEmergencyStore';
-import HospitalCard from '../../components/Emergency/HospitalCard';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import AmbulanceLayout from "../../components/Emergency/Layout/AmbulanceLayout";
+import MapDisplay from "../../components/Emergency/MapDisplay";
+import WebRtcCall from "../../components/webRTC/WebRtcCall";
+import useEmergencyStore from "../../store/useEmergencyStore";
+import HospitalCard from "../../components/Emergency/HospitalCard";
 
 export default function AmbulanceDashboardPage() {
   const navigate = useNavigate();
@@ -24,7 +23,7 @@ export default function AmbulanceDashboardPage() {
     const currentAmbulance = useEmergencyStore.getState().selectedAmbulance;
     // 이름 대신, 필수 정보인 KTAS 레벨 존재 여부로 수정 모드를 판단합니다.
     const isEdit = !!currentAmbulance?.patientDetails?.ktasLevel;
-    navigate('/emergency/patient-input', { state: { isEditMode: isEdit } });
+    navigate("/emergency/patient-input", { state: { isEditMode: isEdit } });
   };
 
   const handleStartCall = () => {
@@ -39,7 +38,9 @@ export default function AmbulanceDashboardPage() {
     return (
       <AmbulanceLayout>
         <div className="bg-white p-8 rounded-lg shadow-md text-center">
-          <h1 className="text-2xl font-bold mb-4">선택된 구급차 정보가 없습니다.</h1>
+          <h1 className="text-2xl font-bold mb-4">
+            선택된 구급차 정보가 없습니다.
+          </h1>
           <p>소방서 대시보드에서 구급차를 선택해주세요.</p>
         </div>
       </AmbulanceLayout>
@@ -64,11 +65,21 @@ export default function AmbulanceDashboardPage() {
               </button>
             </div>
             <div className="grid grid-cols-2 gap-4 text-gray-600">
-              <p><strong>이름:</strong> {patientInfo.name}</p>
-              <p><strong>성별:</strong> {patientInfo.gender}</p>
-              <p><strong>나이:</strong> {patientInfo.age}</p>
-              <p><strong>증상:</strong> {patientDetails.chiefComplaint}</p>
-              <p><strong>중증도:</strong> {patientDetails.ktasLevel}</p>
+              <p>
+                <strong>이름:</strong> {patientInfo.name}
+              </p>
+              <p>
+                <strong>성별:</strong> {patientInfo.gender}
+              </p>
+              <p>
+                <strong>나이:</strong> {patientInfo.age}
+              </p>
+              <p>
+                <strong>증상:</strong> {patientDetails.chiefComplaint}
+              </p>
+              <p>
+                <strong>중증도:</strong> {patientDetails.ktasLevel}
+              </p>
             </div>
           </div>
 
@@ -92,7 +103,9 @@ export default function AmbulanceDashboardPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-center text-gray-500">매칭된 병원 정보가 없습니다.</p>
+              <p className="text-center text-gray-500">
+                매칭된 병원 정보가 없습니다.
+              </p>
             )}
           </div>
 
@@ -110,9 +123,19 @@ export default function AmbulanceDashboardPage() {
             </div>
             <div className="flex-grow bg-gray-200 rounded-lg flex items-center justify-center min-h-[300px]">
               {isCalling ? (
-                <WebRtcCall sessionName="hospital-call" userName="ambulance-user" onLeave={handleEndCall} />
+                <WebRtcCall
+                  sessionId={'ambulance-call'}
+                  userName={`ambulance-${selectedAmbulance.id}`}
+                  onLeave={handleEndCall}
+                  ambulanceId={selectedAmbulance.id}
+                  patientName={patientInfo.name}
+                  ktas={patientDetails.ktasLevel}
+                  hospitalId={hospitals.length > 0 ? hospitals[0].id : 0}
+                />
               ) : (
-                <p className="text-center text-gray-500">통화 시작 버튼을 눌러 화상 통화를 시작하세요.</p>
+                <p className="text-center text-gray-500">
+                  통화 시작 버튼을 눌러 화상 통화를 시작하세요.
+                </p>
               )}
             </div>
           </div>

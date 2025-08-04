@@ -7,14 +7,14 @@ import { useFullScreen } from "../../hooks/useFullScreen";
 import VideoDisplay from "./VideoDisplay";
 import CallControls from "./CallControls";
 
-export default function WebRtcCall({ sessionName, userName, onLeave }) {
+export default function WebRtcCall({ sessionId, ambulanceId, onLeave }) {
   const { togglePipMode } = useWebRtc();
   const location = useLocation();
   
   // 커스텀 훅들로 로직 완전 분리
   const { joinSession, leaveSession } = useOpenVidu({ 
-    sessionName, 
-    userName,
+    sessionId, 
+    ambulanceId,
     onError: (error) => {
       alert(error.message);
     }

@@ -22,7 +22,7 @@ const useEmergencyStore = create((set, get) => ({
 
       // 로그인된 구급차의 환자 정보를 가져옵니다.
       const patientData = await getPatientInfo();
-      console.log('patientData from getPatientInfo:', patientData);
+      // console.log('patientData from getPatientInfo:', patientData);
 
       // 가져온 환자 정보를 기반으로 selectedAmbulance 객체를 구성합니다.
       // 구급차의 ID는 userKey를 사용하고, carNumber는 userKey가 carNumber라고 가정합니다.

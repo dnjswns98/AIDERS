@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = '/api/v1';
 
 // Ambulance API
 
@@ -89,21 +89,44 @@ export const updateHospitalDepartment = async (departmentUpdate) => {
   }
 };
 
-// OpenVidu API
+
+
 export const createAmbulanceToken = async (request) => {
   try {
-    // const response = await axios.post(`${API_BASE_URL}/video-call/ambulance/token`, request);
-    const response = await axios.post(`http://localhost:8080/api/video-call/ambulance/token`, request);
+    // 데이터 검증 및 변환
+    const sanitizedRequest = {
+      sessionId: request.sessionId ||  '', 
+      ambulanceId: Number(request.ambulanceId) || 0,
+      hospitalId: Number(request.hospitalId) || 0,
+      ktas: Number(request.ktas) || 0,
+      patientName: request.patientName || ''
+    };
+
+    console.log('전송할 데이터:', sanitizedRequest);
+    
+    const response = await axios.post(
+      // const response = await axios.post(`${API_BASE_URL}/video-call/ambulance/token`, request);
+      `http://localhost:8080/api/video-call/ambulance/token`, 
+      sanitizedRequest,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
     return response.data;
   } catch (error) {
-    console.error('Error creating ambulance token:', error);
+    console.error('서버 응답:', error.response?.data);
+    console.error('상태 코드:', error.response?.status);
     throw error;
   }
 };
 
-export const getHospitalToken = async (sessionId) => {
+
+
+export const getHospitalToken = async (sessionId, hospitalId) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/video-call/hospital/token`, { params: { sessionId } });
+    const response = await axios.get(`http://localhost:8080/api/video-call/hospital/token`, { params: { sessionId,hospitalId } });
     return response.data;
   } catch (error) {
     console.error('Error getting hospital token:', error);
@@ -113,7 +136,7 @@ export const getHospitalToken = async (sessionId) => {
 
 export const startVideoCall = async (request) => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/video-call/start-call`, request);
+    const response = await axios.put(`http://localhost:8080/api/video-call/start-call`, request);
     return response.data;
   } catch (error) {
     console.error('Error starting video call:', error);
@@ -123,7 +146,7 @@ export const startVideoCall = async (request) => {
 
 export const endVideoCall = async (request) => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/video-call/end-call`, request);
+    const response = await axios.put(`http://localhost:8080/api/video-call/end-call`, request);
     return response.data;
   } catch (error) {
     console.error('Error ending video call:', error);
@@ -133,7 +156,7 @@ export const endVideoCall = async (request) => {
 
 export const completeTransport = async (sessionId, hospitalId) => {
   try {
-    const response = await axios.delete(`${API_BASE_URL}/video-call/session/${sessionId}/complete`, { params: { hospitalId } });
+    const response = await axios.delete(`http://localhost:8080/api/video-call/session/${sessionId}/complete`, { params: { hospitalId } });
     return response.data;
   } catch (error) {
     console.error('Error completing transport:', error);
