@@ -61,5 +61,9 @@ public abstract class User {
     public String getRole() {
       return this.role;
     }
+
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
 }
 

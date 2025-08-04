@@ -85,5 +85,47 @@ public class JwtProvider {
                         .parseClaimsJws(token)
                         .getBody().getSubject());
     }
+
+    // 1. 임시(비밀번호 재설정) 토큰 발급
+    public String generatePasswordResetToken(String userKey) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + 10 * 60 * 1000); // 10분
+        return Jwts.builder()
+                .setSubject("PASSWORD_RESET")
+                .claim("userKey", userKey)
+                .claim("tokenType", "PASSWORD_RESET")
+                .setIssuedAt(now)
+                .setExpiration(expiry)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    // 2. userKey 추출 + 타입 검증
+    public String getUserKeyFromPasswordResetToken(String token) {
+        var claims = Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        String tokenType = claims.get("tokenType", String.class);
+        if (!"PASSWORD_RESET".equals(tokenType)) {
+            throw new IllegalArgumentException("비밀번호 재설정 토큰이 아닙니다.");
+        }
+        return claims.get("userKey", String.class);
+    }
+
+    // 3. 토큰 타입 검증 메서드 (선택)
+    public boolean isPasswordResetToken(String token) {
+        try {
+            var claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            return "PASSWORD_RESET".equals(claims.get("tokenType", String.class));
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }
 
