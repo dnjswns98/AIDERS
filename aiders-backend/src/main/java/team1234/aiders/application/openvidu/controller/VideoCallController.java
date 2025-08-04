@@ -15,7 +15,7 @@ import team1234.aiders.application.openvidu.service.OpenViduService;
 import team1234.aiders.redis.service.RedisService;
 
 @RestController
-@RequestMapping("/api/v1/video-call") // 추후 수정
+@RequestMapping("/api/v1/video-call")
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")
