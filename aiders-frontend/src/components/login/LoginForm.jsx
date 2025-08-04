@@ -57,13 +57,13 @@ export default function LoginForm() {
       };
 
       // userKey 패턴으로 역할 판단
-      let userType = "user";
-      if (username.startsWith("AMB-")) {
-        userType = "ambulance";
-      } else if (username.startsWith("A")) {
-        userType = "hospital";
-      } else if (/^\d+$/.test(username)) {
-        userType = "firestation";
+      let userType = 'user';
+      if (username.startsWith('A')) {
+        userType = 'hospital';
+      } else if (/[가-힣]/.test(username)) {
+        userType = 'ambulance';
+      } else if (/^\d{7}$/.test(username)) {
+        userType = 'firestation';
       }
 
       login({
@@ -138,12 +138,10 @@ export default function LoginForm() {
         <div className="login-test-account-info">
           <div className="login-test-account-title">테스트 계정</div>
           <div className="login-test-account-details">
-            <div>👮 관리자: admin / admin123</div>
-            <div>🚒 소방서: 1 / b18eb822-485c-4963-910f-ba26c1aa9d49</div>
+            <div>👮 관리자: admin / admin</div>
+            <div>🚒 소방서: 6110582 / f63f9527-a468-4fcb-bf4c-836a3313ecd6</div>
             <div>🏥 병원: A1700023 / ad567afe-ce4c-445e-8538-4bddcdca2bff</div>
-            <div>
-              🚑 구급차: AMB-1fa26dce / 3c82e08e-5d64-4476-b0b0-c21650b9fac1
-            </div>
+            <div>🚑 구급차: 998버4200 / 8dedb374-c0d8-4525-85ad-e48d4372bc0d</div>
           </div>
         </div>
 
