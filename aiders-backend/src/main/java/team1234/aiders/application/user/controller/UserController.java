@@ -13,7 +13,9 @@ import team1234.aiders.application.user.dto.ambulance.AmbulanceRegistRequestDto;
 import team1234.aiders.application.user.dto.UserRegistResponseDto;
 import team1234.aiders.application.user.dto.organization.OrganizationRegisterRequestDto;
 import team1234.aiders.application.user.dto.password.PasswordResetAuthRequestDto;
+import team1234.aiders.application.user.dto.password.PasswordResetTokenResponseDto;
 import team1234.aiders.application.user.service.UserService;
+import team1234.aiders.common.jwt.JwtProvider;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,6 +23,7 @@ import team1234.aiders.application.user.service.UserService;
 public class UserController {
 
     private final UserService userService;
+    private final JwtProvider jwtProvider;
 
     @GetMapping("/")
     @PreAuthorize("hasRole('ADMIN')")
@@ -47,12 +50,11 @@ public class UserController {
     }
 
     @PostMapping("/password/auth")
-    public ResponseEntity<Void> authenticateForPasswordReset(@RequestBody PasswordResetAuthRequestDto request) {
-        boolean authenticated = userService.authenticateForPasswordReset(request);
-        if (!authenticated) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        return ResponseEntity.ok().build();
+    public ResponseEntity<PasswordResetTokenResponseDto> authenticateForPasswordReset(@RequestBody PasswordResetAuthRequestDto request) {
+        userService.authenticateForPasswordReset(request);
+
+        String resetToken = jwtProvider.generatePasswordResetToken(request.getUserKey());
+        return ResponseEntity.ok(new PasswordResetTokenResponseDto(resetToken));
     }
 
     @DeleteMapping("/{userId}")

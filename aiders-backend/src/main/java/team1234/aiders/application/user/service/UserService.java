@@ -65,8 +65,11 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public Boolean authenticateForPasswordReset(PasswordResetAuthRequestDto request) {
-        return userRepository.findByUserKeyAndPasswordResetKey(request.getUserKey(), request.getPasswordResetKey()).isPresent();
+    public void authenticateForPasswordReset(PasswordResetAuthRequestDto request) {
+        boolean exists = userRepository.findByUserKeyAndPasswordResetKey(request.getUserKey(), request.getPasswordResetKey()).isPresent();
+        if (!exists) {
+            throw new IllegalArgumentException("인증 정보가 일치하지 않습니다.");
+        }
     }
 
     public void deleteUser(Long id) {
