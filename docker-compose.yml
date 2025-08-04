@@ -4,7 +4,7 @@ services:
     image: redis:7-alpine
     container_name: aiders-redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT}:6379"
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
@@ -17,10 +17,10 @@ services:
     image: mysql:8.0
     container_name: aiders-mysql
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT}:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=1234
-      - MYSQL_DATABASE=mydb
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -32,9 +32,9 @@ services:
     image: openvidu/openvidu-dev:2.31.0
     container_name: aiders-openvidu
     ports:
-      - "4443:4443"
+      - "${OPENVIDU_PORT}:4443"
     environment:
-      - OPENVIDU_SECRET=MY_SECRET
+      - OPENVIDU_SECRET=${OPENVIDU_SECRET}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
@@ -46,7 +46,7 @@ services:
     build: ./aiders-backend
     container_name: aiders-backend
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT}:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/mydb?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&zeroDateTimeBehavior=convertToNull&rewriteBatchedStatements=true
@@ -69,7 +69,7 @@ services:
     build: ./aiders-frontend
     container_name: aiders-frontend
     ports:
-      - "3000:5173"
+      - "${FRONTEND_PORT}:${FRONTEND_INTERNAL_PORT}"
     command: sh -c "cd /app && npm run dev -- --host 0.0.0.0"
     depends_on:
       - aiders-app
