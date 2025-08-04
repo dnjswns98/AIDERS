@@ -25,6 +25,10 @@ public class AlarmController {
 
     @MessageMapping("/alarm/send")
     public void sendAlarm(AlarmMessage alarmMessage){
+        if (alarmMessage.getCreatedAt() == null) {
+            alarmMessage.setCreatedAt(LocalDateTime.now());
+        }
+
         // DB에 저장
         alarmService.saveAlarm(alarmMessage);
 
@@ -36,6 +40,10 @@ public class AlarmController {
     @PostMapping("/send")
     @Operation(summary = "알림 생성 및 WebSocket 전송 test api")
     public ResponseEntity<String> saveAndSendAlarm(@RequestBody AlarmMessage alarmMessage) {
+        if (alarmMessage.getCreatedAt() == null) {
+            alarmMessage.setCreatedAt(LocalDateTime.now());
+        }
+
         alarmService.saveAlarm(alarmMessage);
         String destination = "/topic/alarm/" + alarmService.getHospitalIdByAmbulanceKey(alarmMessage.getAmbulanceKey());
         messagingTemplate.convertAndSend(destination, alarmMessage);
