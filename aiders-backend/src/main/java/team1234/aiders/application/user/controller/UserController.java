@@ -12,6 +12,7 @@ import team1234.aiders.application.user.dto.UserResponseDto;
 import team1234.aiders.application.user.dto.ambulance.AmbulanceRegistRequestDto;
 import team1234.aiders.application.user.dto.UserRegistResponseDto;
 import team1234.aiders.application.user.dto.organization.OrganizationRegisterRequestDto;
+import team1234.aiders.application.user.dto.password.PasswordChangeRequestDto;
 import team1234.aiders.application.user.dto.password.PasswordResetAuthRequestDto;
 import team1234.aiders.application.user.dto.password.PasswordResetTokenResponseDto;
 import team1234.aiders.application.user.service.UserService;
@@ -55,6 +56,14 @@ public class UserController {
 
         String resetToken = jwtProvider.generatePasswordResetToken(request.getUserKey());
         return ResponseEntity.ok(new PasswordResetTokenResponseDto(resetToken));
+    }
+
+    @PostMapping("/password/change")
+    public ResponseEntity<Void> changePassword(@RequestBody PasswordChangeRequestDto request) {
+        String userKey = jwtProvider.getUserKeyFromPasswordResetToken(request.getResetToken());
+
+        userService.changePassword(userKey, request.getNewPassword());
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{userId}")

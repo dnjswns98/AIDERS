@@ -18,7 +18,9 @@ import team1234.aiders.application.user.dto.UserResponseDto;
 import team1234.aiders.application.user.dto.ambulance.AmbulanceRegistRequestDto;
 import team1234.aiders.application.user.dto.UserRegistResponseDto;
 import team1234.aiders.application.user.dto.organization.OrganizationRegisterRequestDto;
+import team1234.aiders.application.user.dto.password.PasswordChangeRequestDto;
 import team1234.aiders.application.user.dto.password.PasswordResetAuthRequestDto;
+import team1234.aiders.application.user.entity.User;
 import team1234.aiders.application.user.repository.UserRepository;
 
 import java.util.UUID;
@@ -70,6 +72,12 @@ public class UserService {
         if (!exists) {
             throw new IllegalArgumentException("인증 정보가 일치하지 않습니다.");
         }
+    }
+
+    public void changePassword(String userKey, String newPassword) {
+        User user = userRepository.findByUserKey(userKey)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        user.changePassword(passwordEncoder.encode(newPassword));;
     }
 
     public void deleteUser(Long id) {
