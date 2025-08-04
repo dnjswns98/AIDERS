@@ -97,7 +97,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "https://localhost:5173", "http://localhost:8080", "https://localhost:8080"));
+        config.setAllowedOrigins(List.of("http://localhost:5173", "https://localhost:5173", "http://localhost:8080", "https://localhost:8080", "https://i13d107.p.ssafy.io"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization", "SET_COOKIE"));
