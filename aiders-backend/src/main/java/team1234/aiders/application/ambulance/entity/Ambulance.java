@@ -2,6 +2,7 @@ package team1234.aiders.application.ambulance.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import team1234.aiders.application.ambulance.dto.PatientOptionalInfoRequestDto;
@@ -60,6 +61,18 @@ public class Ambulance extends User {
 
     private String hospitalName;
     private String hospitalAddress;
+
+    @Builder
+    public Ambulance(
+            String userKey,
+            String role,
+            String password,
+            String passwordResetKey,
+            Firestation firestation
+    ) {
+        super(userKey, role, password, passwordResetKey);
+        this.firestation = firestation;
+    }
 
     public void updateRequiredPatientInfo(PatientRequiredInfoRequestDto dto) {
         this.pKtas = dto.getKtas();

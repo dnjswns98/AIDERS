@@ -25,6 +25,6 @@ public class Firestation extends User {
     @Column(nullable = false)
     private String address;
 
-    @Column(nullable = false)
+    @Column(unique = true, nullable = false)
     private String name;
 }
