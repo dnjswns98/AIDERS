@@ -1,5 +1,7 @@
+// src/pages/Emergency/AmbulanceDashboardPage.jsx
+
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import AmbulanceLayout from "../../components/Emergency/Layout/AmbulanceLayout";
 import MapDisplay from "../../components/Emergency/MapDisplay";
 import WebRtcCall from "../../components/webRTC/WebRtcCall";
@@ -8,6 +10,9 @@ import HospitalCard from "../../components/Emergency/HospitalCard";
 
 export default function AmbulanceDashboardPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state || {};
+
   const { selectedAmbulance, fetchAmbulances } = useEmergencyStore();
   const [isCalling, setIsCalling] = useState(false);
 
@@ -15,50 +20,68 @@ export default function AmbulanceDashboardPage() {
     fetchAmbulances();
   }, [fetchAmbulances]);
 
-  // 이 페이지에서는 더 이상 병원 목록을 직접 관리하지 않습니다.
-  // 필요하다면 useEmergencyStore에서 가져옵니다.
-  const hospitals = []; // 예시 데이터, 실제로는 스토어나 API에서 가져와야 합니다.
+  // 환자 정보는 navigation state(formData) → Zustand → 빈 객체 우선순위로 가져옴
+  const patientFromState = state.formData;
+  const patient =
+    patientFromState || selectedAmbulance?.patientInfo || {};
+  const details = patientFromState
+    ? {
+        ktasLevel: patientFromState.ktasLevel || "-",
+        chiefComplaint: patientFromState.chiefComplaint || "-",
+        treatmentDetails: patientFromState.treatmentDetails || "-",
+        familyHistory: patientFromState.familyHistory || {},
+        pastHistory: patientFromState.pastHistory || {},
+        vitalSigns: patientFromState.vitalSigns || {},
+        medications: patientFromState.medications || [],
+        department: patientFromState.department || "-",
+        ageRange: patientFromState.ageRange || "-"
+      }
+    : selectedAmbulance?.patientDetails || {};
 
-  const handleModifyPatientInfo = () => {
-    const currentAmbulance = useEmergencyStore.getState().selectedAmbulance;
-    // 이름 대신, 필수 정보인 KTAS 레벨 존재 여부로 수정 모드를 판단합니다.
-    const isEdit = !!currentAmbulance?.patientDetails?.ktasLevel;
-    navigate("/emergency/patient-input", { state: { isEditMode: isEdit } });
+  const hospitals = []; // 실제 병원 데이터 사용 시 API 등으로 대체
+
+  const handleModify = () => {
+    if (!selectedAmbulance) return;
+    const formData = {
+      ...selectedAmbulance.patientInfo,
+      ...selectedAmbulance.patientDetails,
+      medications:
+        selectedAmbulance.patientDetails?.medications
+          ?.map((m) => m.name)
+          .join(", ") || "",
+      familyHistory:
+        selectedAmbulance.patientDetails?.familyHistory?.father || "",
+      pastHistory:
+        selectedAmbulance.patientDetails?.pastHistory?.hypertension || ""
+    };
+    navigate("/emergency/patient-input", {
+      state: { isEditMode: true, formData }
+    });
   };
 
-  const handleStartCall = () => {
-    setIsCalling(true);
-  };
+  const handleCallStart = () => setIsCalling(true);
+  const handleCallEnd = () => setIsCalling(false);
 
-  const handleEndCall = () => {
-    setIsCalling(false);
-  };
-
-  if (!selectedAmbulance) {
+  if (!selectedAmbulance && !patientFromState) {
     return (
       <AmbulanceLayout>
         <div className="bg-white p-8 rounded-lg shadow-md text-center">
-          <h1 className="text-2xl font-bold mb-4">
-            선택된 구급차 정보가 없습니다.
-          </h1>
+          <h1 className="text-2xl font-bold mb-4">선택된 구급차 정보가 없습니다.</h1>
           <p>소방서 대시보드에서 구급차를 선택해주세요.</p>
         </div>
       </AmbulanceLayout>
     );
   }
 
-  const { patientInfo, patientDetails } = selectedAmbulance;
-
   return (
     <AmbulanceLayout>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column */}
         <div className="flex flex-col gap-6">
           <div className="bg-white p-6 rounded-lg shadow-md">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-800">환자 정보</h2>
               <button
-                onClick={handleModifyPatientInfo}
+                onClick={handleModify}
                 className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
               >
                 수정
@@ -66,19 +89,19 @@ export default function AmbulanceDashboardPage() {
             </div>
             <div className="grid grid-cols-2 gap-4 text-gray-600">
               <p>
-                <strong>이름:</strong> {patientInfo.name}
+                <strong>이름:</strong> {patient.name || "-"}
               </p>
               <p>
-                <strong>성별:</strong> {patientInfo.gender}
+                <strong>성별:</strong> {patient.gender || "-"}
               </p>
               <p>
-                <strong>나이:</strong> {patientInfo.age}
+                <strong>나이:</strong> {patient.age || "-"}
               </p>
               <p>
-                <strong>증상:</strong> {patientDetails.chiefComplaint}
+                <strong>증상:</strong> {details.chiefComplaint || "-"}
               </p>
               <p>
-                <strong>중증도:</strong> {patientDetails.ktasLevel}
+                <strong>중증도:</strong> {details.ktasLevel || "-"}
               </p>
             </div>
           </div>
@@ -86,13 +109,17 @@ export default function AmbulanceDashboardPage() {
           <div className="bg-white p-6 rounded-lg shadow-md flex-grow flex flex-col">
             <h2 className="text-xl font-bold text-gray-800 mb-4">지도</h2>
             <div className="flex-grow h-96 lg:h-auto">
-              {/* 지도 컴포넌트 - 병원 위치 또는 구급차 위치 표시 */}
-              {hospitals.length > 0 && <MapDisplay hospital={hospitals[0]} />}
+              {hospitals.length > 0 ? (
+                <MapDisplay hospital={hospitals[0]} />
+              ) : (
+                <p className="text-center text-gray-500">
+                  병원 위치 정보가 없습니다.
+                </p>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Right Column */}
         <div className="flex flex-col gap-6">
           <div className="bg-white p-6 rounded-lg shadow-md flex-grow flex flex-col">
             <h2 className="text-xl font-bold text-gray-800 mb-4">병원 정보</h2>
@@ -114,7 +141,7 @@ export default function AmbulanceDashboardPage() {
               <h2 className="text-xl font-bold text-gray-800">화상 통화</h2>
               {!isCalling && (
                 <button
-                  onClick={handleStartCall}
+                  onClick={handleCallStart}
                   className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
                 >
                   통화 시작
@@ -124,12 +151,12 @@ export default function AmbulanceDashboardPage() {
             <div className="flex-grow bg-gray-200 rounded-lg flex items-center justify-center min-h-[300px]">
               {isCalling ? (
                 <WebRtcCall
-                  sessionId={'ambulance-call'}
-                  userName={`ambulance-${selectedAmbulance.id}`}
-                  onLeave={handleEndCall}
-                  ambulanceId={selectedAmbulance.id}
-                  patientName={patientInfo.name}
-                  ktas={patientDetails.ktasLevel}
+                  sessionId={"ambulance-call"}
+                  userName={`ambulance-${selectedAmbulance?.id || "unknown"}`}
+                  onLeave={handleCallEnd}
+                  ambulanceId={selectedAmbulance?.id || 0}
+                  patientName={patient.name || ""}
+                  ktas={details.ktasLevel || ""}
                   hospitalId={hospitals.length > 0 ? hospitals[0].id : 0}
                 />
               ) : (
