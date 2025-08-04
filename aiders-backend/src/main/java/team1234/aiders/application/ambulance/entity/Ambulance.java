@@ -94,6 +94,12 @@ public class Ambulance extends User {
         dto.getVitalSigns().ifPresent(v -> this.pVitalSigns = v);
     }
 
+    public void dispatchPatientInfo(Double latitude, Double longitude, String address, String condition) {
+        this.pLatitude = latitude;
+        this.pLongitude = longitude;
+        this.pAddress = address;
+        this.pCondition = condition;
+    }
 
     public void changeStatus(AmbCurrentStatus status) {
         this.currentStatus = status;
