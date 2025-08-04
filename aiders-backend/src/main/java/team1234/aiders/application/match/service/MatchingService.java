@@ -9,7 +9,9 @@ import team1234.aiders.application.hospital.dto.HospitalData;
 import team1234.aiders.application.hospital.entity.Hospital;
 import team1234.aiders.application.hospital.repository.HospitalRepository;
 import team1234.aiders.application.match.dto.MatchingCondition;
+import team1234.aiders.common.util.DistanceUtils;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -19,6 +21,9 @@ public class MatchingService {
 
     private final AmbulanceRepository ambulanceRepository;
     private final HospitalRepository hospitalRepository;
+    private final DistanceUtils distanceUtils;
+
+    record ScoredHospitalData(HospitalData data, double distance) {}
 
     public Hospital autoMatch(Long ambulanceId, double ambLat, double ambLng) {
 
@@ -38,6 +43,15 @@ public class MatchingService {
         if (hospitalDataList.isEmpty()) {
             throw new IllegalStateException("조건에 맞는 병원이 없습니다.");
         }
+
+        // 거리 기준 상위 10개 병원만 필터링
+        List<ScoredHospitalData> nearestHospitals = hospitalDataList.stream()
+                .map(h -> new ScoredHospitalData(
+                        h,
+                        distanceUtils.calculateDistance(ambLat, ambLng, h.getHospital().getLatitude(), h.getHospital().getLongitude())))
+                .sorted(Comparator.comparingDouble(ScoredHospitalData::distance)) // 거리 기준 정렬
+                .limit(10)
+                .toList();
 
         return null;
     }
