@@ -73,6 +73,7 @@ public class DispatchService {
                     .orElseThrow(() -> new IllegalArgumentException("ambulance not found"));
 
             ambulance.changeStatus(AmbCurrentStatus.DISPATCH);
+            ambulance.dispatchPatientInfo(history.getPLatitude(), history.getPLongitude(), history.getPAddress(), history.getPCondition());
 
             Dispatch dispatch = new Dispatch(ambulance, history);
             dispatchRepository.save(dispatch);
