@@ -26,6 +26,12 @@ public class HospitalController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/location/{userId}")
+    public ResponseEntity<HospitalLocationResponseDto> getHospitalLocationByUserId(@PathVariable Long userId) {
+        HospitalLocationResponseDto response = hospitalService.getHospitalLocationByUserId(userId);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/department")
     public ResponseEntity<DepartmentResponseDto> getDepartments(@AuthenticationPrincipal CustomUserDetails user) {
         DepartmentResponseDto response = hospitalService.getDepartmentStatus(user);

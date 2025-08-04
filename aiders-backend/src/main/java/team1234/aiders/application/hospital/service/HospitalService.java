@@ -36,6 +36,14 @@ public class HospitalService {
     }
 
     @Transactional(readOnly = true)
+    public HospitalLocationResponseDto getHospitalLocationByUserId(Long userId) {
+        Hospital hospital = hospitalRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("찾는 병원이 없습니다."));
+
+        return HospitalLocationResponseDto.fromEntity(hospital);
+    }
+
+    @Transactional(readOnly = true)
     public DepartmentResponseDto getDepartmentStatus(CustomUserDetails user) {
         HospitalDepartment department = findDepartmentByUser(user);
         return DepartmentResponseDto.fromEntity(department);
