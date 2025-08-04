@@ -4,7 +4,7 @@ services:
     image: redis:7-alpine
     container_name: aiders-redis
     ports:
-      - "${REDIS_PORT}:6379"
+      - ${REDIS_PORT}:6379
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
@@ -17,7 +17,7 @@ services:
     image: mysql:8.0
     container_name: aiders-mysql
     ports:
-      - "${MYSQL_PORT}:3306"
+      - ${MYSQL_PORT}:3306
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - MYSQL_DATABASE=${MYSQL_DATABASE}
@@ -32,7 +32,7 @@ services:
     image: openvidu/openvidu-dev:2.31.0
     container_name: aiders-openvidu
     ports:
-      - "${OPENVIDU_PORT}:4443"
+      - ${OPENVIDU_PORT}:4443
     environment:
       - OPENVIDU_SECRET=${OPENVIDU_SECRET}
     volumes:
@@ -46,13 +46,13 @@ services:
     build: ./aiders-backend
     container_name: aiders-backend
     ports:
-      - "${BACKEND_PORT}:8080"
+      - ${BACKEND_PORT}:8080
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/mydb?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&zeroDateTimeBehavior=convertToNull&rewriteBatchedStatements=true
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&zeroDateTimeBehavior=convertToNull&rewriteBatchedStatements=true
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=1234
-      - OPENVIDU_SECRET=MY_SECRET
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - OPENVIDU_SECRET=${OPENVIDU_SECRET}
     depends_on:
       mysql:
         condition: service_started
@@ -69,7 +69,7 @@ services:
     build: ./aiders-frontend
     container_name: aiders-frontend
     ports:
-      - "${FRONTEND_PORT}:${FRONTEND_INTERNAL_PORT}"
+      - ${FRONTEND_PORT}:${FRONTEND_INTERNAL_PORT}
     command: sh -c "cd /app && npm run dev -- --host 0.0.0.0"
     depends_on:
       - aiders-app
