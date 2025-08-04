@@ -14,4 +14,6 @@ public interface UserRepository extends JpaRepository<User, Long>, CustomUserRep
     @Modifying(clearAutomatically = true)
     @Query("update User u set u.isDeleted = true where u.id = :id")
     void softDeleteById(@Param("id") Long id);
+
+    Optional<User> findByUserKeyAndPasswordResetKey(String userKey, String passwordResetKey);
 }

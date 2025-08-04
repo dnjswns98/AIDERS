@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -11,6 +12,7 @@ import team1234.aiders.application.user.dto.UserResponseDto;
 import team1234.aiders.application.user.dto.ambulance.AmbulanceRegistRequestDto;
 import team1234.aiders.application.user.dto.UserRegistResponseDto;
 import team1234.aiders.application.user.dto.organization.OrganizationRegisterRequestDto;
+import team1234.aiders.application.user.dto.password.PasswordResetAuthRequestDto;
 import team1234.aiders.application.user.service.UserService;
 
 @RestController
@@ -39,6 +41,15 @@ public class UserController {
     @PostMapping("/regist/organization")
     public ResponseEntity<UserRegistResponseDto> registOrganization(@RequestBody OrganizationRegisterRequestDto request) {
         userService.registOrganization(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/password/auth")
+    public ResponseEntity<Void> authenticateForPasswordReset(@RequestBody PasswordResetAuthRequestDto request) {
+        boolean authenticated = userService.authenticateForPasswordReset(request);
+        if (!authenticated) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         return ResponseEntity.ok().build();
     }
 

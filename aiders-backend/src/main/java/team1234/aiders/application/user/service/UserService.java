@@ -18,6 +18,7 @@ import team1234.aiders.application.user.dto.UserResponseDto;
 import team1234.aiders.application.user.dto.ambulance.AmbulanceRegistRequestDto;
 import team1234.aiders.application.user.dto.UserRegistResponseDto;
 import team1234.aiders.application.user.dto.organization.OrganizationRegisterRequestDto;
+import team1234.aiders.application.user.dto.password.PasswordResetAuthRequestDto;
 import team1234.aiders.application.user.repository.UserRepository;
 
 import java.util.UUID;
@@ -61,6 +62,11 @@ public class UserService {
             hospitalRepository.save(hospital);
         }
         return new UserRegistResponseDto(passwordInfo.getRawPassword(), passwordInfo.getResetKey());
+    }
+
+    @Transactional(readOnly = true)
+    public Boolean authenticateForPasswordReset(PasswordResetAuthRequestDto request) {
+        return userRepository.findByUserKeyAndPasswordResetKey(request.getUserKey(), request.getPasswordResetKey()).isPresent();
     }
 
     public void deleteUser(Long id) {
