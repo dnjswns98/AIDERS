@@ -9,7 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import team1234.aiders.application.user.dto.UserResponseDto;
 import team1234.aiders.application.user.dto.ambulance.AmbulanceRegistRequestDto;
-import team1234.aiders.application.user.dto.ambulance.AmbulanceRegistResponseDto;
+import team1234.aiders.application.user.dto.UserRegistResponseDto;
 import team1234.aiders.application.user.service.UserService;
 
 @RestController
@@ -30,7 +30,7 @@ public class UserController {
     }
 
     @PostMapping("/regist/ambulance")
-    public ResponseEntity<AmbulanceRegistResponseDto> registerAmbulance(@RequestBody AmbulanceRegistRequestDto request) {
+    public ResponseEntity<UserRegistResponseDto> registerAmbulance(@RequestBody AmbulanceRegistRequestDto request) {
         userService.registAmbulance(request);
         return ResponseEntity.ok().build();
     }

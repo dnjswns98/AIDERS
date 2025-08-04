@@ -14,7 +14,7 @@ import team1234.aiders.application.firestation.entity.Firestation;
 import team1234.aiders.application.firestation.repository.FirestationRepository;
 import team1234.aiders.application.user.dto.UserResponseDto;
 import team1234.aiders.application.user.dto.ambulance.AmbulanceRegistRequestDto;
-import team1234.aiders.application.user.dto.ambulance.AmbulanceRegistResponseDto;
+import team1234.aiders.application.user.dto.UserRegistResponseDto;
 import team1234.aiders.application.user.repository.UserRepository;
 
 import java.util.UUID;
@@ -34,7 +34,7 @@ public class UserService {
         return userRepository.searchUsers(pageable, search, role);
     }
 
-    public AmbulanceRegistResponseDto registAmbulance(AmbulanceRegistRequestDto request) {
+    public UserRegistResponseDto registAmbulance(AmbulanceRegistRequestDto request) {
         Firestation firestation = findFirestation(request);
 
         PasswordInfo passwordInfo = generatePasswordInfo();
@@ -42,7 +42,7 @@ public class UserService {
         Ambulance ambulance = createAmbulance(request, firestation, passwordInfo);
         ambulanceRepository.save(ambulance);
 
-        return new AmbulanceRegistResponseDto(passwordInfo.getRawPassword(), passwordInfo.getResetKey());
+        return new UserRegistResponseDto(passwordInfo.getRawPassword(), passwordInfo.getResetKey());
     }
 
     public void deleteUser(Long id) {
