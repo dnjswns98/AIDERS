@@ -8,6 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import team1234.aiders.application.user.dto.UserResponseDto;
+import team1234.aiders.application.user.dto.ambulance.AmbulanceRegistRequestDto;
+import team1234.aiders.application.user.dto.UserRegistResponseDto;
+import team1234.aiders.application.user.dto.organization.OrganizationRegisterRequestDto;
 import team1234.aiders.application.user.service.UserService;
 
 @RestController
@@ -25,6 +28,18 @@ public class UserController {
             @RequestParam(required = false) String role) {
         Page<UserResponseDto> result = userService.getUsers(pageable, search, role);
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/regist/ambulance")
+    public ResponseEntity<UserRegistResponseDto> registerAmbulance(@RequestBody AmbulanceRegistRequestDto request) {
+        userService.registAmbulance(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/regist/organization")
+    public ResponseEntity<UserRegistResponseDto> registOrganization(@RequestBody OrganizationRegisterRequestDto request) {
+        userService.registOrganization(request);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{userId}")
