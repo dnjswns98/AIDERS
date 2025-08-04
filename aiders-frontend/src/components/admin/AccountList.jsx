@@ -1,24 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAccountStore } from "../../store/useAccountStore";
 import DeleteModal from "./DeleteModal";
 
 import './accountList.css';
 
 export default function AccountList() {
-  const { accounts } = useAccountStore();
+  const { accounts, loading, error, fetchAccounts, deleteAccount } = useAccountStore();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState(null);
+
+  // 컴포넌트 마운트 시 사용자 목록 조회
+  useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
 
   const handleDeleteClick = (account) => {
     setAccountToDelete(account);
     setDeleteModalOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (accountToDelete) {
-      useAccountStore.getState().deleteAccount(accountToDelete.id);
-      setDeleteModalOpen(false);
-      setAccountToDelete(null);
+      try {
+        await deleteAccount(accountToDelete.id);
+        setDeleteModalOpen(false);
+        setAccountToDelete(null);
+      } catch (error) {
+        alert('사용자 삭제에 실패했습니다.');
+      }
     }
   };
 
@@ -34,14 +43,36 @@ export default function AccountList() {
       </div>
 
       <div className="account-list-body">
-        {accounts.length === 0 ? (
+        {loading ? (
           <div className="no-accounts-message">
-            <div className="no-accounts-icon">
-              📋
-            </div>
-            <h3 className="no-accounts-title">
-              등록된 계정이 없습니다
-            </h3>
+            <div className="no-accounts-icon">⏳</div>
+            <h3 className="no-accounts-title">로딩 중...</h3>
+            <p className="no-accounts-text">사용자 목록을 불러오고 있습니다.</p>
+          </div>
+        ) : error ? (
+          <div className="no-accounts-message">
+            <div className="no-accounts-icon">❌</div>
+            <h3 className="no-accounts-title">오류 발생</h3>
+            <p className="no-accounts-text">{error}</p>
+            <button 
+              onClick={() => fetchAccounts()}
+              style={{ 
+                marginTop: '10px', 
+                padding: '8px 16px', 
+                backgroundColor: '#3b82f6', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px', 
+                cursor: 'pointer' 
+              }}
+            >
+              다시 시도
+            </button>
+          </div>
+        ) : accounts.length === 0 ? (
+          <div className="no-accounts-message">
+            <div className="no-accounts-icon">📋</div>
+            <h3 className="no-accounts-title">등록된 계정이 없습니다</h3>
             <p className="no-accounts-text">새로운 계정을 생성해보세요.</p>
           </div>
         ) : (
@@ -49,21 +80,21 @@ export default function AccountList() {
             <table className="account-table">
               <thead>
                 <tr>
-                  <th>소속</th>
-                  <th>아이디</th>
-                  <th>상세정보</th>
-                  <th>임시 비밀번호</th>
-                  <th>패스키</th>
+                  <th>ID</th>
+                  <th>역할</th>
+                  <th>사용자 키</th>
+                  <th>생성일</th>
+                  <th>수정일</th>
                   <th>작업</th>
                 </tr>
               </thead>
               <tbody>
                 {accounts.map((account) => (
-                  <tr 
-                    key={account.id} 
-                  >
+                  <tr key={account.id}>
+                    <td>{account.id}</td>
                     <td className="account-type-cell">
                       <span className="account-type-icon-spacing">
+                        {account.type === "관리자" && "👨‍💼"}
                         {account.type === "병원" && "🏥"}
                         {account.type === "구급대원" && "🚑"}
                         {account.type === "소방서" && "🚒"}
@@ -73,29 +104,11 @@ export default function AccountList() {
                     <td className="account-id-cell">
                       {account.accountId}
                     </td>
-                    <td className="account-detail-cell">
-                      {account.address && (
-                        <div className="account-detail-item">
-                          <span className="account-detail-label">주소: </span>
-                          {account.address}
-                        </div>
-                      )}
-                      {account.vehicleNumber && (
-                        <div className="account-detail-item">
-                          <span className="account-detail-label">차량번호: </span>
-                          {account.vehicleNumber}
-                        </div>
-                      )}
+                    <td>
+                      {account.createdAt ? new Date(account.createdAt).toLocaleDateString() : '-'}
                     </td>
                     <td>
-                      <span className="account-password-passkey account-temp-password">
-                        {account.tempPassword}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="account-password-passkey account-passkey">
-                        {account.passkey}
-                      </span>
+                      {account.updatedAt ? new Date(account.updatedAt).toLocaleDateString() : '-'}
                     </td>
                     <td className="account-actions-cell">
                       <button

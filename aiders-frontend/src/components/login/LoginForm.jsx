@@ -27,7 +27,7 @@ export default function LoginForm() {
     try {
       console.log("API 요청 시작");
       const response = await axios.post(
-        "http://localhost:8080/api/v1/auth/login",
+        `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/login`,
         {
           userKey: username,
           password: password,
@@ -49,15 +49,15 @@ export default function LoginForm() {
       };
 
       // userKey 패턴으로 역할 판단
-      let userType = 'user';
-      if (username === 'admin') {
-        userType = 'admin';
-      } else if (username.startsWith('A')) {
-        userType = 'hospital';
+      let userType = "user";
+      if (username === "admin") {
+        userType = "admin";
+      } else if (username.startsWith("A")) {
+        userType = "hospital";
       } else if (/[가-힣]/.test(username)) {
-        userType = 'ambulance';
+        userType = "ambulance";
       } else if (/^\d{7}$/.test(username)) {
-        userType = 'firestation';
+        userType = "firestation";
       }
 
       login({
@@ -84,7 +84,6 @@ export default function LoginForm() {
       setLoading(false);
     }
   };
-
 
   return (
     <div className="login-container">
@@ -136,7 +135,9 @@ export default function LoginForm() {
             <div>👮 관리자: admin / admin</div>
             <div>🚒 소방서: 6110582 / f63f9527-a468-4fcb-bf4c-836a3313ecd6</div>
             <div>🏥 병원: A1700023 / ad567afe-ce4c-445e-8538-4bddcdca2bff</div>
-            <div>🚑 구급차: 998버4200 / 8dedb374-c0d8-4525-85ad-e48d4372bc0d</div>
+            <div>
+              🚑 구급차: 998버4200 / 8dedb374-c0d8-4525-85ad-e48d4372bc0d
+            </div>
           </div>
         </div>
 
