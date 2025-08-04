@@ -3,14 +3,17 @@ package team1234.aiders.application.hospital.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import team1234.aiders.application.hospital.dto.HospitalLocationResponseDto;
 import team1234.aiders.application.hospital.dto.department.DepartmentResponseDto;
 import team1234.aiders.application.hospital.dto.department.DepartmentUpdateRequestDto;
 import team1234.aiders.application.hospital.dto.emergencybed.EmergencyBedResponseDto;
 import team1234.aiders.application.hospital.dto.emergencybed.EmergencyBedUpdateRequestDto;
 import team1234.aiders.application.hospital.entity.EmergencyBed;
+import team1234.aiders.application.hospital.entity.Hospital;
 import team1234.aiders.application.hospital.entity.HospitalDepartment;
 import team1234.aiders.application.hospital.repository.EmergencyBedRepository;
 import team1234.aiders.application.hospital.repository.HospitalDepartmentRepository;
+import team1234.aiders.application.hospital.repository.HospitalRepository;
 import team1234.aiders.application.hospital.util.BedType;
 import team1234.aiders.application.hospital.util.UpdateBed;
 import team1234.aiders.config.security.CustomUserDetails;
@@ -20,8 +23,25 @@ import team1234.aiders.config.security.CustomUserDetails;
 @Transactional
 public class HospitalService {
 
+    private final HospitalRepository hospitalRepository;
     private final HospitalDepartmentRepository departmentRepository;
     private final EmergencyBedRepository emergencyBedRepository;
+
+    @Transactional(readOnly = true)
+    public HospitalLocationResponseDto getHospitalLocation(CustomUserDetails user) {
+        Hospital hospital = hospitalRepository.findById(user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("찾는 병원이 없습니다."));
+
+        return HospitalLocationResponseDto.fromEntity(hospital);
+    }
+
+    @Transactional(readOnly = true)
+    public HospitalLocationResponseDto getHospitalLocationByUserId(Long userId) {
+        Hospital hospital = hospitalRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("찾는 병원이 없습니다."));
+
+        return HospitalLocationResponseDto.fromEntity(hospital);
+    }
 
     @Transactional(readOnly = true)
     public DepartmentResponseDto getDepartmentStatus(CustomUserDetails user) {
