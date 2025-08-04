@@ -12,9 +12,12 @@ import team1234.aiders.application.ambulance.entity.Ambulance;
 import team1234.aiders.application.ambulance.repository.AmbulanceRepository;
 import team1234.aiders.application.firestation.entity.Firestation;
 import team1234.aiders.application.firestation.repository.FirestationRepository;
+import team1234.aiders.application.hospital.entity.Hospital;
+import team1234.aiders.application.hospital.repository.HospitalRepository;
 import team1234.aiders.application.user.dto.UserResponseDto;
 import team1234.aiders.application.user.dto.ambulance.AmbulanceRegistRequestDto;
 import team1234.aiders.application.user.dto.UserRegistResponseDto;
+import team1234.aiders.application.user.dto.organization.OrganizationRegisterRequestDto;
 import team1234.aiders.application.user.repository.UserRepository;
 
 import java.util.UUID;
@@ -26,6 +29,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final FirestationRepository firestationRepository;
+    private final HospitalRepository hospitalRepository;
     private final PasswordEncoder passwordEncoder;
     private final AmbulanceRepository ambulanceRepository;
 
@@ -42,6 +46,20 @@ public class UserService {
         Ambulance ambulance = createAmbulance(request, firestation, passwordInfo);
         ambulanceRepository.save(ambulance);
 
+        return new UserRegistResponseDto(passwordInfo.getRawPassword(), passwordInfo.getResetKey());
+    }
+
+    public UserRegistResponseDto registOrganization(OrganizationRegisterRequestDto request) {
+        PasswordInfo passwordInfo = generatePasswordInfo();
+
+        if (request.getRole().equals("firestation")) {
+            Firestation firestation = createFirestation(request, passwordInfo);
+            firestationRepository.save(firestation);
+        }
+        if (request.getRole().equals("hospital")) {
+            Hospital hospital = createHospital(request, passwordInfo);
+            hospitalRepository.save(hospital);
+        }
         return new UserRegistResponseDto(passwordInfo.getRawPassword(), passwordInfo.getResetKey());
     }
 
@@ -70,6 +88,32 @@ public class UserService {
                 .password(passwordInfo.getEncodedPassword())
                 .passwordResetKey(passwordInfo.getResetKey())
                 .firestation(firestation)
+                .build();
+    }
+
+    private Firestation createFirestation(OrganizationRegisterRequestDto request, PasswordInfo passwordInfo) {
+        return Firestation.builder()
+                .userKey(request.getUserKey())
+                .password(passwordInfo.getEncodedPassword())
+                .passwordResetKey(passwordInfo.getResetKey())
+                .role(request.getRole())
+                .name(request.getName())
+                .address(request.getAddress())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
+                .build();
+    }
+
+    private Hospital createHospital(OrganizationRegisterRequestDto request, PasswordInfo passwordInfo) {
+        return Hospital.builder()
+                .userKey(request.getUserKey())
+                .password(passwordInfo.getEncodedPassword())
+                .passwordResetKey(passwordInfo.getResetKey())
+                .role(request.getRole())
+                .name(request.getName())
+                .address(request.getAddress())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
                 .build();
     }
 
