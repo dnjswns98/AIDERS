@@ -37,7 +37,7 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance }) => {
         flexDirection: 'column',
         gap: '12px'
       }}>
-        {ambulances.map((ambulance) => (
+        {(ambulances || []).map((ambulance) => (
           <div
             key={ambulance.id}
             onClick={() => onSelectAmbulance(ambulance)}

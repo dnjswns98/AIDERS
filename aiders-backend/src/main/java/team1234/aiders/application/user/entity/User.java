@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
@@ -16,7 +17,7 @@ import java.time.LocalDateTime;
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class User {
+public abstract class User {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
@@ -24,6 +25,9 @@ public class User {
 
     @Column(nullable = false, columnDefinition = "TINYINT(1) default 0")
     private Boolean isDeleted = false;
+
+    @Column(name = "role", nullable = false, updatable = false, insertable = false)
+    private String role;
 
     @Column(unique = true, nullable = false)
     private String userKey;
@@ -42,9 +46,20 @@ public class User {
 
     private String refreshToken;
 
+    public User(String userKey, String role, String password, String passwordResetKey) {
+        this.userKey = userKey;
+        this.role = role;
+        this.password = password;
+        this.passwordResetKey = passwordResetKey;
+    }
+
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
     }
 
+    @Transient
+    public String getRole() {
+      return this.role;
+    }
 }
 
