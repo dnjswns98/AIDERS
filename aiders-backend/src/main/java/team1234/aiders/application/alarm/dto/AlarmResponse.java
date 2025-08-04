@@ -16,5 +16,4 @@ public class AlarmResponse {
     private String patientName;
     private Integer ktas;
     private LocalDateTime createdAt;
-    private String message;
 }

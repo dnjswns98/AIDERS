@@ -79,7 +79,7 @@ public class AlarmService {
                         .patientName(alarm.getPName())
                         .ktas(alarm.getPKtas())
                         .createdAt(alarm.getCreatedAt())
-                        .message("환자 " + alarm.getPName() + "가 병원에 자동 매칭되었습니다.")
+                        //.message("환자 " + alarm.getPName() + "가 병원에 자동 매칭되었습니다.")
                         .build())
                 .toList();
     }
@@ -90,8 +90,8 @@ public class AlarmService {
                         .id(alarm.getId())
                         .type(AlarmType.REQUEST)
                         .ambulanceKey(alarm.getAmbulance().getUserKey())
-                        .createdAt(alarm.getAmbulance().getTransferStartTime())
-                        .message("구급차가 통화를 요청했습니다.")
+                        .createdAt(alarm.getCreatedAt())
+                        //.message("구급차가 통화를 요청했습니다.")
                         .build())
                 .toList();
     }
@@ -102,8 +102,8 @@ public class AlarmService {
                         .id(alarm.getId())
                         .type(AlarmType.EDIT)
                         .ambulanceKey(alarm.getAmbulance().getUserKey())
-                        .createdAt(LocalDateTime.now()) // 따로 없다면 현재시간
-                        .message("환자 정보가 수정되었습니다.")
+                        .createdAt(alarm.getCreatedAt()) // 따로 없다면 현재시간
+                        //.message("환자 정보가 수정되었습니다.")
                         .build())
                 .toList();
     }
@@ -119,7 +119,6 @@ public class AlarmService {
                         .patientName(m.getPName())
                         .ktas(m.getPKtas())
                         .createdAt(m.getCreatedAt())
-                        .message("환자 " + m.getPName() + " 매칭 완료")
                         .build()
         ));
 
@@ -128,8 +127,7 @@ public class AlarmService {
                         .id(r.getId())
                         .type(AlarmType.REQUEST)
                         .ambulanceKey(r.getAmbulance().getUserKey())
-                        .createdAt(null)
-                        .message("구급차의 통화 요청 알림")
+                        .createdAt(r.getCreatedAt())
                         .build()
         ));
 
@@ -138,8 +136,7 @@ public class AlarmService {
                         .id(e.getId())
                         .type(AlarmType.EDIT)
                         .ambulanceKey(e.getAmbulance().getUserKey())
-                        .createdAt(null)
-                        .message("환자 정보가 수정되었습니다.")
+                        .createdAt(e.getCreatedAt())
                         .build()
         ));
 
