@@ -1,4 +1,4 @@
-package team1234.aiders.application.match.dto;
+package team1234.aiders.application.hospital.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
