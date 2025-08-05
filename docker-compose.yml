@@ -18,6 +18,14 @@ services:
     container_name: aiders-mysql
     ports:
       - ${MYSQL_PORT}:3306
+    command: [
+      "mysqld",
+      "--character-set-server=utf8mb4",
+      "--collation-server=utf8mb4_unicode_ci", 
+      "--default-time-zone=+09:00",
+      "--init-connect=SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
+      "--skip-character-set-client-handshake"
+    ]
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - MYSQL_DATABASE=${MYSQL_DATABASE}
@@ -49,7 +57,7 @@ services:
       - ${BACKEND_PORT}:8080
     environment:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&zeroDateTimeBehavior=convertToNull&rewriteBatchedStatements=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - OPENVIDU_SECRET=${OPENVIDU_SECRET}

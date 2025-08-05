@@ -36,3 +36,9 @@ logs/
 # 개발 중 테스트 파일
 test.*
 debug.*
+
+# MySQL 임시 설정 폴더들 (docker-compose로 대체)
+mysql-config/
+mysql-init/
+mysql-data/
+mysql-logs/
