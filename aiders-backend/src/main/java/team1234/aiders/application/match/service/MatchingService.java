@@ -118,6 +118,7 @@ public class MatchingService {
             case "비뇨의학과" -> "ur";
             case "정신건강의학과" -> "psy";
             case "치과" -> "dt";
+            case "신경외과" -> "ns";
             default -> null;
         };
     }
@@ -126,7 +127,7 @@ public class MatchingService {
     private double calculateScore(HospitalData h, double distance, Ambulance amb, Map<String, Long> transferCountMap) {
         double urgencyFactor = 6 - amb.getPKtas();
         long transferCount = transferCountMap.getOrDefault(h.getHospital().getName(), 0L);
-        double recentPenalty = transferCount * 2;
+        double recentPenalty = transferCount * 1.5;
 
         double bonus = calcDepartmentBonus(h, amb);
         double congestionScore = calcRelevantCongestion(h, amb);
@@ -142,19 +143,20 @@ public class MatchingService {
         String mappedDept = mapToCode(dept);
 
         return switch (mappedDept) {
-            case "gs" -> h.getDepartment().getGsIsAvailable() ? 10 : 0;
-            case "ts" -> h.getDepartment().getTsIsAvailable() ? 10 : 0;
-            case "os" -> h.getDepartment().getOsIsAvailable() ? 10 : 0;
-            case "pd" -> h.getDepartment().getPdIsAvailable() ? 10 : 0;
-            case "im" -> h.getDepartment().getImIsAvailable() ? 10 : 0;
-            case "nr" -> h.getDepartment().getNrIsAvailable() ? 10 : 0;
-            case "ob" -> h.getDepartment().getObIsAvailable() ? 10 : 0;
-            case "op" -> h.getDepartment().getOpIsAvailable() ? 10 : 0;
-            case "ent" -> h.getDepartment().getEntIsAvailable() ? 10 : 0;
-            case "dr" -> h.getDepartment().getDrIsAvailable() ? 10 : 0;
-            case "ur" -> h.getDepartment().getUrIsAvailable() ? 10 : 0;
-            case "psy" -> h.getDepartment().getPsyIsAvailable() ? 10 : 0;
-            case "dt" -> h.getDepartment().getDtIsAvailable() ? 10 : 0;
+            case "gs" -> h.getDepartment().getGsIsAvailable() ? 5 : 0;
+            case "ts" -> h.getDepartment().getTsIsAvailable() ? 5 : 0;
+            case "os" -> h.getDepartment().getOsIsAvailable() ? 5 : 0;
+            case "pd" -> h.getDepartment().getPdIsAvailable() ? 5 : 0;
+            case "im" -> h.getDepartment().getImIsAvailable() ? 5 : 0;
+            case "nr" -> h.getDepartment().getNrIsAvailable() ? 5 : 0;
+            case "ob" -> h.getDepartment().getObIsAvailable() ? 5 : 0;
+            case "op" -> h.getDepartment().getOpIsAvailable() ? 5 : 0;
+            case "ent" -> h.getDepartment().getEntIsAvailable() ? 5 : 0;
+            case "dr" -> h.getDepartment().getDrIsAvailable() ? 5 : 0;
+            case "ur" -> h.getDepartment().getUrIsAvailable() ? 5 : 0;
+            case "psy" -> h.getDepartment().getPsyIsAvailable() ? 5 : 0;
+            case "dt" -> h.getDepartment().getDtIsAvailable() ? 5 : 0;
+            case "ns" -> h.getDepartment().getNsIsAvailable() ? 5 : 0;
             default -> 0;
         };
     }
