@@ -46,7 +46,7 @@ public abstract class User {
 
     private String refreshToken;
 
-    public User(String userKey, String role, String password, String passwordResetKey) {
+    public User(String userKey, String password, String passwordResetKey, String role) {
         this.userKey = userKey;
         this.role = role;
         this.password = password;

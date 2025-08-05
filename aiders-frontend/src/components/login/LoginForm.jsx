@@ -26,9 +26,8 @@ export default function LoginForm() {
 
     try {
       console.log("API 요청 시작");
-      console.log("VITE_API_BASE_URL:", import.meta.env.VITE_API_BASE_URL);
-      console.log("전체 URL:", `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/login`);      
-const response = await axios.post(
+      
+      const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/login`,
         {
           userKey: username,
@@ -50,17 +49,8 @@ const response = await axios.post(
         role: tokenPayload.role,
       };
 
-      // userKey 패턴으로 역할 판단
-      let userType = "user";
-      if (username === "admin") {
-        userType = "admin";
-      } else if (username.startsWith("A")) {
-        userType = "hospital";
-      } else if (/[가-힣]/.test(username)) {
-        userType = "ambulance";
-      } else if (/^\d{7}$/.test(username)) {
-        userType = "firestation";
-      }
+      // accessToken의 payload에서 role 값 추출
+      const userType = tokenPayload.role.toLowerCase();
 
       login({
         user: userInfo,
