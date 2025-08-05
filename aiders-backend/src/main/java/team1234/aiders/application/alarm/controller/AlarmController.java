@@ -18,12 +18,12 @@ import java.util.NoSuchElementException;
 @RequiredArgsConstructor
 @Controller // WebSocket용
 @RestController // REST API용
-@RequestMapping("/api/alarm")
+@RequestMapping("/api/v1/alarm")
 public class AlarmController {
     private final SimpMessagingTemplate messagingTemplate;
     private final AlarmService alarmService;
 
-    @MessageMapping("/alarm/v1/send")
+    @MessageMapping("/alarm/send")
     public void sendAlarm(AlarmMessage alarmMessage){
         if (alarmMessage.getCreatedAt() == null) {
             alarmMessage.setCreatedAt(LocalDateTime.now());
