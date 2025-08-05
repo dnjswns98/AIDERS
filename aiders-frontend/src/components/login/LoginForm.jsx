@@ -21,7 +21,7 @@ export default function LoginForm() {
       return;
     }
 
-    console.log("로그인 시도:", { userKey: username, password: password });
+    console.log("로그인 시도:", { userKey: username.trim(), password: password });
     setLoading(true);
 
     try {
@@ -30,7 +30,7 @@ export default function LoginForm() {
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/login`,
         {
-          userKey: username,
+          userKey: username.trim(),
           password: password,
         }
       );
@@ -44,7 +44,7 @@ export default function LoginForm() {
 
       // 사용자 정보 구성
       const userInfo = {
-        userKey: tokenPayload.userKey || username,
+        userKey: tokenPayload.userKey || username.trim(),
         userId: tokenPayload.sub,
         role: tokenPayload.role,
       };
