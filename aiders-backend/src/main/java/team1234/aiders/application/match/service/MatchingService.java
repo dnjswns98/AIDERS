@@ -118,7 +118,7 @@ public class MatchingService {
         double bonus = calcDepartmentBonus(h, amb);
         double congestionScore = calcRelevantCongestion(h, amb);
 
-        return (100 / (distance + 1)) + bonus + urgencyFactor * 5 - congestionScore - recentPenalty;
+        return 20 * (urgencyFactor/(distance + 1)) + bonus - congestionScore - recentPenalty;
     }
 
     // 보너스 점수 계산
