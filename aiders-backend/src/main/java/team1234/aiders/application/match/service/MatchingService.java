@@ -116,8 +116,9 @@ public class MatchingService {
         double recentPenalty = transferCount * 2;
 
         double bonus = calcDepartmentBonus(h, amb);
+        double congestionScore = calcRelevantCongestion(h, amb);
 
-        return (100 / (distance + 1)) + bonus + urgencyFactor * 5 - recentPenalty;
+        return (100 / (distance + 1)) + bonus + urgencyFactor * 5 - congestionScore - recentPenalty;
     }
 
     // 보너스 점수 계산
@@ -145,4 +146,41 @@ public class MatchingService {
         };
     }
 
+    // 혼잡도 계산 (가용 병상 수/전체 병상 수)
+    private double calcRelevantCongestion(HospitalData h, Ambulance amb) {
+        int total = 0;
+        int available = 0;
+
+        switch (amb.getPAgeRange()) {
+            case NEWBORN -> {
+                if(h.getBed().getNeonatalIsExist() && h.getBed().getNeonatalIsAvailable()) {
+                    total += h.getBed().getNeonatalTotalBed();
+                    available += h.getBed().getNeonatalAvailableBed();
+                }
+            }
+            case INFANT, KIDS, TEENAGER -> {
+                if (h.getBed().getPediatricIsExist() && h.getBed().getPediatricIsAvailable()) {
+                    total += h.getBed().getPediatricTotalBed();
+                    available += h.getBed().getPediatricAvailableBed();
+                }
+            }
+            case ADULT, ELDERLY, UNDECIDED -> {
+                if (h.getBed().getGeneralIsExist() && h.getBed().getGeneralIsAvailable()) {
+                    total += h.getBed().getGeneralTotalBed();
+                    available += h.getBed().getGeneralAvailableBed();
+                }
+            }
+        }
+
+        // 외상 환자라면 trauma 병상도 고려
+        if (amb.getPDepartment() != null && amb.getPDepartment().contains("외과")) {
+            if (h.getBed().getTraumaIsExist() && h.getBed().getTraumaIsAvailable()) {
+                total += h.getBed().getTraumaTotalBed();
+                available += h.getBed().getTraumaAvailableBed();
+            }
+        }
+
+        if (total == 0) return 0;
+        return (1 - ((double) available / total)) * 10; // 혼잡도 점수
+    }
 }
