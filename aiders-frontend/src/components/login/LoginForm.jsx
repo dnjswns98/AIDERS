@@ -48,17 +48,8 @@ export default function LoginForm() {
         role: tokenPayload.role,
       };
 
-      // userKey 패턴으로 역할 판단
-      let userType = "user";
-      if (username === "admin") {
-        userType = "admin";
-      } else if (username.startsWith("A")) {
-        userType = "hospital";
-      } else if (/[가-힣]/.test(username)) {
-        userType = "ambulance";
-      } else if (/^\d{7}$/.test(username)) {
-        userType = "firestation";
-      }
+      // accessToken의 payload에서 role 값 추출
+      const userType = tokenPayload.role.toLowerCase();
 
       login({
         user: userInfo,
