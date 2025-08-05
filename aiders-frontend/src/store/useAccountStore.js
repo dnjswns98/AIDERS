@@ -11,6 +11,7 @@ export const useAccountStore = create((set, get) => ({
 
   // 사용자 목록 조회
   fetchAccounts: async (page = 0, size = 15, search = '', role = '') => {
+    // console.log('🔍 fetchAccounts 호출:', { page, size, search, role });
     set({ loading: true, error: null });
     
     try {
@@ -24,7 +25,10 @@ export const useAccountStore = create((set, get) => ({
       if (role) params.append('role', role);
 
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
-      const response = await fetchWithAuth(`${baseUrl}/api/v1/user/?${params}`, {
+      const url = `${baseUrl}/api/v1/user/?${params}`;
+      // console.log('🌐 API 요청 URL:', url);
+
+      const response = await fetchWithAuth(url, {
         method: 'GET'
       });
 
@@ -34,6 +38,12 @@ export const useAccountStore = create((set, get) => ({
       }
 
       const data = await response.json();
+      // console.log('📊 API 응답 데이터:', {
+      //   currentPage: data.number,
+      //   totalPages: data.totalPages,
+      //   totalElements: data.totalElements,
+      //   contentLength: data.content?.length
+      // });
       
       // 백엔드 응답을 프론트엔드 형식으로 변환 (admin 제외)
       const transformedAccounts = data.content
@@ -53,13 +63,22 @@ export const useAccountStore = create((set, get) => ({
         user.role === 'admin' || user.role === 'ROLE_ADMIN'
       ).length;
       
-      set({
+      const newState = {
         accounts: transformedAccounts,
         currentPage: data.number,
         totalPages: data.totalPages,
         totalElements: data.totalElements - adminCount, // 전체에서 admin 수 제외
         loading: false
-      });
+      };
+
+      // console.log('✅ Store 업데이트:', {
+      //   accountsCount: transformedAccounts.length,
+      //   currentPage: newState.currentPage,
+      //   totalPages: newState.totalPages,
+      //   totalElements: newState.totalElements
+      // });
+
+      set(newState);
 
     } catch (error) {
       console.error('사용자 목록 조회 실패:', error);
@@ -95,7 +114,7 @@ export const useAccountStore = create((set, get) => ({
         totalElements: state.totalElements - 1
       }));
 
-      console.log('사용자 삭제 완료');
+      // console.log('사용자 삭제 완료');
     } catch (error) {
       console.error('사용자 삭제 실패:', error);
       set({ error: error.message });
@@ -129,11 +148,11 @@ export const useAccountStore = create((set, get) => ({
       }
 
       const responseText = await response.text();
-      console.log('Ambulance registration response:', responseText);
+      // console.log('Ambulance registration response:', responseText);
       
       // 빈 응답 처리 (백엔드에서 ResponseEntity.ok().build()를 반환하는 경우)
       if (!responseText || responseText.trim() === '') {
-        console.log('빈 응답을 받았습니다. 계정 생성은 성공했지만 패스워드 정보가 없습니다.');
+        // console.log('빈 응답을 받았습니다. 계정 생성은 성공했지만 패스워드 정보가 없습니다.');
         return {
           success: true,
           password: '임시패스워드가 생성되었습니다',
@@ -150,7 +169,7 @@ export const useAccountStore = create((set, get) => ({
         throw new Error(`Invalid JSON response: ${responseText}`);
       }
 
-      console.log('구급차 계정 생성 완료:', data);
+      // console.log('구급차 계정 생성 완료:', data);
       return {
         success: true,
         password: data.password,
@@ -180,7 +199,7 @@ export const useAccountStore = create((set, get) => ({
         longitude: userData.longitude || 0
       };
 
-      console.log('Organization registration request:', requestBody);
+      // console.log('Organization registration request:', requestBody);
 
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/user/regist/organization`, {
         method: 'POST',
@@ -198,11 +217,11 @@ export const useAccountStore = create((set, get) => ({
       }
 
       const responseText = await response.text();
-      console.log('Organization registration response:', responseText);
+      // console.log('Organization registration response:', responseText);
       
       // 빈 응답 처리 (백엔드에서 ResponseEntity.ok().build()를 반환하는 경우)
       if (!responseText || responseText.trim() === '') {
-        console.log('빈 응답을 받았습니다. 계정 생성은 성공했지만 패스워드 정보가 없습니다.');
+        // console.log('빈 응답을 받았습니다. 계정 생성은 성공했지만 패스워드 정보가 없습니다.');
         return {
           success: true,
           password: '임시패스워드가 생성되었습니다',
@@ -219,7 +238,7 @@ export const useAccountStore = create((set, get) => ({
         throw new Error(`Invalid JSON response: ${responseText}`);
       }
 
-      console.log('기관 계정 생성 완료:', data);
+      // console.log('기관 계정 생성 완료:', data);
       return {
         success: true,
         password: data.password,

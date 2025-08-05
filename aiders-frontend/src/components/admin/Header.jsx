@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
+import styles from './Header.module.css';
 
 export default function Header() {
   const navigate = useNavigate();
@@ -11,70 +12,25 @@ export default function Header() {
   };
 
   return (
-    <header style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      backgroundColor: 'white',
-      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-      borderBottom: '1px solid #e5e7eb',
-      zIndex: 50,
-      height: '64px'
-    }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        height: '100%',
-        padding: '0 24px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <h1 style={{
-            fontSize: '24px',
-            fontWeight: 'bold',
-            color: '#2563eb'
-          }}>
+    <header className={styles.header}>
+      <div className={styles.headerContent}>
+        <div className={styles.logoSection}>
+          <h1 className={styles.logoTitle}>
             AIDER
           </h1>
         </div>
 
-        <div style={{
-          position: 'absolute',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          fontSize: '20px',
-          fontWeight: 'bold',
-          color: '#1f2937'
-        }}>
+        <h2 className={styles.pageTitle}>
           관리자페이지
-        </div>
+        </h2>
 
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '16px'
-        }}>
-          <span style={{
-            fontSize: '14px',
-            color: '#6b7280'
-          }}>
+        <div className={styles.userSection}>
+          <span className={styles.userInfo}>
             {user?.userType === 'admin' ? '관리자' : user?.name || '사용자'}로그인됨 ({user?.username})
           </span>
           <button
             onClick={handleLogout}
-            style={{
-              padding: '8px 16px',
-              fontSize: '14px',
-              backgroundColor: '#ef4444',
-              color: 'white',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s'
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#dc2626'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#ef4444'}
+            className={styles.logoutButton}
           >
             로그아웃
           </button>

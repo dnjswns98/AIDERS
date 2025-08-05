@@ -1,0 +1,173 @@
+/* 모달 오버레이 */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+/* 모달 컨테이너 */
+.modal {
+  background-color: white;
+  border-radius: 8px;
+  padding: 24px;
+  width: 100%;
+  max-width: 448px;
+  margin: 0 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* 헤더 영역 */
+.header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.iconContainer {
+  width: 64px;
+  height: 64px;
+  background-color: #fef2f2;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.warningIcon {
+  font-size: 24px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.description {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* 계정 정보 영역 */
+.accountInfo {
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.accountHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.accountIcon {
+  margin-right: 8px;
+}
+
+.accountType {
+  font-weight: 500;
+}
+
+.accountDetails {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.accountDetail {
+  margin-bottom: 4px;
+}
+
+.accountDetail:last-child {
+  margin-bottom: 0;
+}
+
+/* 확인 입력 영역 */
+.confirmSection {
+  margin-bottom: 24px;
+}
+
+.confirmLabel {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.deleteText {
+  color: #dc2626;
+  font-weight: bold;
+}
+
+.confirmInput {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.confirmInput:focus {
+  outline: none;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+/* 버튼 영역 */
+.buttonGroup {
+  display: flex;
+  gap: 12px;
+}
+
+.cancelButton {
+  flex: 1;
+  padding: 8px 16px;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  border-radius: 8px;
+  background-color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.cancelButton:hover {
+  background-color: #f9fafb;
+}
+
+.deleteButton {
+  flex: 1;
+  padding: 8px 16px;
+  background-color: #dc2626;
+  color: white;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.deleteButton:hover {
+  background-color: #b91c1c;
+}
+
+.deleteButton:focus,
+.cancelButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}

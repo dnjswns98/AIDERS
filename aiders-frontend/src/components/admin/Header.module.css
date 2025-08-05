@@ -1,0 +1,78 @@
+/* Header 컨테이너 */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: white;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #e5e7eb;
+  z-index: 50;
+  height: 64px;
+}
+
+/* Header 내용 */
+.headerContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 24px;
+}
+
+/* 로고 영역 */
+.logoSection {
+  display: flex;
+  align-items: center;
+}
+
+.logoTitle {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2563eb;
+  margin: 0;
+}
+
+/* 페이지 제목 */
+.pageTitle {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 20px;
+  font-weight: bold;
+  color: #1f2937;
+  margin: 0;
+}
+
+/* 사용자 정보 영역 */
+.userSection {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.userInfo {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* 로그아웃 버튼 */
+.logoutButton {
+  padding: 8px 16px;
+  font-size: 14px;
+  background-color: #ef4444;
+  color: white;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.logoutButton:hover {
+  background-color: #dc2626;
+}
+
+.logoutButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.5);
+}
