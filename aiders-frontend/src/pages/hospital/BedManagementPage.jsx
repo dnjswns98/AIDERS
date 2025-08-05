@@ -1,309 +1,9 @@
 import { useEffect, useState } from "react";
 import HospitalHeader from "../../components/hospital/HospitalHeader";
+import BedCard from "../../components/hospital/BedCard";
 import useHospitalStore from "../../store/useHospitalStore";
 import { useAuthStore } from "../../store/useAuthStore";
 
-const BedCard = ({ bed, onUpdate }) => {
-  const [isUpdating, setIsUpdating] = useState(false);
-  const isAvailable = bed.status !== 'disabled';
-
-  const handleStatusToggle = async (e) => {
-    e.stopPropagation();
-    setIsUpdating(true);
-    
-    // 상태 토글 API 호출 (department status update)
-    const newStatus = isAvailable ? 'disabled' : 'available';
-    await onUpdate(bed.type, 'status', newStatus);
-    
-    setIsUpdating(false);
-  };
-
-  const handleTotalBedsChange = async (e, delta) => {
-    e.stopPropagation();
-    if (isUpdating) return;
-    
-    const newTotal = Math.max(0, bed.totalBeds + delta);
-    if (newTotal === bed.totalBeds) return;
-    
-    setIsUpdating(true);
-    await onUpdate(bed.type, 'total', newTotal);
-    setIsUpdating(false);
-  };
-
-  const handleCurrentPatientsChange = async (e, delta) => {
-    e.stopPropagation();
-    if (isUpdating) return;
-    
-    const newCurrent = Math.max(0, Math.min(bed.totalBeds, bed.currentPatients + delta));
-    if (newCurrent === bed.currentPatients) return;
-    
-    setIsUpdating(true);
-    await onUpdate(bed.type, 'current', newCurrent);
-    setIsUpdating(false);
-  };
-
-  return (
-    <div style={{
-      backgroundColor: 'white',
-      borderRadius: '8px',
-      border: '1px solid #e5e7eb',
-      padding: '16px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '12px',
-      minHeight: '200px',
-      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-      transition: 'all 0.2s'
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-      e.currentTarget.style.transform = 'translateY(-1px)';
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1)';
-      e.currentTarget.style.transform = 'translateY(0)';
-    }}>
-      
-      {/* 카테고리와 상태 토글 스위치 */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <span style={{
-          backgroundColor: '#f3f4f6',
-          color: '#374151',
-          padding: '4px 8px',
-          borderRadius: '4px',
-          fontSize: '12px',
-          fontWeight: '500'
-        }}>
-          [{bed.category}]
-        </span>
-        
-        {/* ON/OFF 토글 스위치 */}
-        <div
-          onClick={handleStatusToggle}
-          style={{
-            width: '44px',
-            height: '24px',
-            backgroundColor: isAvailable ? '#22c55e' : '#ef4444',
-            borderRadius: '12px',
-            position: 'relative',
-            cursor: 'pointer',
-            transition: 'background-color 0.3s ease',
-            display: 'flex',
-            alignItems: 'center',
-            padding: '2px'
-          }}
-        >
-          <div
-            style={{
-              width: '20px',
-              height: '20px',
-              backgroundColor: 'white',
-              borderRadius: '50%',
-              position: 'absolute',
-              left: isAvailable ? '22px' : '2px',
-              transition: 'left 0.3s ease',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
-            }}
-          />
-        </div>
-      </div>
-
-      {/* 병상명 */}
-      <div style={{
-        fontSize: '18px',
-        fontWeight: '600',
-        color: '#1f2937',
-        lineHeight: '1.4',
-        flex: 1
-      }}>
-        {bed.name}
-      </div>
-
-      {/* 총 병상 수 조절 */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: '#f9fafb',
-        padding: '8px 12px',
-        borderRadius: '6px',
-        marginBottom: '8px'
-      }}>
-        <span style={{
-          fontSize: '12px',
-          color: '#6b7280',
-          fontWeight: '500'
-        }}>
-          총 병상
-        </span>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <button
-            onClick={(e) => handleTotalBedsChange(e, -1)}
-            style={{
-              backgroundColor: '#f3f4f6',
-              color: '#6b7280',
-              border: '1px solid #e5e7eb',
-              borderRadius: '4px',
-              width: '24px',
-              height: '24px',
-              fontSize: '14px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 'bold',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#e5e7eb';
-              e.target.style.color = '#374151';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#f3f4f6';
-              e.target.style.color = '#6b7280';
-            }}
-          >
-            -
-          </button>
-          <span style={{
-            fontSize: '16px',
-            fontWeight: '600',
-            color: '#1f2937',
-            minWidth: '20px',
-            textAlign: 'center'
-          }}>
-            {bed.totalBeds}
-          </span>
-          <button
-            onClick={(e) => handleTotalBedsChange(e, 1)}
-            style={{
-              backgroundColor: '#f3f4f6',
-              color: '#6b7280',
-              border: '1px solid #e5e7eb',
-              borderRadius: '4px',
-              width: '24px',
-              height: '24px',
-              fontSize: '14px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 'bold',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#e5e7eb';
-              e.target.style.color = '#374151';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#f3f4f6';
-              e.target.style.color = '#6b7280';
-            }}
-          >
-            +
-          </button>
-        </div>
-      </div>
-
-      {/* 실제 환자 수 조절 */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: '#f0f9ff',
-        padding: '8px 12px',
-        borderRadius: '6px'
-      }}>
-        <span style={{
-          fontSize: '12px',
-          color: '#0369a1',
-          fontWeight: '500'
-        }}>
-          실제 환자
-        </span>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <button
-            onClick={(e) => handleCurrentPatientsChange(e, -1)}
-            style={{
-              backgroundColor: '#dbeafe',
-              color: '#0369a1',
-              border: '1px solid #bfdbfe',
-              borderRadius: '4px',
-              width: '24px',
-              height: '24px',
-              fontSize: '14px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 'bold',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#bfdbfe';
-              e.target.style.color = '#1e40af';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#dbeafe';
-              e.target.style.color = '#0369a1';
-            }}
-          >
-            -
-          </button>
-          <span style={{
-            fontSize: '16px',
-            fontWeight: '600',
-            color: '#1e40af',
-            minWidth: '20px',
-            textAlign: 'center'
-          }}>
-            {bed.currentPatients}
-          </span>
-          <button
-            onClick={(e) => handleCurrentPatientsChange(e, 1)}
-            style={{
-              backgroundColor: '#dbeafe',
-              color: '#0369a1',
-              border: '1px solid #bfdbfe',
-              borderRadius: '4px',
-              width: '24px',
-              height: '24px',
-              fontSize: '14px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 'bold',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#bfdbfe';
-              e.target.style.color = '#1e40af';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#dbeafe';
-              e.target.style.color = '#0369a1';
-            }}
-          >
-            +
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default function BedManagementPage() {
   const { user } = useAuthStore();
@@ -331,56 +31,71 @@ export default function BedManagementPage() {
   }, [user]);
 
   useEffect(() => {
-    // bedInfo가 있든 없든 기본 베드 구조는 항상 표시
+    console.log('🔍 BedManagementPage - bedInfo:', bedInfo);
+    
+    // 실제 API 응답 구조에 맞게 데이터 변환
     const transformedBeds = [
       {
         id: 1,
-        name: '중환자실 (ICU)',
-        category: 'ICU',
-        type: 'ICU',
-        totalBeds: bedInfo?.icuTotal || 0,
-        currentPatients: bedInfo?.icuUsed || 0,
-        status: 'available'
+        name: '일반병동',
+        category: 'GENERAL',
+        type: 'GENERAL',
+        totalBeds: bedInfo?.generalTotalBed || 0,
+        currentPatients: (bedInfo?.generalTotalBed || 0) - (bedInfo?.generalAvailableBed || 0),
+        status: bedInfo?.generalIsAvailable ? 'available' : 'disabled'
       },
       {
         id: 2,
-        name: '응급실 (ER)',
-        category: 'ER',
-        type: 'EMERGENCY',
-        totalBeds: bedInfo?.emergencyTotal || 0,
-        currentPatients: bedInfo?.emergencyUsed || 0,
-        status: 'available'
+        name: '소아병동',
+        category: 'PEDIATRIC',
+        type: 'PEDIATRIC',
+        totalBeds: bedInfo?.pediatricTotalBed || 0,
+        currentPatients: (bedInfo?.pediatricTotalBed || 0) - (bedInfo?.pediatricAvailableBed || 0),
+        status: bedInfo?.pediatricIsAvailable ? 'available' : 'disabled'
       },
       {
         id: 3,
-        name: '일반병동',
-        category: 'WARD',
-        type: 'GENERAL',
-        totalBeds: bedInfo?.generalTotal || 0,
-        currentPatients: bedInfo?.generalUsed || 0,
-        status: 'available'
+        name: '외상센터',
+        category: 'TRAUMA',
+        type: 'TRAUMA',
+        totalBeds: bedInfo?.traumaTotalBed || 0,
+        currentPatients: (bedInfo?.traumaTotalBed || 0) - (bedInfo?.traumaAvailableBed || 0),
+        status: bedInfo?.traumaIsAvailable ? 'available' : 'disabled'
+      },
+      {
+        id: 4,
+        name: '신생아실',
+        category: 'NEONATAL',
+        type: 'NEONATAL',
+        totalBeds: bedInfo?.neonatalTotalBed || 0,
+        currentPatients: (bedInfo?.neonatalTotalBed || 0) - (bedInfo?.neonatalAvailableBed || 0),
+        status: bedInfo?.neonatalIsAvailable ? 'available' : 'disabled'
       }
     ];
+    
+    console.log('🔍 BedManagementPage - 변환된 beds:', transformedBeds);
     setBeds(transformedBeds);
   }, [bedInfo]);
 
   const handleBedUpdate = async (bedType, updateType, value) => {
     try {
       if (updateType === 'current') {
-        // 현재 환자 수 변경 (수동 증감)
-        const currentBed = beds.find(b => b.type === bedType);
-        if (!currentBed) {
-          console.error('베드 정보를 찾을 수 없습니다:', bedType);
-          return;
-        }
+        // 현재 환자 수 변경 (수동 증감) - value는 이제 delta값 (+1 또는 -1)
+        console.log('🔍 BedManagementPage - 환자 수 변경 요청:', {
+          bedType,
+          delta: value
+        });
 
-        let result;
-        if (value > currentBed.currentPatients) {
-          result = await increaseBedManually(bedType);
-        } else if (value < currentBed.currentPatients) {
+        let result = { success: true };
+        
+        if (value > 0) {
+          // 환자 수 증가 (+1) → 가용 병상 감소
+          console.log('📈 환자 수 증가 (가용 병상 감소) API 호출:', bedType);
           result = await decreaseBedManually(bedType);
-        } else {
-          return; // 변화 없음
+        } else if (value < 0) {
+          // 환자 수 감소 (-1) → 가용 병상 증가
+          console.log('📉 환자 수 감소 (가용 병상 증가) API 호출:', bedType);
+          result = await increaseBedManually(bedType);
         }
 
         if (!result?.success) {
@@ -394,13 +109,23 @@ export default function BedManagementPage() {
         }
 
         const updateData = {};
-        if (bedType === 'ICU') {
-          updateData.icuTotal = value;
-        } else if (bedType === 'EMERGENCY') {
-          updateData.emergencyTotal = value;
-        } else if (bedType === 'GENERAL') {
-          updateData.generalTotal = value;
+        const currentBed = beds.find(b => b.type === bedType);
+        
+        if (bedType === 'GENERAL') {
+          updateData.generalTotalBed = value;
+          updateData.generalAvailableBed = Math.max(0, value - (currentBed?.currentPatients || 0));
+        } else if (bedType === 'PEDIATRIC') {
+          updateData.pediatricTotalBed = value;
+          updateData.pediatricAvailableBed = Math.max(0, value - (currentBed?.currentPatients || 0));
+        } else if (bedType === 'TRAUMA') {
+          updateData.traumaTotalBed = value;
+          updateData.traumaAvailableBed = Math.max(0, value - (currentBed?.currentPatients || 0));
+        } else if (bedType === 'NEONATAL') {
+          updateData.neonatalTotalBed = value;
+          updateData.neonatalAvailableBed = Math.max(0, value - (currentBed?.currentPatients || 0));
         }
+        
+        console.log('🔍 BedManagementPage - 베드 업데이트 데이터:', updateData);
 
         const result = await updateBedInfo(updateData);
         if (!result?.success) {

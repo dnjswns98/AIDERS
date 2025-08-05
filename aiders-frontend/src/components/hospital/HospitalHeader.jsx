@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
+import useHospitalStore from "../../store/useHospitalStore";
 import useNotificationStore from "../../store/useNotificationStore";
 import NotificationModal from "./NotificationModal";
 
@@ -8,6 +9,7 @@ export default function HospitalHeader() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
+  const { hospitalInfo } = useHospitalStore();
   const { getUnreadCount } = useNotificationStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
@@ -29,6 +31,11 @@ export default function HospitalHeader() {
   };
 
   const activeMenu = getCurrentMenu();
+
+  // 병원 정보 상태 변화 추적
+  useEffect(() => {
+    console.log('🏥 HospitalHeader - hospitalInfo 상태 변화:', hospitalInfo);
+  }, [hospitalInfo]);
 
   // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
@@ -89,7 +96,7 @@ export default function HospitalHeader() {
             fontWeight: 'bold',
             color: '#1f2937'
           }}>
-            서울대병원
+            {hospitalInfo?.name || '병원'}
           </div>
           <div style={{
             fontSize: '14px',
