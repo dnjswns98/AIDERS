@@ -1,16 +1,27 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
+import { usePasswordStore } from "../../store/usePasswordStore";
 import axios from "axios";
 import "./login.css";
 
 export default function LoginForm() {
   const navigate = useNavigate();
   const { login } = useAuthStore();
+  const { authenticateForPasswordReset, changePassword, loading: passwordLoading } = usePasswordStore();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  // 비밀번호 재설정 관련 상태
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [resetStep, setResetStep] = useState(1); // 1: 인증, 2: 새 비밀번호 입력
+  const [resetUserKey, setResetUserKey] = useState("");
+  const [resetKey, setResetKey] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,6 +88,73 @@ export default function LoginForm() {
     }
   };
 
+  // 비밀번호 재설정 인증
+  const handlePasswordResetAuth = async (e) => {
+    e.preventDefault();
+    
+    if (!resetUserKey || !resetKey) {
+      alert("사용자 키와 패스키를 모두 입력해주세요.");
+      return;
+    }
+
+    const result = await authenticateForPasswordReset(resetUserKey, resetKey);
+    
+    if (result.success) {
+      setResetToken(result.resetToken);
+      setResetStep(2);
+      alert("인증되었습니다. 새 비밀번호를 입력해주세요.");
+    } else {
+      alert("인증에 실패했습니다: " + result.error);
+    }
+  };
+
+  // 비밀번호 변경
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    
+    if (!newPassword || !confirmPassword) {
+      alert("새 비밀번호를 모두 입력해주세요.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert("새 비밀번호가 일치하지 않습니다.");
+      return;
+    }
+
+    if (newPassword.length < 4) {
+      alert("비밀번호는 4자리 이상이어야 합니다.");
+      return;
+    }
+
+    const result = await changePassword(resetToken, newPassword);
+    
+    if (result.success) {
+      alert("비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 로그인해주세요.");
+      // 초기화
+      setShowPasswordReset(false);
+      setResetStep(1);
+      setResetUserKey("");
+      setResetKey("");
+      setResetToken("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } else {
+      alert("비밀번호 변경에 실패했습니다: " + result.error);
+    }
+  };
+
+  // 비밀번호 재설정 취소
+  const handleResetCancel = () => {
+    setShowPasswordReset(false);
+    setResetStep(1);
+    setResetUserKey("");
+    setResetKey("");
+    setResetToken("");
+    setNewPassword("");
+    setConfirmPassword("");
+  };
+
   return (
     <div className="login-container">
       <div className="login-card">
@@ -133,12 +211,107 @@ export default function LoginForm() {
           </div>
         </div>
 
-        {/* 회원가입 링크 */}
+        {/* 비밀번호 재설정 링크 */}
         <div className="login-signup-link-container">
-          <a href="#" className="login-signup-link">
-            계정 만들기
-          </a>
+          <button 
+            type="button"
+            className="login-signup-link"
+            onClick={() => setShowPasswordReset(true)}
+          >
+            비밀번호를 잊으셨나요?
+          </button>
         </div>
+
+        {/* 비밀번호 재설정 모달 */}
+        {showPasswordReset && (
+          <div className="password-reset-modal">
+            <div className="password-reset-content">
+              <h2 className="password-reset-title">
+                {resetStep === 1 ? "비밀번호 재설정 인증" : "새 비밀번호 설정"}
+              </h2>
+              
+              {resetStep === 1 ? (
+                <form onSubmit={handlePasswordResetAuth}>
+                  <div className="login-input-group">
+                    <input
+                      type="text"
+                      value={resetUserKey}
+                      onChange={(e) => setResetUserKey(e.target.value)}
+                      placeholder="사용자 키 (User Key)"
+                      required
+                      className="login-input"
+                    />
+                  </div>
+                  <div className="login-input-group">
+                    <input
+                      type="text"
+                      value={resetKey}
+                      onChange={(e) => setResetKey(e.target.value)}
+                      placeholder="패스키 (Password Reset Key)"
+                      required
+                      className="login-input"
+                    />
+                  </div>
+                  <div className="password-reset-buttons">
+                    <button 
+                      type="submit" 
+                      className="login-button"
+                      disabled={passwordLoading}
+                    >
+                      {passwordLoading ? "인증 중..." : "인증하기"}
+                    </button>
+                    <button 
+                      type="button" 
+                      className="cancel-button"
+                      onClick={handleResetCancel}
+                    >
+                      취소
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handlePasswordChange}>
+                  <div className="login-input-group">
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="새 비밀번호"
+                      required
+                      className="login-input"
+                    />
+                  </div>
+                  <div className="login-input-group">
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="새 비밀번호 확인"
+                      required
+                      className="login-input"
+                    />
+                  </div>
+                  <div className="password-reset-buttons">
+                    <button 
+                      type="submit" 
+                      className="login-button"
+                      disabled={passwordLoading}
+                    >
+                      {passwordLoading ? "변경 중..." : "비밀번호 변경"}
+                    </button>
+                    <button 
+                      type="button" 
+                      className="cancel-button"
+                      onClick={handleResetCancel}
+                    >
+                      취소
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

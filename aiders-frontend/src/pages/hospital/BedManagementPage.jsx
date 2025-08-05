@@ -1,25 +1,45 @@
+import { useEffect, useState } from "react";
 import HospitalHeader from "../../components/hospital/HospitalHeader";
-import useBedStore from "../../store/useBedStore";
+import useHospitalStore from "../../store/useHospitalStore";
+import { useAuthStore } from "../../store/useAuthStore";
 
-const BedCard = ({ bed }) => {
-  const { updateTotalBeds, updateCurrentPatients, toggleBedStatus } = useBedStore();
-  const isAvailable = bed.status === 'available';
+const BedCard = ({ bed, onUpdate }) => {
+  const [isUpdating, setIsUpdating] = useState(false);
+  const isAvailable = bed.status !== 'disabled';
 
-  const handleStatusToggle = (e) => {
+  const handleStatusToggle = async (e) => {
     e.stopPropagation();
-    toggleBedStatus(bed.id);
+    setIsUpdating(true);
+    
+    // 상태 토글 API 호출 (department status update)
+    const newStatus = isAvailable ? 'disabled' : 'available';
+    await onUpdate(bed.type, 'status', newStatus);
+    
+    setIsUpdating(false);
   };
 
-  const handleTotalBedsChange = (e, delta) => {
+  const handleTotalBedsChange = async (e, delta) => {
     e.stopPropagation();
-    const newTotal = bed.totalBeds + delta;
-    updateTotalBeds(bed.id, newTotal);
+    if (isUpdating) return;
+    
+    const newTotal = Math.max(0, bed.totalBeds + delta);
+    if (newTotal === bed.totalBeds) return;
+    
+    setIsUpdating(true);
+    await onUpdate(bed.type, 'total', newTotal);
+    setIsUpdating(false);
   };
 
-  const handleCurrentPatientsChange = (e, delta) => {
+  const handleCurrentPatientsChange = async (e, delta) => {
     e.stopPropagation();
-    const newCurrent = bed.currentPatients + delta;
-    updateCurrentPatients(bed.id, newCurrent);
+    if (isUpdating) return;
+    
+    const newCurrent = Math.max(0, Math.min(bed.totalBeds, bed.currentPatients + delta));
+    if (newCurrent === bed.currentPatients) return;
+    
+    setIsUpdating(true);
+    await onUpdate(bed.type, 'current', newCurrent);
+    setIsUpdating(false);
   };
 
   return (
@@ -286,7 +306,126 @@ const BedCard = ({ bed }) => {
 };
 
 export default function BedManagementPage() {
-  const { beds, getStatistics } = useBedStore();
+  const { user } = useAuthStore();
+  const { 
+    loading, 
+    error, 
+    bedInfo, 
+    fetchBedInfo, 
+    updateBedInfo,
+    createInitialBedInfo,
+    decreaseBedManually, 
+    increaseBedManually 
+  } = useHospitalStore();
+
+  const [beds, setBeds] = useState([]);
+
+  useEffect(() => {
+    const initializeData = async () => {
+      if (user?.userId) {
+        await fetchBedInfo();
+      }
+    };
+
+    initializeData();
+  }, [user]);
+
+  useEffect(() => {
+    // bedInfo가 있든 없든 기본 베드 구조는 항상 표시
+    const transformedBeds = [
+      {
+        id: 1,
+        name: '중환자실 (ICU)',
+        category: 'ICU',
+        type: 'ICU',
+        totalBeds: bedInfo?.icuTotal || 0,
+        currentPatients: bedInfo?.icuUsed || 0,
+        status: 'available'
+      },
+      {
+        id: 2,
+        name: '응급실 (ER)',
+        category: 'ER',
+        type: 'EMERGENCY',
+        totalBeds: bedInfo?.emergencyTotal || 0,
+        currentPatients: bedInfo?.emergencyUsed || 0,
+        status: 'available'
+      },
+      {
+        id: 3,
+        name: '일반병동',
+        category: 'WARD',
+        type: 'GENERAL',
+        totalBeds: bedInfo?.generalTotal || 0,
+        currentPatients: bedInfo?.generalUsed || 0,
+        status: 'available'
+      }
+    ];
+    setBeds(transformedBeds);
+  }, [bedInfo]);
+
+  const handleBedUpdate = async (bedType, updateType, value) => {
+    try {
+      if (updateType === 'current') {
+        // 현재 환자 수 변경 (수동 증감)
+        const currentBed = beds.find(b => b.type === bedType);
+        if (!currentBed) {
+          console.error('베드 정보를 찾을 수 없습니다:', bedType);
+          return;
+        }
+
+        let result;
+        if (value > currentBed.currentPatients) {
+          result = await increaseBedManually(bedType);
+        } else if (value < currentBed.currentPatients) {
+          result = await decreaseBedManually(bedType);
+        } else {
+          return; // 변화 없음
+        }
+
+        if (!result?.success) {
+          alert('베드 환자 수 변경에 실패했습니다: ' + (result?.error || '알 수 없는 오류'));
+        }
+      } else if (updateType === 'total') {
+        // 총 베드 수 변경 (베드 정보 업데이트)
+        if (value < 0) {
+          alert('베드 수는 0보다 작을 수 없습니다.');
+          return;
+        }
+
+        const updateData = {};
+        if (bedType === 'ICU') {
+          updateData.icuTotal = value;
+        } else if (bedType === 'EMERGENCY') {
+          updateData.emergencyTotal = value;
+        } else if (bedType === 'GENERAL') {
+          updateData.generalTotal = value;
+        }
+
+        const result = await updateBedInfo(updateData);
+        if (!result?.success) {
+          alert('베드 정보 업데이트에 실패했습니다: ' + (result?.error || '알 수 없는 오류'));
+        }
+      } else if (updateType === 'status') {
+        // 상태 변경 (진료과 상태 업데이트)
+        console.log('Status update:', bedType, value);
+        // TODO: department API 연결
+      }
+    } catch (error) {
+      console.error('베드 업데이트 중 오류 발생:', error);
+      alert('베드 업데이트 중 오류가 발생했습니다: ' + error.message);
+    }
+  };
+
+  // 통계 계산
+  const getStatistics = () => {
+    const totalBeds = beds.reduce((sum, bed) => sum + bed.totalBeds, 0);
+    const totalPatients = beds.reduce((sum, bed) => sum + bed.currentPatients, 0);
+    const availableBeds = totalBeds - totalPatients;
+    
+    return { totalBeds, totalPatients, availableBeds };
+  };
+
   const stats = getStatistics();
 
   return (
@@ -361,19 +500,74 @@ export default function BedManagementPage() {
             </div>
           </div>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '16px',
-            marginTop: '24px'
-          }}>
-            {beds.map((bed) => (
-              <BedCard 
-                key={bed.id} 
-                bed={bed} 
-              />
-            ))}
-          </div>
+          {loading ? (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '60px 20px',
+              color: '#6b7280' 
+            }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+              <div style={{ fontSize: '18px', fontWeight: '500' }}>베드 정보를 불러오는 중...</div>
+            </div>
+          ) : error ? (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '60px 20px',
+              color: '#ef4444' 
+            }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
+              <div style={{ fontSize: '18px', fontWeight: '500', marginBottom: '8px' }}>오류가 발생했습니다</div>
+              <div style={{ fontSize: '14px' }}>{error}</div>
+              <button 
+                onClick={() => fetchBedInfo()}
+                style={{
+                  marginTop: '16px',
+                  padding: '8px 16px',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                다시 시도
+              </button>
+            </div>
+          ) : (
+            <>
+              {beds.every(bed => bed.totalBeds === 0 && bed.currentPatients === 0) && (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '20px',
+                  marginBottom: '20px',
+                  backgroundColor: '#fef3c7',
+                  borderRadius: '8px',
+                  border: '1px solid #f59e0b'
+                }}>
+                  <div style={{ fontSize: '16px', fontWeight: '500', color: '#92400e', marginBottom: '4px' }}>
+                    ℹ️ 베드 데이터가 비어있습니다
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#92400e' }}>
+                    아래 카드의 +/- 버튼을 사용해서 베드 정보를 설정해주세요.
+                  </div>
+                </div>
+              )}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: '16px',
+                marginTop: '24px'
+              }}>
+                {beds.map((bed) => (
+                  <BedCard 
+                    key={bed.id} 
+                    bed={bed} 
+                    onUpdate={handleBedUpdate}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </main>
     </>

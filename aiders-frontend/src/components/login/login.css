@@ -130,8 +130,68 @@
   text-decoration: none;
   font-weight: 500;
   transition: text-decoration 0.2s;
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 
 .login-signup-link:hover {
   text-decoration: underline;
+}
+
+/* 비밀번호 재설정 모달 */
+.password-reset-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.password-reset-content {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  width: 90%;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.password-reset-title {
+  font-size: 20px;
+  font-weight: 500;
+  color: #3c4043;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.password-reset-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cancel-button {
+  flex: 1;
+  height: 48px;
+  border: 1px solid #dadce0;
+  background: white;
+  color: #3c4043;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-button:hover {
+  background-color: #f8f9fa;
+  border-color: #c8c9ca;
 }

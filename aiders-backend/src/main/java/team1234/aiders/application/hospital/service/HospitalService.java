@@ -3,6 +3,7 @@ package team1234.aiders.application.hospital.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import team1234.aiders.application.hospital.dto.HospitalInfoResponseDto;
 import team1234.aiders.application.hospital.dto.HospitalLocationResponseDto;
 import team1234.aiders.application.hospital.dto.department.DepartmentResponseDto;
 import team1234.aiders.application.hospital.dto.department.DepartmentUpdateRequestDto;
@@ -29,16 +30,27 @@ public class HospitalService {
 
     @Transactional(readOnly = true)
     public HospitalLocationResponseDto getHospitalLocation(CustomUserDetails user) {
-        Hospital hospital = hospitalRepository.findById(user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("찾는 병원이 없습니다."));
+        Hospital hospital = findHospital(user.getId());
 
         return HospitalLocationResponseDto.fromEntity(hospital);
     }
 
     @Transactional(readOnly = true)
-    public HospitalLocationResponseDto getHospitalLocationByUserId(Long userId) {
-        Hospital hospital = hospitalRepository.findById(userId)
+    public HospitalInfoResponseDto getHospitalInfo(CustomUserDetails user) {
+        Hospital hospital = findHospital(user.getId());
+
+        return HospitalInfoResponseDto.fromEntity(hospital);
+    }
+
+    private Hospital findHospital(Long user) {
+        Hospital hospital = hospitalRepository.findById(user)
                 .orElseThrow(() -> new IllegalArgumentException("찾는 병원이 없습니다."));
+        return hospital;
+    }
+
+    @Transactional(readOnly = true)
+    public HospitalLocationResponseDto getHospitalLocationByUserId(Long userId) {
+        Hospital hospital = findHospital(userId);
 
         return HospitalLocationResponseDto.fromEntity(hospital);
     }
