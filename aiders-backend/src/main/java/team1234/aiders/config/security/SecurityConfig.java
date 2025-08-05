@@ -46,6 +46,9 @@ public class SecurityConfig {
 
     //TODO: ADMIN 전용 API 경로들
     private static final String[] ADMIN_ENDPOINT = {
+            "/api/v1/user/",
+            "/api/v1/regist/**",
+            "/api/v1/user/{userId}"
     };
 
     //TODO: AMBULANCE 전용 API 경로들
