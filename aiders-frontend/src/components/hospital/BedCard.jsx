@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const BedCard = ({ bed, onUpdate, compact = false }) => {
+const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleTotalBedsChange = async (e, delta) => {
@@ -23,12 +23,12 @@ const BedCard = ({ bed, onUpdate, compact = false }) => {
     if (delta > 0 && bed.currentPatients >= bed.totalBeds) return;
     if (delta < 0 && bed.currentPatients <= 0) return;
     
-    console.log('🔍 BedCard - 환자 수 변경:', {
-      bedType: bed.type,
-      currentPatients: bed.currentPatients,
-      delta,
-      totalBeds: bed.totalBeds
-    });
+    // console.log('🔍 BedCard - 환자 수 변경:', {
+    //   bedType: bed.type,
+    //   currentPatients: bed.currentPatients,
+    //   delta,
+    //   totalBeds: bed.totalBeds
+    // });
     
     setIsUpdating(true);
     await onUpdate(bed.type, 'current', delta); // delta만 전달
@@ -112,7 +112,7 @@ const BedCard = ({ bed, onUpdate, compact = false }) => {
           사용: {bed.currentPatients}/{bed.totalBeds} | 여유: {bed.totalBeds - bed.currentPatients}개
         </span>
         
-        {compact && (
+        {compact && !readonly && (
           <div style={{
             display: 'flex',
             alignItems: 'center',

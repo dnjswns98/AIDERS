@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAccountStore } from "../../store/useAccountStore";
 import DeleteModal from "./DeleteModal";
+import Pagination from "./Pagination";
 
 import './accountList.css';
 
@@ -211,45 +212,14 @@ export default function AccountList() {
         )}
       </div>
       
-      {/* 페이지네이션 - 하단 고정 */}
-      {!loading && !error && totalPages > 1 && (
-        <div className="pagination-container">
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 0}
-            className={`pagination-button ${currentPage === 0 ? 'disabled' : ''}`}
-          >
-            이전
-          </button>
-          
-          {/* 페이지 번호들 */}
-          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-            const startPage = Math.max(0, Math.min(currentPage - 2, totalPages - 5));
-            const pageNum = startPage + i;
-            
-            return (
-              <button
-                key={pageNum}
-                onClick={() => handlePageChange(pageNum)}
-                className={`pagination-button ${currentPage === pageNum ? 'active' : ''}`}
-              >
-                {pageNum + 1}
-              </button>
-            );
-          })}
-          
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage >= totalPages - 1}
-            className={`pagination-button ${currentPage >= totalPages - 1 ? 'disabled' : ''}`}
-          >
-            다음
-          </button>
-          
-          <span className="pagination-info">
-            {currentPage + 1} / {totalPages} 페이지
-          </span>
-        </div>
+      {/* 새로운 페이지네이션 컴포넌트 */}
+      {!loading && !error && totalPages > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          showPages={5}
+        />
       )}
 
       <DeleteModal

@@ -1,0 +1,181 @@
+/* Header 컨테이너 */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: white;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #e5e7eb;
+  z-index: 50;
+  height: 64px;
+}
+
+/* Header 내용 */
+.headerContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 24px;
+}
+
+/* 로고 영역 */
+.logoSection {
+  display: flex;
+  align-items: center;
+}
+
+.logoTitle {
+  font-size: 24px;
+  font-weight: bold;
+  color: #059669;
+  margin: 0;
+}
+
+/* 병원 정보 영역 */
+.hospitalInfo {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.hospitalName {
+  font-size: 18px;
+  font-weight: bold;
+  color: #1f2937;
+  margin: 0;
+}
+
+.hospitalType {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* 우측 사용자 영역 */
+.userSection {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* 메뉴 드롭다운 */
+.dropdownContainer {
+  position: relative;
+}
+
+.dropdownButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dropdownButton:hover {
+  background-color: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.dropdownArrow {
+  font-size: 12px;
+  transition: transform 0.2s;
+}
+
+.dropdownArrow.open {
+  transform: rotate(180deg);
+}
+
+/* 드롭다운 메뉴 */
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 100;
+  min-width: 140px;
+}
+
+/* 드롭다운 메뉴 아이템 */
+.menuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: transparent;
+  color: #374151;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.menuItem.active {
+  background-color: #f0f9ff;
+  color: #0369a1;
+}
+
+.menuItem:hover:not(.active) {
+  background-color: #f9fafb;
+}
+
+.menuItem:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.menuItem:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+/* 알림 배지 */
+.notificationBadge {
+  background-color: #ef4444;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 1px 5px;
+  border-radius: 8px;
+  min-width: 16px;
+  text-align: center;
+  margin-left: 4px;
+}
+
+/* 사용자 정보 */
+.userInfo {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* 로그아웃 버튼 */
+.logoutButton {
+  padding: 8px 16px;
+  font-size: 14px;
+  background-color: #ef4444;
+  color: white;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.logoutButton:hover {
+  background-color: #dc2626;
+}
+
+.logoutButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.5);
+}

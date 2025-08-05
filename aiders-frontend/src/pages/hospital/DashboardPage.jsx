@@ -52,7 +52,7 @@ const InitialSetupModal = ({ onSave, onCancel }) => {
       neonatalTotalBed: neonatalTotal,
       neonatalAvailableBed: neonatalTotal
     };
-    console.log('🔍 초기 설정 데이터:', data);
+    // console.log('🔍 초기 설정 데이터:', data);
     onSave(data);
   };
 
@@ -217,14 +217,13 @@ export default function DashboardPage() {
     error, 
     hospitalInfo,
     hospitalLocation,
-    departmentStatus,
     bedInfo, 
     fetchHospitalInfo,
     fetchHospitalLocation,
-    fetchDepartmentStatus,
     fetchBedInfo, 
     decreaseBedManually, 
-    increaseBedManually 
+    increaseBedManually,
+    updateBedInfo
   } = useHospitalStore();
   
   const {
@@ -238,37 +237,46 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const initializeData = async () => {
-      console.log('🔍 DashboardPage - 초기화 시작');
-      console.log('🔍 DashboardPage - 사용자 정보:', {
-        userId: user?.userId,
-        username: user?.username,
-        userType: user?.userType,
-        fullUser: user
-      });
+      // console.log('🔍 DashboardPage - 초기화 시작');
+      // console.log('🔍 DashboardPage - 사용자 정보:', {
+      //   userId: user?.userId,
+      //   username: user?.username,
+      //   userType: user?.userType,
+      //   fullUser: user
+      // });
       
       if (user?.userId) {
-        console.log('🔍 병원 ID 설정:', user.userId);
+        // console.log('🔍 병원 ID 설정:', user.userId);
         // 병원 ID 설정
         setHospitalId(user.userId);
         
-        // 병원 정보, 위치, 진료과, 베드 정보, 알림 조회
-        const [hospitalResult, locationResult, departmentResult, bedResult] = await Promise.all([
-          fetchHospitalInfo(),
-          fetchHospitalLocation(),
-          fetchDepartmentStatus(),
-          fetchBedInfo(),
-          fetchAllAlarms(user.userId)
-        ]);
-        
-        console.log('📊 DashboardPage API 조회 결과들:');
-        console.log('  🏥 병원 정보:', hospitalResult);
-        console.log('  📍 위치 정보:', locationResult);
-        console.log('  🏥 진료과 정보:', departmentResult);
-        console.log('  🛏️ 베드 정보:', bedResult);
-        
-        // 기본값으로 초기화된 경우 초기 설정 모드로 전환
-        if (bedResult?.isDefault) {
-          setIsInitialSetup(true);
+        // 병원 정보, 위치, 베드 정보, 알림 조회 (에러 발생 시 개별 처리)
+        try {
+          await fetchHospitalInfo();
+        } catch (error) {
+          console.error('병원 정보 조회 실패:', error);
+        }
+
+        try {
+          await fetchHospitalLocation();
+        } catch (error) {
+          console.error('병원 위치 조회 실패:', error);
+        }
+
+        try {
+          const bedResult = await fetchBedInfo();
+          // 기본값으로 초기화된 경우 초기 설정 모드로 전환
+          if (bedResult?.isDefault) {
+            setIsInitialSetup(true);
+          }
+        } catch (error) {
+          console.error('병상 정보 조회 실패:', error);
+        }
+
+        try {
+          await fetchAllAlarms(user.userId);
+        } catch (error) {
+          console.error('알림 조회 실패:', error);
         }
       }
     };
@@ -277,31 +285,28 @@ export default function DashboardPage() {
   }, [user]);
 
   useEffect(() => {
-    console.log('🏥 DashboardPage - hospitalInfo 상태 변화:', hospitalInfo);
+    // console.log('🏥 DashboardPage - hospitalInfo 상태 변화:', hospitalInfo);
   }, [hospitalInfo]);
 
   useEffect(() => {
-    console.log('📍 DashboardPage - hospitalLocation 상태 변화:', hospitalLocation);
+    // console.log('📍 DashboardPage - hospitalLocation 상태 변화:', hospitalLocation);
   }, [hospitalLocation]);
 
-  useEffect(() => {
-    console.log('🏥 DashboardPage - departmentStatus 상태 변화:', departmentStatus);
-  }, [departmentStatus]);
 
   useEffect(() => {
-    console.log('🔍 bedInfo useEffect 실행 - bedInfo:', bedInfo);
+    // console.log('🔍 bedInfo useEffect 실행 - bedInfo:', bedInfo);
     
     if (bedInfo) {
-      console.log('🔍 bedInfo 상세 정보 (실제 API 필드):', {
-        generalTotalBed: bedInfo.generalTotalBed,
-        generalAvailableBed: bedInfo.generalAvailableBed,
-        pediatricTotalBed: bedInfo.pediatricTotalBed,
-        pediatricAvailableBed: bedInfo.pediatricAvailableBed,
-        traumaTotalBed: bedInfo.traumaTotalBed,
-        traumaAvailableBed: bedInfo.traumaAvailableBed,
-        neonatalTotalBed: bedInfo.neonatalTotalBed,
-        neonatalAvailableBed: bedInfo.neonatalAvailableBed
-      });
+      // console.log('🔍 bedInfo 상세 정보 (실제 API 필드):', {
+      //   generalTotalBed: bedInfo.generalTotalBed,
+      //   generalAvailableBed: bedInfo.generalAvailableBed,
+      //   pediatricTotalBed: bedInfo.pediatricTotalBed,
+      //   pediatricAvailableBed: bedInfo.pediatricAvailableBed,
+      //   traumaTotalBed: bedInfo.traumaTotalBed,
+      //   traumaAvailableBed: bedInfo.traumaAvailableBed,
+      //   neonatalTotalBed: bedInfo.neonatalTotalBed,
+      //   neonatalAvailableBed: bedInfo.neonatalAvailableBed
+      // });
       
       // 실제 API 응답 구조에 맞게 데이터 변환
       const transformedBeds = [
@@ -343,10 +348,10 @@ export default function DashboardPage() {
         }
       ];
       
-      console.log('🔍 변환된 beds 데이터:', transformedBeds);
+      // console.log('🔍 변환된 beds 데이터:', transformedBeds);
       setBeds(transformedBeds);
     } else {
-      console.log('🔍 bedInfo가 null/undefined입니다');
+      // console.log('🔍 bedInfo가 null/undefined입니다');
     }
   }, [bedInfo]);
 
@@ -354,24 +359,24 @@ export default function DashboardPage() {
     try {
       if (updateType === 'current') {
         // 현재 환자 수 변경 (수동 증감) - value는 이제 delta값 (+1 또는 -1)
-        console.log('🔍 DashboardPage - 환자 수 변경 요청:', {
-          bedType,
-          delta: value,
-          valueType: typeof value
-        });
+        // console.log('🔍 DashboardPage - 환자 수 변경 요청:', {
+        //   bedType,
+        //   delta: value,
+        //   valueType: typeof value
+        // });
 
         let result = { success: true };
         
         if (value > 0) {
           // 환자 수 증가 (+1) → 가용 병상 감소
-          console.log('📈 환자 수 증가 (가용 병상 감소) API 호출:', bedType);
+          // console.log('📈 환자 수 증가 (가용 병상 감소) API 호출:', bedType);
           result = await decreaseBedManually(bedType);
-          console.log('📈 환자 수 증가 결과:', result);
+          // console.log('📈 환자 수 증가 결과:', result);
         } else if (value < 0) {
           // 환자 수 감소 (-1) → 가용 병상 증가  
-          console.log('📉 환자 수 감소 (가용 병상 증가) API 호출:', bedType);
+          // console.log('📉 환자 수 감소 (가용 병상 증가) API 호출:', bedType);
           result = await increaseBedManually(bedType);
-          console.log('📉 환자 수 감소 결과:', result);
+          // console.log('📉 환자 수 감소 결과:', result);
         }
 
         if (!result?.success) {
@@ -401,7 +406,7 @@ export default function DashboardPage() {
           updateData.neonatalAvailableBed = Math.max(0, value - (currentBed?.currentPatients || 0));
         }
         
-        console.log('🔍 베드 업데이트 데이터:', updateData);
+        // console.log('🔍 베드 업데이트 데이터:', updateData);
 
         const result = await updateBedInfo(updateData);
         if (!result?.success) {
@@ -409,7 +414,7 @@ export default function DashboardPage() {
         }
       } else if (updateType === 'status') {
         // 상태 변경 (진료과 상태 업데이트)
-        console.log('Status update:', bedType, value);
+        // console.log('Status update:', bedType, value);
         // TODO: department API 연결
       }
     } catch (error) {
@@ -566,6 +571,7 @@ export default function DashboardPage() {
                     bed={bed} 
                     onUpdate={handleBedUpdate}
                     compact={true}
+                    readonly={true}
                   />
                 ))
               )}
