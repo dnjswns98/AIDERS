@@ -23,7 +23,7 @@ public class AlarmController {
     private final SimpMessagingTemplate messagingTemplate;
     private final AlarmService alarmService;
 
-    @MessageMapping("/alarm/send")
+    @MessageMapping("/alarm/v1/send")
     public void sendAlarm(AlarmMessage alarmMessage){
         if (alarmMessage.getCreatedAt() == null) {
             alarmMessage.setCreatedAt(LocalDateTime.now());

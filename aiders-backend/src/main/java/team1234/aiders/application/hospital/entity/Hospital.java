@@ -1,9 +1,6 @@
 package team1234.aiders.application.hospital.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
-import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -33,6 +30,13 @@ public class Hospital extends User {
 
     @Column(columnDefinition = "POINT")
     private Point location;
+
+    @OneToOne(mappedBy = "hospital", fetch = FetchType.LAZY)
+    private HospitalDepartment department;
+
+    @OneToOne(mappedBy = "hospital", fetch = FetchType.LAZY)
+    private EmergencyBed bed;
+
 
     @Builder
     public Hospital(String userKey, String password, String passwordResetKey, String role,
