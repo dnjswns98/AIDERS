@@ -1,5 +1,8 @@
+import { useEffect, useState } from "react";
 import HospitalHeader from "../../components/hospital/HospitalHeader";
-import useBedStore from "../../store/useBedStore";
+import useHospitalStore from "../../store/useHospitalStore";
+import useHospitalAlarmStore from "../../store/useHospitalAlarmStore";
+import { useAuthStore } from "../../store/useAuthStore";
 
 const ambulanceData = [
   {
@@ -31,12 +34,17 @@ const ambulanceData = [
   }
 ];
 
-const BedItem = ({ bed }) => {
-  const { updateCurrentPatients } = useBedStore();
-  
-  const handlePatientChange = (delta) => {
-    const newCurrent = bed.currentPatients + delta;
-    updateCurrentPatients(bed.id, newCurrent);
+const BedItem = ({ bed, onDecrease, onIncrease }) => {
+  const handleDecrease = () => {
+    if (bed.currentPatients > 0) {
+      onDecrease(bed.type);
+    }
+  };
+
+  const handleIncrease = () => {
+    if (bed.currentPatients < bed.totalBeds) {
+      onIncrease(bed.type);
+    }
   };
 
   const available = bed.totalBeds - bed.currentPatients;
@@ -90,7 +98,8 @@ const BedItem = ({ bed }) => {
           gap: '4px'
         }}>
           <button
-            onClick={() => handlePatientChange(-1)}
+            onClick={handleDecrease}
+            disabled={bed.currentPatients <= 0}
             style={{
               backgroundColor: '#f3f4f6',
               color: '#6b7280',
@@ -117,7 +126,8 @@ const BedItem = ({ bed }) => {
             {bed.currentPatients}
           </span>
           <button
-            onClick={() => handlePatientChange(1)}
+            onClick={handleIncrease}
+            disabled={bed.currentPatients >= bed.totalBeds}
             style={{
               backgroundColor: '#f3f4f6',
               color: '#6b7280',
@@ -155,7 +165,97 @@ const BedItem = ({ bed }) => {
 };
 
 export default function DashboardPage() {
-  const { beds, getStatistics } = useBedStore();
+  const { user } = useAuthStore();
+  const { 
+    loading, 
+    error, 
+    bedInfo, 
+    fetchBedInfo, 
+    decreaseBedManually, 
+    increaseBedManually 
+  } = useHospitalStore();
+  
+  const {
+    allAlarms,
+    fetchAllAlarms,
+    setHospitalId
+  } = useHospitalAlarmStore();
+
+  const [beds, setBeds] = useState([]);
+
+  useEffect(() => {
+    const initializeData = async () => {
+      if (user?.userId) {
+        // 병원 ID 설정
+        setHospitalId(user.userId);
+        
+        // 베드 정보와 알림 조회
+        await Promise.all([
+          fetchBedInfo(),
+          fetchAllAlarms(user.userId)
+        ]);
+      }
+    };
+
+    initializeData();
+  }, [user]);
+
+  useEffect(() => {
+    if (bedInfo) {
+      // 백엔드 데이터를 프론트엔드 형식으로 변환
+      const transformedBeds = [
+        {
+          id: 1,
+          name: '중환자실',
+          category: 'ICU',
+          type: 'ICU',
+          totalBeds: bedInfo.icuTotal || 0,
+          currentPatients: bedInfo.icuUsed || 0
+        },
+        {
+          id: 2,
+          name: '응급실',
+          category: 'ER',
+          type: 'EMERGENCY',
+          totalBeds: bedInfo.emergencyTotal || 0,
+          currentPatients: bedInfo.emergencyUsed || 0
+        },
+        {
+          id: 3,
+          name: '일반병동',
+          category: 'WARD',
+          type: 'GENERAL',
+          totalBeds: bedInfo.generalTotal || 0,
+          currentPatients: bedInfo.generalUsed || 0
+        }
+      ];
+      setBeds(transformedBeds);
+    }
+  }, [bedInfo]);
+
+  const handleDecreaseBed = async (bedType) => {
+    const result = await decreaseBedManually(bedType);
+    if (!result.success) {
+      alert('베드 감소에 실패했습니다: ' + result.error);
+    }
+  };
+
+  const handleIncreaseBed = async (bedType) => {
+    const result = await increaseBedManually(bedType);
+    if (!result.success) {
+      alert('베드 증가에 실패했습니다: ' + result.error);
+    }
+  };
+
+  // 통계 계산
+  const getStatistics = () => {
+    const totalBeds = beds.reduce((sum, bed) => sum + bed.totalBeds, 0);
+    const totalPatients = beds.reduce((sum, bed) => sum + bed.currentPatients, 0);
+    const availableBeds = totalBeds - totalPatients;
+    
+    return { totalBeds, totalPatients, availableBeds };
+  };
+
   const stats = getStatistics();
 
   return (
@@ -236,9 +336,28 @@ export default function DashboardPage() {
               maxHeight: 'calc(100vh - 280px)',
               overflowY: 'auto'
             }}>
-              {beds.map((bed) => (
-                <BedItem key={bed.id} bed={bed} />
-              ))}
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
+                  베드 정보를 불러오는 중...
+                </div>
+              ) : error ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#ef4444' }}>
+                  오류: {error}
+                </div>
+              ) : beds.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
+                  베드 정보가 없습니다.
+                </div>
+              ) : (
+                beds.map((bed) => (
+                  <BedItem 
+                    key={bed.id} 
+                    bed={bed} 
+                    onDecrease={handleDecreaseBed}
+                    onIncrease={handleIncreaseBed}
+                  />
+                ))
+              )}
             </div>
           </div>
 
@@ -330,8 +449,13 @@ export default function DashboardPage() {
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {ambulanceData.map((ambulance) => (
-                <div key={ambulance.id} style={{
+              {allAlarms.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
+                  현재 접수된 구급차가 없습니다.
+                </div>
+              ) : (
+                allAlarms.slice(0, 10).map((alarm) => (
+                <div key={alarm.id} style={{
                   padding: '12px',
                   backgroundColor: '#fefefe',
                   borderRadius: '8px',
@@ -348,16 +472,16 @@ export default function DashboardPage() {
                       fontWeight: '600',
                       color: '#1f2937',
                       fontSize: '14px'
-                    }}>{ambulance.vehicleNumber}</span>
+                    }}>{alarm.ambulanceKey || '구급차'}</span>
                     <span style={{
                       fontSize: '12px',
                       padding: '4px 8px',
                       borderRadius: '12px',
-                      backgroundColor: ambulance.priority === '응급' ? '#fee2e2' : '#fef3c7',
-                      color: ambulance.priority === '응급' ? '#991b1b' : '#92400e',
+                      backgroundColor: alarm.type === 'MATCHING' ? '#fee2e2' : '#fef3c7',
+                      color: alarm.type === 'MATCHING' ? '#991b1b' : '#92400e',
                       fontWeight: '600'
                     }}>
-                      {ambulance.priority}
+                      {alarm.type === 'MATCHING' ? '매칭' : alarm.type === 'REQUEST' ? '통화요청' : '수정'}
                     </span>
                   </div>
                   
@@ -367,13 +491,10 @@ export default function DashboardPage() {
                     color: '#4b5563'
                   }}>
                     <div style={{ marginBottom: '6px' }}>
-                      <strong>환자:</strong> {ambulance.patientInfo}
+                      <strong>메시지:</strong> {alarm.message || '알림 내용 없음'}
                     </div>
                     <div style={{ marginBottom: '6px' }}>
-                      <strong>증상:</strong> {ambulance.condition}
-                    </div>
-                    <div style={{ marginBottom: '6px' }}>
-                      <strong>거리:</strong> {ambulance.distance}
+                      <strong>시간:</strong> {new Date(alarm.createdAt).toLocaleString('ko-KR')}
                     </div>
                   </div>
                   
@@ -391,11 +512,12 @@ export default function DashboardPage() {
                       fontWeight: '600',
                       color: '#065f46'
                     }}>
-                      🕐 도착예정: {ambulance.eta}
+                      🚨 {alarm.type === 'MATCHING' ? '매칭 완료' : alarm.type === 'REQUEST' ? '통화 요청' : '정보 수정'}
                     </span>
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
