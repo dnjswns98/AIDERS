@@ -1,5 +1,6 @@
 import HospitalHeader from "../../components/hospital/HospitalHeader";
 import useBedStore from "../../store/useBedStore";
+import TestHospitalCallPage from "./TestHospitalCallPage";
 
 const ambulanceData = [
   {
@@ -161,6 +162,7 @@ export default function DashboardPage() {
   return (
     <>
       <HospitalHeader />
+      <TestHospitalCallPage />
       
       <main style={{ 
         paddingTop: '64px', 

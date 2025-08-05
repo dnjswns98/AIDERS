@@ -29,17 +29,20 @@ export default function WebRtcCall({ sessionId, ambulanceId, onLeave }) {
   const { isFullScreen, toggleFullScreen } = useFullScreen();
 
   // 컴포넌트 생명주기 관리
-  useEffect(() => {
-    joinSession();
-    
-    const handleBeforeUnload = () => leaveSession();
-    window.addEventListener("beforeunload", handleBeforeUnload);
+useEffect(() => {
+  joinSession();
 
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      leaveSession();
-    };
-  }, [joinSession, leaveSession]);
+  // beforeunload 이벤트는 페이지를 완전히 벗어날 때만 호출되도록:
+  const handleBeforeUnload = (event) => {
+    leaveSession();
+  };
+  window.addEventListener("beforeunload", handleBeforeUnload);
+
+  return () => {
+    window.removeEventListener("beforeunload", handleBeforeUnload);
+    leaveSession();
+  };
+}, []);
 
   // PiP 모드 관리
   useEffect(() => {

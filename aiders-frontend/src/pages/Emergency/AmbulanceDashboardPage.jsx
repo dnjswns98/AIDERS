@@ -1,5 +1,3 @@
-// src/pages/Emergency/AmbulanceDashboardPage.jsx
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import AmbulanceLayout from "../../components/Emergency/Layout/AmbulanceLayout";
@@ -7,6 +5,7 @@ import MapDisplay from "../../components/Emergency/MapDisplay";
 import WebRtcCall from "../../components/webRTC/WebRtcCall";
 import useEmergencyStore from "../../store/useEmergencyStore";
 import HospitalCard from "../../components/Emergency/HospitalCard";
+import { useAuthStore } from "../../store/useAuthStore";
 
 export default function AmbulanceDashboardPage() {
   const navigate = useNavigate();
@@ -16,14 +15,30 @@ export default function AmbulanceDashboardPage() {
   const { selectedAmbulance, fetchAmbulances } = useEmergencyStore();
   const [isCalling, setIsCalling] = useState(false);
 
+  const { user } = useAuthStore();
+  if (!user?.userKey) {
+    return <div>로그인된 구급차 정보가 없습니다.</div>;
+  }
+
+  const currentRealUserKey = user.userKey;
+  if (!user?.userId) {
+    return <div>구급차 ID를 불러오지 못했다. 노오력이 부족하다.</div>;
+  }
+
+  const currentRealAmbulancId = user.userId;
+
+  useEffect(() => {
+    console.log("sessionID :", currentRealUserKey);
+    console.log("ambulanceID :", currentRealAmbulancId);
+  }, [currentRealUserKey, currentRealAmbulancId]);
+
   useEffect(() => {
     fetchAmbulances();
   }, [fetchAmbulances]);
 
   // 환자 정보는 navigation state(formData) → Zustand → 빈 객체 우선순위로 가져옴
   const patientFromState = state.formData;
-  const patient =
-    patientFromState || selectedAmbulance?.patientInfo || {};
+  const patient = patientFromState || selectedAmbulance?.patientInfo || {};
   const details = patientFromState
     ? {
         ktasLevel: patientFromState.ktasLevel || "-",
@@ -34,7 +49,7 @@ export default function AmbulanceDashboardPage() {
         vitalSigns: patientFromState.vitalSigns || {},
         medications: patientFromState.medications || [],
         department: patientFromState.department || "-",
-        ageRange: patientFromState.ageRange || "-"
+        ageRange: patientFromState.ageRange || "-",
       }
     : selectedAmbulance?.patientDetails || {};
 
@@ -52,10 +67,10 @@ export default function AmbulanceDashboardPage() {
       familyHistory:
         selectedAmbulance.patientDetails?.familyHistory?.father || "",
       pastHistory:
-        selectedAmbulance.patientDetails?.pastHistory?.hypertension || ""
+        selectedAmbulance.patientDetails?.pastHistory?.hypertension || "",
     };
     navigate("/emergency/patient-input", {
-      state: { isEditMode: true, formData }
+      state: { isEditMode: true, formData },
     });
   };
 
@@ -66,7 +81,9 @@ export default function AmbulanceDashboardPage() {
     return (
       <AmbulanceLayout>
         <div className="bg-white p-8 rounded-lg shadow-md text-center">
-          <h1 className="text-2xl font-bold mb-4">선택된 구급차 정보가 없습니다.</h1>
+          <h1 className="text-2xl font-bold mb-4">
+            선택된 구급차 정보가 없습니다.
+          </h1>
           <p>소방서 대시보드에서 구급차를 선택해주세요.</p>
         </div>
       </AmbulanceLayout>
@@ -151,13 +168,13 @@ export default function AmbulanceDashboardPage() {
             <div className="flex-grow bg-gray-200 rounded-lg flex items-center justify-center min-h-[300px]">
               {isCalling ? (
                 <WebRtcCall
-                  sessionId={"ambulance-call"}
-                  userName={`ambulance-${selectedAmbulance?.id || "unknown"}`}
+                  sessionId={currentRealAmbulancId}
+                  ambulanceId={currentRealAmbulancId}
                   onLeave={handleCallEnd}
-                  ambulanceId={selectedAmbulance?.id || 0}
                   patientName={patient.name || ""}
                   ktas={details.ktasLevel || ""}
-                  hospitalId={hospitals.length > 0 ? hospitals[0].id : 0}
+                  // hospitalId={hospitals.length > 0 ? hospitals[0].id : 0}
+                  hospitalId='241' 
                 />
               ) : (
                 <p className="text-center text-gray-500">
@@ -167,6 +184,8 @@ export default function AmbulanceDashboardPage() {
             </div>
           </div>
         </div>
+
+        <button>asdai</button>
       </div>
     </AmbulanceLayout>
   );
