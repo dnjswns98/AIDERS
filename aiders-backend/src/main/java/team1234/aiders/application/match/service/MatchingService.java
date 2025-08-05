@@ -9,10 +9,13 @@ import team1234.aiders.application.hospital.dto.HospitalData;
 import team1234.aiders.application.hospital.entity.Hospital;
 import team1234.aiders.application.hospital.repository.HospitalRepository;
 import team1234.aiders.application.match.dto.MatchingCondition;
-import team1234.aiders.common.util.DistanceUtils;
+import static team1234.aiders.common.util.DistanceUtils.calculateDistance;
 
-import java.util.Comparator;
-import java.util.List;
+import team1234.aiders.application.report.repository.ReportRepository;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +24,7 @@ public class MatchingService {
 
     private final AmbulanceRepository ambulanceRepository;
     private final HospitalRepository hospitalRepository;
-    private final DistanceUtils distanceUtils;
+    private final ReportRepository reportRepository;
 
     record ScoredHospitalData(HospitalData data, double distance) {}
 
@@ -48,10 +51,26 @@ public class MatchingService {
         List<ScoredHospitalData> nearestHospitals = hospitalDataList.stream()
                 .map(h -> new ScoredHospitalData(
                         h,
-                        distanceUtils.calculateDistance(ambLat, ambLng, h.getHospital().getLatitude(), h.getHospital().getLongitude())))
+                        calculateDistance(ambLat, ambLng, h.getHospital().getLatitude(), h.getHospital().getLongitude())))
                 .sorted(Comparator.comparingDouble(ScoredHospitalData::distance)) // 거리 기준 정렬
                 .limit(10)
                 .toList();
+
+        // 병원 이름 리스트
+        List<String> topHospitalNames = nearestHospitals.stream()
+                .map(h -> h.data().getHospital().getName())
+                .toList();
+
+        // 최근 이송 횟수 조회 (최근 1일 기준)
+        LocalDateTime ago = LocalDateTime.now().minusDays(1);
+        List<Object[]> result = reportRepository.countRecentTransfersByHospitalName(ago, topHospitalNames);
+
+        // 병원이름 -> 이송 횟수 맵핑
+        Map<String, Long> recentTransferCountMap = result.stream()
+                .collect(Collectors.toMap(
+                        row -> (String) row[0],
+                        row -> (Long) row[1]
+                ));
 
         return null;
     }
