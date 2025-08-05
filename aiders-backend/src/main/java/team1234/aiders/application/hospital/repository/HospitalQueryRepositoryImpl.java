@@ -28,7 +28,6 @@ public class HospitalQueryRepositoryImpl implements HospitalQueryRepository {
         BooleanBuilder builder = new BooleanBuilder();
 
         // 진료과 필터링
-        // 진료과 필터링
         if (condition.getDepartmentCode() != null) {
             switch (condition.getDepartmentCode()) {
                 case "im" -> builder.and(d.imIsExist.isTrue().and(d.imIsAvailable.isTrue()));     // 내과
