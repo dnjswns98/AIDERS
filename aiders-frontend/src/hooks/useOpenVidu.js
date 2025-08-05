@@ -185,7 +185,9 @@ export const useOpenVidu = ({
             console.log("[streamCreated] 새 구독자 추가");
 
             // 스트림 연결
+            
             if (subscriber.stream?.hasVideo && sessionContext.publisher) {
+              console.log("local!!:",sessionContext.publisher.stream.getMediaStream(),"||| remote!!!!:",subscriber.stream.getMediaStream())
               startCall(
                 sessionContext.publisher.stream.getMediaStream(),
                 subscriber.stream.getMediaStream()

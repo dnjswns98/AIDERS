@@ -53,6 +53,7 @@ export const WebRtcProvider = ({ children }) => {
     console.log('WebRtcContext: startCall called.', { local, remote });
     setIsCallActive(true);
     setLocalStream(local);
+    console.log("this is remote!!!!!! : ",remote)
     if (remote) {
       setRemoteStream(remote);
     } else {
