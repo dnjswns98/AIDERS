@@ -48,6 +48,43 @@ export const useAuthStore = create(
       isAuthenticated: () => {
         const { accessToken } = get();
         return !!accessToken;
+      },
+
+      // 토큰 갱신
+      refreshAccessToken: async () => {
+        const { refreshToken } = get();
+        
+        if (!refreshToken) {
+          throw new Error('Refresh token이 없습니다.');
+        }
+
+        try {
+          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/reissue`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              refreshToken: refreshToken
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          
+          // 새로운 access token 저장
+          set({ accessToken: data.accessToken });
+          
+          return data.accessToken;
+        } catch (error) {
+          console.error('토큰 갱신 실패:', error);
+          // 갱신 실패 시 로그아웃
+          get().logout();
+          throw error;
+        }
       }
     }),
     {

@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import { fetchWithAuth } from "../utils/apiInterceptor"
 
 export const useAccountStore = create((set, get) => ({
   accounts: [],
@@ -13,10 +14,6 @@ export const useAccountStore = create((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      // useAuthStore에서 accessToken 가져오기
-      const { useAuthStore } = await import('./useAuthStore');
-      const { accessToken } = useAuthStore.getState();
-      
       const params = new URLSearchParams({
         page: page.toString(),
         size: size.toString(),
@@ -26,13 +23,9 @@ export const useAccountStore = create((set, get) => ({
       if (search) params.append('search', search);
       if (role) params.append('role', role);
 
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-      const response = await fetch(`${baseUrl}/api/v1/user/?${params}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+      const response = await fetchWithAuth(`${baseUrl}/api/v1/user/?${params}`, {
+        method: 'GET'
       });
 
       if (!response.ok) {
@@ -116,7 +109,7 @@ export const useAccountStore = create((set, get) => ({
       const { useAuthStore } = await import('./useAuthStore');
       const { accessToken } = useAuthStore.getState();
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/user/regist/ambulance`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/user/regist/ambulance`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -189,7 +182,7 @@ export const useAccountStore = create((set, get) => ({
 
       console.log('Organization registration request:', requestBody);
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/user/regist/organization`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/user/regist/organization`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
