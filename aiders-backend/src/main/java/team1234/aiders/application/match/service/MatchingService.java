@@ -28,6 +28,19 @@ public class MatchingService {
 
     record ScoredHospitalData(HospitalData data, double distance) {}
 
+    public Hospital getMatchedHospital(Long ambulanceId) {
+        Ambulance ambulance = ambulanceRepository.findById(ambulanceId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 구급차를 찾을 수 없습니다."));
+
+        Hospital matchedHospital = ambulance.getHospital();
+
+        if (matchedHospital == null) {
+            throw new IllegalStateException("아직 병원이 매칭되지 않았습니다.");
+        }
+
+        return matchedHospital;
+    }
+
     public Hospital autoMatch(Long ambulanceId, double ambLat, double ambLng) {
 
         Ambulance ambulance = ambulanceRepository.findById(ambulanceId)
