@@ -115,6 +115,34 @@ public class MatchingService {
         long transferCount = transferCountMap.getOrDefault(h.getHospital().getName(), 0L);
         double recentPenalty = transferCount * 2;
 
-        return (100 / (distance + 1)) + urgencyFactor * 5 - recentPenalty;
+        double bonus = calcDepartmentBonus(h, amb);
+
+        return (100 / (distance + 1)) + bonus + urgencyFactor * 5 - recentPenalty;
     }
+
+    // 보너스 점수 계산
+    private double calcDepartmentBonus(HospitalData h, Ambulance amb) {
+        String dept = amb.getPDepartment();
+        if (dept == null) return 0;
+
+        String mappedDept = mapToCode(dept);
+
+        return switch (mappedDept) {
+            case "gs" -> h.getDepartment().getGsIsAvailable() ? 10 : 0;
+            case "ts" -> h.getDepartment().getTsIsAvailable() ? 10 : 0;
+            case "os" -> h.getDepartment().getOsIsAvailable() ? 10 : 0;
+            case "pd" -> h.getDepartment().getPdIsAvailable() ? 10 : 0;
+            case "im" -> h.getDepartment().getImIsAvailable() ? 10 : 0;
+            case "nr" -> h.getDepartment().getNrIsAvailable() ? 10 : 0;
+            case "ob" -> h.getDepartment().getObIsAvailable() ? 10 : 0;
+            case "op" -> h.getDepartment().getOpIsAvailable() ? 10 : 0;
+            case "ent" -> h.getDepartment().getEntIsAvailable() ? 10 : 0;
+            case "dr" -> h.getDepartment().getDrIsAvailable() ? 10 : 0;
+            case "ur" -> h.getDepartment().getUrIsAvailable() ? 10 : 0;
+            case "psy" -> h.getDepartment().getPsyIsAvailable() ? 10 : 0;
+            case "dt" -> h.getDepartment().getDtIsAvailable() ? 10 : 0;
+            default -> 0;
+        };
+    }
+
 }
