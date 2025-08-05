@@ -70,7 +70,7 @@ public class Ambulance extends User {
             String passwordResetKey,
             Firestation firestation
     ) {
-        super(userKey, role, password, passwordResetKey);
+        super(userKey, password, passwordResetKey, role);
         this.firestation = firestation;
     }
 
