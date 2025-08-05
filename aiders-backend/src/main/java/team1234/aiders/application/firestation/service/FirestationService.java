@@ -3,6 +3,7 @@ package team1234.aiders.application.firestation.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import team1234.aiders.application.firestation.dto.FirestationInfoResponseDto;
 import team1234.aiders.application.firestation.dto.FirestationLocationResponseDto;
 import team1234.aiders.application.firestation.entity.Firestation;
 import team1234.aiders.application.firestation.repository.FirestationRepository;
@@ -17,9 +18,21 @@ public class FirestationService {
 
     @Transactional(readOnly = true)
     public FirestationLocationResponseDto getFirestationLocation(CustomUserDetails user) {
-        Firestation  firestation = firestationRepository.findById(user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Firestation Not Found"));
+        Firestation firestation = findFirestation(user);
 
         return FirestationLocationResponseDto.fromEntity(firestation);
+    }
+
+    @Transactional(readOnly = true)
+    public FirestationInfoResponseDto getFirestationInfo(CustomUserDetails user) {
+        Firestation firestation = findFirestation(user);
+
+        return FirestationInfoResponseDto.fromEntity(firestation);
+    }
+
+    private Firestation findFirestation(CustomUserDetails user) {
+        Firestation firestation = firestationRepository.findById(user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Firestation Not Found"));
+        return firestation;
     }
 }
