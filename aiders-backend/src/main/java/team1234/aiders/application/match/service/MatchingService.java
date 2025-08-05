@@ -72,7 +72,19 @@ public class MatchingService {
                         row -> (Long) row[1]
                 ));
 
-        return null;
+        // 점수 계산 및 병원 선택
+        ScoredHospitalData selected = nearestHospitals.stream()
+                .max(Comparator.comparingDouble(h ->
+                        calculateScore(h.data(), h.distance(), ambulance, recentTransferCountMap)))
+                .orElseThrow(() -> new IllegalStateException("No suitable hospital"));
+
+        // 구급차에 병원 정보 저장
+        Hospital hospital = selected.data().getHospital();
+        ambulance.setHospital(hospital);
+        ambulance.setHospitalName(hospital.getName());
+        ambulance.setHospitalAddress(hospital.getAddress());
+
+        return hospital;
     }
 
     // 진료과 문자열을 코드로 변환
@@ -95,5 +107,14 @@ public class MatchingService {
             case "치과" -> "dt";
             default -> null;
         };
+    }
+
+    // 점수 계산 함수
+    private double calculateScore(HospitalData h, double distance, Ambulance amb, Map<String, Long> transferCountMap) {
+        double urgencyFactor = 6 - amb.getPKtas();
+        long transferCount = transferCountMap.getOrDefault(h.getHospital().getName(), 0L);
+        double recentPenalty = transferCount * 2;
+
+        return (100 / (distance + 1)) + urgencyFactor * 5 - recentPenalty;
     }
 }
