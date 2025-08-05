@@ -44,6 +44,7 @@ public class HospitalQueryRepositoryImpl implements HospitalQueryRepository {
                 case "ur" -> builder.and(d.urIsExist.isTrue().and(d.urIsAvailable.isTrue()));     // 비뇨의학과
                 case "psy" -> builder.and(d.psyIsExist.isTrue().and(d.psyIsAvailable.isTrue()));  // 정신건강의학과
                 case "dt" -> builder.and(d.dtIsExist.isTrue().and(d.dtIsAvailable.isTrue()));     // 치과
+                case "ns" -> builder.and(d.nsIsExist.isTrue().and(d.nsIsAvailable.isTrue()));
             }
         }
 

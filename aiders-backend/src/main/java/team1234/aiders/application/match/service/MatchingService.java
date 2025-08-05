@@ -118,6 +118,7 @@ public class MatchingService {
             case "비뇨의학과" -> "ur";
             case "정신건강의학과" -> "psy";
             case "치과" -> "dt";
+            case "신경외과" -> "ns";
             default -> null;
         };
     }
@@ -155,6 +156,7 @@ public class MatchingService {
             case "ur" -> h.getDepartment().getUrIsAvailable() ? 10 : 0;
             case "psy" -> h.getDepartment().getPsyIsAvailable() ? 10 : 0;
             case "dt" -> h.getDepartment().getDtIsAvailable() ? 10 : 0;
+            case "ns" -> h.getDepartment().getNsIsAvailable() ? 10 : 0;
             default -> 0;
         };
     }
