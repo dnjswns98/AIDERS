@@ -46,7 +46,6 @@ public class SecurityConfig {
 
     //TODO: ADMIN 전용 API 경로들
     private static final String[] ADMIN_ENDPOINT = {
-
     };
 
     //TODO: AMBULANCE 전용 API 경로들

@@ -39,15 +39,15 @@ public class UserController {
     @PostMapping("/regist/ambulance")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserRegistResponseDto> registerAmbulance(@RequestBody AmbulanceRegistRequestDto request) {
-        userService.registAmbulance(request);
-        return ResponseEntity.ok().build();
+        UserRegistResponseDto response = userService.registAmbulance(request);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/regist/organization")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserRegistResponseDto> registOrganization(@RequestBody OrganizationRegisterRequestDto request) {
-        userService.registOrganization(request);
-        return ResponseEntity.ok().build();
+        UserRegistResponseDto response = userService.registOrganization(request);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/password/auth")
