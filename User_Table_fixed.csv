@@ -1,0 +1,5 @@
+user_key,role,password,encoded_password
+admin,admin,8e9de9cd-edaf-4325-a2ef-b225542be2d1,$2b$12$6gRy71JwSypq/NSqHj.fWODy0gC/8nBleQThNzcXX7b1NJkN8vwNu
+6110582,firestation,42f368b1-b5cf-44e9-a1e6-38b953cf4337,$2b$10$7uW3IEV99ReavDpkF/MiX.grfGqiwt.27hfpeGeauklemOZ51R/za
+A1700023,hospital,ad567afe-ce4c-445e-8538-4bddcdca2bff,$2b$04$SQHFzI.WWc5mXZlENBkKXevcBNUgvSEzgFWo5HDn9PeN7/wMtEo0K
+998버4200,ambulance,8dedb374-c0d8-4525-85ad-e48d4372bc0d,$2b$12$VzTtCLNS8zhFg9y1ab59/.9JYi1y.Rf0hIaavr.EZ3fhSqsPHZrOC

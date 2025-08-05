@@ -1,18 +1,55 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAccountStore } from "../../store/useAccountStore";
 import DeleteModal from "./DeleteModal";
 
 import './accountList.css';
 
 export default function AccountList() {
-  const { accounts, loading, error, fetchAccounts, deleteAccount } = useAccountStore();
+  const { 
+    accounts, 
+    loading, 
+    error, 
+    currentPage, 
+    totalPages, 
+    totalElements,
+    fetchAccounts, 
+    deleteAccount 
+  } = useAccountStore();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
 
   // 컴포넌트 마운트 시 사용자 목록 조회
   useEffect(() => {
     fetchAccounts();
   }, [fetchAccounts]);
+
+  // 검색 핸들러 (디바운스 효과)
+  const debouncedSearch = useCallback(() => {
+    if (searchTerm.length >= 2 || searchTerm.length === 0) {
+      fetchAccounts(0, 15, searchTerm, roleFilter);
+    }
+  }, [searchTerm, roleFilter, fetchAccounts]);
+
+  // 검색어 변경 시 자동 검색 (2글자 이상일 때)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      debouncedSearch();
+    }, 300); // 300ms 디바운스
+
+    return () => clearTimeout(timeoutId);
+  }, [debouncedSearch]);
+
+  // 페이지 변경 핸들러
+  const handlePageChange = (newPage) => {
+    fetchAccounts(newPage, 15, searchTerm, roleFilter);
+  };
+
+  // 검색 핸들러
+  const handleSearch = () => {
+    fetchAccounts(0, 15, searchTerm, roleFilter);
+  };
 
   const handleDeleteClick = (account) => {
     setAccountToDelete(account);
@@ -32,14 +69,62 @@ export default function AccountList() {
   };
 
   return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
     <div className="account-list-card">
       <div className="account-list-header">
-        <h2 className="account-list-title">
-          계정 조회
-        </h2>
-        <p className="account-list-subtitle">
-          등록된 모든 계정을 조회하고 관리할 수 있습니다.
-        </p>
+        <div>
+          <h2 className="account-list-title">
+            계정 조회
+          </h2>
+          <p className="account-list-subtitle">
+            등록된 모든 계정을 조회하고 관리할 수 있습니다. (총 {totalElements}개)
+          </p>
+        </div>
+        
+        {/* 검색 및 필터 */}
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '16px' }}>
+          <input
+            type="text"
+            placeholder="사용자 키 검색..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '14px'
+            }}
+          />
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '14px'
+            }}
+          >
+            <option value="">모든 역할</option>
+            <option value="hospital">병원</option>
+            <option value="ambulance">구급대원</option>
+            <option value="firestation">소방서</option>
+          </select>
+          <button
+            onClick={handleSearch}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '14px',
+              cursor: 'pointer'
+            }}
+          >
+            검색
+          </button>
+        </div>
       </div>
 
       <div className="account-list-body">
@@ -80,24 +165,23 @@ export default function AccountList() {
             <table className="account-table">
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>역할</th>
                   <th>사용자 키</th>
                   <th>생성일</th>
                   <th>수정일</th>
-                  <th>작업</th>
+                  <th>삭제</th>
                 </tr>
               </thead>
               <tbody>
                 {accounts.map((account) => (
                   <tr key={account.id}>
-                    <td>{account.id}</td>
                     <td className="account-type-cell">
                       <span className="account-type-icon-spacing">
                         {account.type === "관리자" && "👨‍💼"}
                         {account.type === "병원" && "🏥"}
                         {account.type === "구급대원" && "🚑"}
                         {account.type === "소방서" && "🚒"}
+                        {!["관리자", "병원", "구급대원", "소방서"].includes(account.type) && "👤"}
                       </span>
                       <span className="account-type-text">{account.type}</span>
                     </td>
@@ -126,6 +210,47 @@ export default function AccountList() {
           </div>
         )}
       </div>
+      
+      {/* 페이지네이션 - 하단 고정 */}
+      {!loading && !error && totalPages > 1 && (
+        <div className="pagination-container">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 0}
+            className={`pagination-button ${currentPage === 0 ? 'disabled' : ''}`}
+          >
+            이전
+          </button>
+          
+          {/* 페이지 번호들 */}
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            const startPage = Math.max(0, Math.min(currentPage - 2, totalPages - 5));
+            const pageNum = startPage + i;
+            
+            return (
+              <button
+                key={pageNum}
+                onClick={() => handlePageChange(pageNum)}
+                className={`pagination-button ${currentPage === pageNum ? 'active' : ''}`}
+              >
+                {pageNum + 1}
+              </button>
+            );
+          })}
+          
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage >= totalPages - 1}
+            className={`pagination-button ${currentPage >= totalPages - 1 ? 'disabled' : ''}`}
+          >
+            다음
+          </button>
+          
+          <span className="pagination-info">
+            {currentPage + 1} / {totalPages} 페이지
+          </span>
+        </div>
+      )}
 
       <DeleteModal
         isOpen={deleteModalOpen}
@@ -133,6 +258,7 @@ export default function AccountList() {
         onConfirm={handleDeleteConfirm}
         account={accountToDelete}
       />
+    </div>
     </div>
   );
 }

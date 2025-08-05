@@ -20,7 +20,7 @@ export const useAuthStore = create(
         // API 호출로 서버에서 refresh token 제거
         if (accessToken) {
           try {
-            await fetch('http://localhost:8080/api/v1/auth/logout', {
+            await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/logout`, {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${accessToken}`,

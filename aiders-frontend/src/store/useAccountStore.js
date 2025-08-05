@@ -26,7 +26,8 @@ export const useAccountStore = create((set, get) => ({
       if (search) params.append('search', search);
       if (role) params.append('role', role);
 
-      const response = await fetch(`http://localhost:8080/api/v1/user/?${params}`, {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+      const response = await fetch(`${baseUrl}/api/v1/user/?${params}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -35,27 +36,35 @@ export const useAccountStore = create((set, get) => ({
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
       
-      // 백엔드 응답을 프론트엔드 형식으로 변환
-      const transformedAccounts = data.content.map(user => ({
-        id: user.id,
-        accountId: user.userKey,
-        type: getRoleDisplayName(user.role),
-        password: user.password,
-        role: user.role,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt
-      }));
+      // 백엔드 응답을 프론트엔드 형식으로 변환 (admin 제외)
+      const transformedAccounts = data.content
+        .filter(user => user.role !== 'admin' && user.role !== 'ROLE_ADMIN')
+        .map(user => ({
+          id: user.id,
+          accountId: user.userKey,
+          type: getRoleDisplayName(user.role),
+          password: user.password,
+          role: user.role,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
+        }));
 
+      // admin 계정을 제외한 실제 계정 수 계산
+      const adminCount = data.content.filter(user => 
+        user.role === 'admin' || user.role === 'ROLE_ADMIN'
+      ).length;
+      
       set({
         accounts: transformedAccounts,
         currentPage: data.number,
         totalPages: data.totalPages,
-        totalElements: data.totalElements,
+        totalElements: data.totalElements - adminCount, // 전체에서 admin 수 제외
         loading: false
       });
 
@@ -75,7 +84,7 @@ export const useAccountStore = create((set, get) => ({
       const { useAuthStore } = await import('./useAuthStore');
       const { accessToken } = useAuthStore.getState();
 
-      const response = await fetch(`http://localhost:8080/api/v1/user/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/user/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -101,6 +110,137 @@ export const useAccountStore = create((set, get) => ({
     }
   },
 
+  // 구급차 계정 등록
+  registerAmbulance: async (userData) => {
+    try {
+      const { useAuthStore } = await import('./useAuthStore');
+      const { accessToken } = useAuthStore.getState();
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/user/regist/ambulance`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userKey: userData.userKey,
+          role: 'ambulance',
+          name: userData.name
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Ambulance registration error:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+      }
+
+      const responseText = await response.text();
+      console.log('Ambulance registration response:', responseText);
+      
+      // 빈 응답 처리 (백엔드에서 ResponseEntity.ok().build()를 반환하는 경우)
+      if (!responseText || responseText.trim() === '') {
+        console.log('빈 응답을 받았습니다. 계정 생성은 성공했지만 패스워드 정보가 없습니다.');
+        return {
+          success: true,
+          password: '임시패스워드가 생성되었습니다',
+          passwordResetKey: '관리자에게 문의하세요'
+        };
+      }
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error('JSON parse error:', jsonError);
+        console.error('Response text:', responseText);
+        throw new Error(`Invalid JSON response: ${responseText}`);
+      }
+
+      console.log('구급차 계정 생성 완료:', data);
+      return {
+        success: true,
+        password: data.password,
+        passwordResetKey: data.passwordResetKey
+      };
+    } catch (error) {
+      console.error('구급차 계정 생성 실패:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+
+  // 기관 계정 등록 (병원/소방서)
+  registerOrganization: async (userData) => {
+    try {
+      const { useAuthStore } = await import('./useAuthStore');
+      const { accessToken } = useAuthStore.getState();
+
+      const requestBody = {
+        userKey: userData.userKey,
+        role: userData.role, // 'hospital' or 'firestation'
+        address: userData.address,
+        name: userData.name,
+        latitude: userData.latitude || 0,
+        longitude: userData.longitude || 0
+      };
+
+      console.log('Organization registration request:', requestBody);
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/user/regist/organization`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Organization registration error:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+      }
+
+      const responseText = await response.text();
+      console.log('Organization registration response:', responseText);
+      
+      // 빈 응답 처리 (백엔드에서 ResponseEntity.ok().build()를 반환하는 경우)
+      if (!responseText || responseText.trim() === '') {
+        console.log('빈 응답을 받았습니다. 계정 생성은 성공했지만 패스워드 정보가 없습니다.');
+        return {
+          success: true,
+          password: '임시패스워드가 생성되었습니다',
+          passwordResetKey: '관리자에게 문의하세요'
+        };
+      }
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error('JSON parse error:', jsonError);
+        console.error('Response text:', responseText);
+        throw new Error(`Invalid JSON response: ${responseText}`);
+      }
+
+      console.log('기관 계정 생성 완료:', data);
+      return {
+        success: true,
+        password: data.password,
+        passwordResetKey: data.passwordResetKey
+      };
+    } catch (error) {
+      console.error('기관 계정 생성 실패:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+
   addAccount: (account) =>
     set((state) => ({
       accounts: [
@@ -119,14 +259,18 @@ export const useAccountStore = create((set, get) => ({
 function getRoleDisplayName(role) {
   switch (role) {
     case 'ROLE_ADMIN':
+    case 'admin':
       return '관리자';
     case 'ROLE_HOSPITAL':
+    case 'hospital':
       return '병원';
     case 'ROLE_AMBULANCE':
+    case 'ambulance':
       return '구급대원';
     case 'ROLE_FIRESTATION':
+    case 'firestation':
       return '소방서';
     default:
-      return '사용자';
+      return role || '사용자';
   }
 }
