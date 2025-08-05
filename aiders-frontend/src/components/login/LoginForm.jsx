@@ -26,7 +26,9 @@ export default function LoginForm() {
 
     try {
       console.log("API 요청 시작");
-      const response = await axios.post(
+      console.log("VITE_API_BASE_URL:", import.meta.env.VITE_API_BASE_URL);
+      console.log("전체 URL:", `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/login`);      
+const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/login`,
         {
           userKey: username,
