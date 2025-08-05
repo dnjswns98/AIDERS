@@ -26,7 +26,9 @@ export default function AdminPage() {
           width: 'calc(100vw - 256px)',
           marginLeft: '256px', 
           padding: '24px',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          height: 'calc(100vh - 64px)', /* 헤더 높이 제외 */
+          overflow: 'hidden'
         }}>
           {renderContent()}
         </main>

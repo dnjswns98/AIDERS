@@ -15,11 +15,12 @@ export default function AccountCreate() {
   const [formData, setFormData] = useState({
     accountId: "",
     address: "",
-    vehicleNumber: "",
+    name: "",
+    firestationName: "",
   });
   const [createdAccount, setCreatedAccount] = useState(null);
 
-  const addAccount = useAccountStore((state) => state.addAccount);
+  const { registerAmbulance, registerOrganization } = useAccountStore();
 
   const handleTypeSelect = (type) => {
     setSelectedType(type);
@@ -33,21 +34,39 @@ export default function AccountCreate() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const newAccount = {
-      type: selectedType,
-      accountId: formData.accountId,
-      ...(selectedType === "구급대원" ? { vehicleNumber: formData.vehicleNumber } : { address: formData.address }),
-    };
+    let result;
+    if (selectedType === "구급대원") {
+      result = await registerAmbulance({
+        userKey: formData.accountId,
+        name: formData.firestationName
+      });
+    } else {
+      const role = selectedType === "병원" ? "hospital" : "firestation";
+      result = await registerOrganization({
+        userKey: formData.accountId,
+        role: role,
+        address: formData.address,
+        name: formData.name
+      });
+    }
 
-    addAccount(newAccount);
-    const accounts = useAccountStore.getState().accounts;
-    const latestAccount = accounts[accounts.length - 1];
-
-    setCreatedAccount(latestAccount);
-    setStep(3);
+    if (result.success) {
+      setCreatedAccount({
+        type: selectedType,
+        accountId: formData.accountId,
+        name: selectedType !== "구급대원" ? formData.name : null,
+        address: selectedType !== "구급대원" ? formData.address : null,
+        firestationName: selectedType === "구급대원" ? formData.firestationName : null,
+        tempPassword: result.password,
+        passkey: result.passwordResetKey
+      });
+      setStep(3);
+    } else {
+      alert(`계정 생성 실패: ${result.error}`);
+    }
   };
 
   const resetForm = () => {
@@ -56,7 +75,8 @@ export default function AccountCreate() {
     setFormData({
       accountId: "",
       address: "",
-      vehicleNumber: "",
+      name: "",
+      firestationName: "",
     });
     setCreatedAccount(null);
   };
@@ -131,8 +151,14 @@ export default function AccountCreate() {
               <input
                 type="text"
                 value={formData.accountId}
-                onChange={(e) => handleInputChange("accountId", e.target.value)}
-                placeholder="아이디를 입력하세요"
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // 영문, 숫자만 허용
+                  if (/^[a-zA-Z0-9]*$/.test(value)) {
+                    handleInputChange("accountId", value);
+                  }
+                }}
+                placeholder="아이디를 입력하세요 (영문, 숫자만)"
                 required
                 className="form-input"
               />
@@ -141,31 +167,46 @@ export default function AccountCreate() {
             {selectedType === "구급대원" ? (
               <div className="form-group">
                 <label className="form-label">
-                  차량번호
+                  소속 소방서명
                 </label>
                 <input
                   type="text"
-                  value={formData.vehicleNumber}
-                  onChange={(e) => handleInputChange("vehicleNumber", e.target.value)}
-                  placeholder="차량번호를 입력하세요"
+                  value={formData.firestationName}
+                  onChange={(e) => handleInputChange("firestationName", e.target.value)}
+                  placeholder="소속 소방서명을 입력하세요 (기존 소방서)"
                   required
                   className="form-input"
                 />
               </div>
             ) : (
-              <div className="form-group">
-                <label className="form-label">
-                  주소
-                </label>
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => handleInputChange("address", e.target.value)}
-                  placeholder="주소를 입력하세요"
-                  required
-                  className="form-input"
-                />
-              </div>
+              <>
+                <div className="form-group">
+                  <label className="form-label">
+                    {selectedType} 이름
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange("name", e.target.value)}
+                    placeholder={`${selectedType} 이름을 입력하세요`}
+                    required
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">
+                    주소
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) => handleInputChange("address", e.target.value)}
+                    placeholder="주소를 입력하세요"
+                    required
+                    className="form-input"
+                  />
+                </div>
+              </>
             )}
 
             <button
@@ -211,16 +252,22 @@ export default function AccountCreate() {
                 <span className="account-info-label">아이디:</span>
                 <span className="account-info-value">{createdAccount.accountId}</span>
               </div>
+              {createdAccount.name && (
+                <div className="account-info-row">
+                  <span className="account-info-label">{createdAccount.type} 이름:</span>
+                  <span className="account-info-value">{createdAccount.name}</span>
+                </div>
+              )}
               {createdAccount.address && (
                 <div className="account-info-row">
                   <span className="account-info-label">주소:</span>
                   <span className="account-info-value">{createdAccount.address}</span>
                 </div>
               )}
-              {createdAccount.vehicleNumber && (
+              {createdAccount.firestationName && (
                 <div className="account-info-row">
-                  <span className="account-info-label">차량번호:</span>
-                  <span className="account-info-value">{createdAccount.vehicleNumber}</span>
+                  <span className="account-info-label">소속 소방서:</span>
+                  <span className="account-info-value">{createdAccount.firestationName}</span>
                 </div>
               )}
               <hr className="account-info-hr" />
