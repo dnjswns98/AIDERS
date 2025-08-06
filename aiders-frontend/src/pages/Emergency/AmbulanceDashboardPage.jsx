@@ -174,7 +174,7 @@ export default function AmbulanceDashboardPage() {
                   patientName={patient.name || ""}
                   ktas={details.ktasLevel || ""}
                   // hospitalId={hospitals.length > 0 ? hospitals[0].id : 0}
-                  hospitalId='241' 
+                  hospitalId="241"
                 />
               ) : (
                 <p className="text-center text-gray-500">
@@ -184,8 +184,6 @@ export default function AmbulanceDashboardPage() {
             </div>
           </div>
         </div>
-
-        <button>asdai</button>
       </div>
     </AmbulanceLayout>
   );
