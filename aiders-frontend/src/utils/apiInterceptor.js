@@ -19,11 +19,11 @@ export const fetchWithAuth = async (url, options = {}) => {
   const { useAuthStore } = await import('../store/useAuthStore');
   const { accessToken, refreshAccessToken, logout } = useAuthStore.getState();
   
-  console.log('🔍 fetchWithAuth 호출:', {
-    url,
-    hasAccessToken: !!accessToken,
-    tokenPreview: accessToken ? `${accessToken.substring(0, 20)}...` : 'null'
-  });
+  // console.log('🔍 fetchWithAuth 호출:', {
+  //   url,
+  //   hasAccessToken: !!accessToken,
+  //   tokenPreview: accessToken ? `${accessToken.substring(0, 20)}...` : 'null'
+  // });
   
   // 기본 헤더 설정
   const defaultOptions = {

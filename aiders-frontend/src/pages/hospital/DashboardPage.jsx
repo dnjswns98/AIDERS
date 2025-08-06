@@ -1,9 +1,6 @@
-import { useEffect, useState } from "react";
 import HospitalHeader from "../../components/hospital/HospitalHeader";
-import BedCard from "../../components/hospital/BedCard";
-import useHospitalStore from "../../store/useHospitalStore";
-import useHospitalAlarmStore from "../../store/useHospitalAlarmStore";
-import { useAuthStore } from "../../store/useAuthStore";
+import useBedStore from "../../store/useBedStore";
+import TestHospitalCallPage from "./TestHospitalCallPage";
 
 const ambulanceData = [
   {
@@ -317,7 +314,9 @@ export default function DashboardPage() {
           type: 'GENERAL',
           totalBeds: bedInfo.generalTotalBed || 0,
           currentPatients: (bedInfo.generalTotalBed || 0) - (bedInfo.generalAvailableBed || 0),
-          status: bedInfo.generalIsAvailable ? 'available' : 'disabled'
+          status: bedInfo.generalIsAvailable ? 'available' : 'disabled',
+          isAvailable: bedInfo.generalIsAvailable,
+          isExist: bedInfo.generalIsExist
         },
         {
           id: 2,
@@ -326,7 +325,9 @@ export default function DashboardPage() {
           type: 'PEDIATRIC',
           totalBeds: bedInfo.pediatricTotalBed || 0,
           currentPatients: (bedInfo.pediatricTotalBed || 0) - (bedInfo.pediatricAvailableBed || 0),
-          status: bedInfo.pediatricIsAvailable ? 'available' : 'disabled'
+          status: bedInfo.pediatricIsAvailable ? 'available' : 'disabled',
+          isAvailable: bedInfo.pediatricIsAvailable,
+          isExist: bedInfo.pediatricIsExist
         },
         {
           id: 3,
@@ -335,7 +336,9 @@ export default function DashboardPage() {
           type: 'TRAUMA',
           totalBeds: bedInfo.traumaTotalBed || 0,
           currentPatients: (bedInfo.traumaTotalBed || 0) - (bedInfo.traumaAvailableBed || 0),
-          status: bedInfo.traumaIsAvailable ? 'available' : 'disabled'
+          status: bedInfo.traumaIsAvailable ? 'available' : 'disabled',
+          isAvailable: bedInfo.traumaIsAvailable,
+          isExist: bedInfo.traumaIsExist
         },
         {
           id: 4,
@@ -344,12 +347,16 @@ export default function DashboardPage() {
           type: 'NEONATAL',
           totalBeds: bedInfo.neonatalTotalBed || 0,
           currentPatients: (bedInfo.neonatalTotalBed || 0) - (bedInfo.neonatalAvailableBed || 0),
-          status: bedInfo.neonatalIsAvailable ? 'available' : 'disabled'
+          status: bedInfo.neonatalIsAvailable ? 'available' : 'disabled',
+          isAvailable: bedInfo.neonatalIsAvailable,
+          isExist: bedInfo.neonatalIsExist
         }
       ];
       
       // console.log('🔍 변환된 beds 데이터:', transformedBeds);
-      setBeds(transformedBeds);
+      // isExist가 false인 병상은 제외하고 표시
+      const visibleBeds = transformedBeds.filter(bed => bed.isExist !== false);
+      setBeds(visibleBeds);
     } else {
       // console.log('🔍 bedInfo가 null/undefined입니다');
     }
@@ -459,16 +466,10 @@ export default function DashboardPage() {
   return (
     <>
       <HospitalHeader />
-      
-      {isInitialSetup && (
-        <InitialSetupModal
-          onSave={handleInitialSetup}
-          onCancel={() => setIsInitialSetup(false)}
-        />
-      )}
+      <TestHospitalCallPage />
       
       <main style={{ 
-        paddingTop: '64px', 
+        paddingTop: '0', 
         height: '100vh',
         backgroundColor: '#f3f4f6',
         margin: '0'
@@ -477,7 +478,7 @@ export default function DashboardPage() {
           display: 'grid',
           gridTemplateColumns: '380px 1fr 400px',
           gap: '0',
-          height: 'calc(100vh - 64px)',
+          height: '100vh',
           width: '100vw'
         }}>
           {/* 좌측: 병상정보 */}

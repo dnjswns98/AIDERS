@@ -1,3 +1,5 @@
+// src/pages/Emergency/AmbulancePatientInputPage.jsx
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import AmbulanceLayout from "../../components/Emergency/Layout/AmbulanceLayout";
@@ -35,10 +37,12 @@ export default function AmbulancePatientInputPage() {
   const mainContentRef = useRef(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
+  // 필기/타이핑 모드 토글 함수
   const toggleInputMode = () => {
     setInputMode((prevMode) => (prevMode === "drawing" ? "typing" : "drawing"));
   };
 
+  // 편집 모드일 때 selectedAmbulance로 폼 데이터 초기화
   useEffect(() => {
     if (isEditMode && selectedAmbulance) {
       setFormData({
@@ -51,13 +55,10 @@ export default function AmbulancePatientInputPage() {
         chiefComplaint: selectedAmbulance.patientDetails.chiefComplaint ?? "",
         treatmentDetails:
           selectedAmbulance.patientDetails.treatmentDetails ?? "",
-        familyHistory: {
-          father: selectedAmbulance.patientDetails.familyHistory?.father ?? "",
-        }.father, // Ensure it's a string
-        pastHistory: {
-          hypertension:
-            selectedAmbulance.patientDetails.pastHistory?.hypertension ?? "",
-        }.hypertension, // Ensure it's a string
+        familyHistory:
+          selectedAmbulance.patientDetails.familyHistory?.father ?? "",
+        pastHistory:
+          selectedAmbulance.patientDetails.pastHistory?.hypertension ?? "",
         medications:
           selectedAmbulance.patientDetails.medications
             ?.map((m) => m.name)
@@ -68,14 +69,17 @@ export default function AmbulancePatientInputPage() {
     }
   }, [isEditMode, selectedAmbulance]);
 
+  // 입력값 변경 핸들러
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // 저장(병원 매칭)버튼 클릭 시 실행
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    // 필수 확인: KTAS와 진료과목
     if (
       formData.ktasLevel.includes("선택") ||
       formData.department.includes("선택") ||
@@ -90,6 +94,7 @@ export default function AmbulancePatientInputPage() {
       let updatedInfo;
 
       if (isEditMode) {
+        // 수정 모드면 기존 정보에 덮어쓰기
         const existingPatientInfo = selectedAmbulance.patientInfo;
         const existingPatientDetails = selectedAmbulance.patientDetails;
         updatedInfo = {
@@ -125,6 +130,7 @@ export default function AmbulancePatientInputPage() {
           },
         };
       } else {
+        // 신규 입력 모드
         updatedInfo = {
           patientInfo: {
             gender: formData.gender,
@@ -149,9 +155,10 @@ export default function AmbulancePatientInputPage() {
       }
       updatePatientInfo(selectedAmbulance.id, updatedInfo);
     }
-    navigate("/emergency");
+    navigate("/emergency/", { state: { formData } });
   };
 
+  // 다음 필기 영역으로 스크롤 이동
   const scrollToNextDrawingArea = () => {
     const nextIndex = currentDrawingIndex + 1;
     if (nextIndex < detailInputRefs.current.length) {
@@ -169,17 +176,14 @@ export default function AmbulancePatientInputPage() {
     }
   };
 
-  // 스크롤 이벤트 핸들러
+  // 스크롤 이벤트 핸들러: 스크롤 상태에 따라 버튼 표시 여부 결정
   const handleScroll = useCallback(() => {
     const target = mainContentRef.current;
     if (!target) return;
 
     const { scrollTop, scrollHeight, clientHeight } = target;
-
-    // 스크롤이 거의 끝에 도달했는지 확인 (10px 여유)
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 10;
 
-    // 스크롤이 가능하고, 하단에 도달하지 않았을 때만 버튼 표시
     setShowScrollButton(!isAtBottom && scrollHeight > clientHeight);
   }, []);
 
@@ -187,12 +191,10 @@ export default function AmbulancePatientInputPage() {
     const scrollContainer = mainContentRef.current;
     if (!scrollContainer) return;
 
-    // 초기 상태 체크
     handleScroll();
 
     scrollContainer.addEventListener("scroll", handleScroll);
 
-    // ResizeObserver를 사용하여 콘텐츠 크기 변경 감지
     const resizeObserver = new ResizeObserver(handleScroll);
     resizeObserver.observe(scrollContainer);
 
@@ -307,7 +309,7 @@ export default function AmbulancePatientInputPage() {
         </form>
       </div>
 
-      {/* 고정된 "다음 필기 공간" 버튼 - 그리기 모드이고, 스크롤이 하단에 도달하지 않았을 때 렌더링 */}
+      {/* 고정된 "다음 필기 공간" 버튼 - 그리기 모드이고, 스크롤이 하단에 도달하지 않았을 때에만 표시 */}
       {inputMode === "drawing" && showScrollButton && (
         <button
           onClick={scrollToNextDrawingArea}
