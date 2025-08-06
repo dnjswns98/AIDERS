@@ -1,165 +1,235 @@
+// src/api/api.js
+
 import axios from 'axios';
 
-const API_BASE_URL = '/api/v1';
+// 환경변수에 정의된 API 기본 URL 사용 (.env 파일에 VITE_API_BASE_URL=http://localhost:8080 으로 설정)
+// API_BASE에는 /api/v1 이 포함되어 있지 않은 상태로 가정합니다.
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-// Ambulance API
-
-
+/**
+ * 구급차 상태 업데이트
+ * @param {number} ambulanceId - 현재는 ambulanceId 미사용, 백엔드 API에 따라 수정 필요
+ * @param {string} status - 'wait' 또는 'transfer'
+ * @returns {Promise<any>}
+ */
 export const updateAmbulanceStatus = async (ambulanceId, status) => {
   try {
-    // 백엔드에 ambulanceId를 직접 전달하는 엔드포인트가 없으므로,
-    // 현재 로그인된 구급차의 상태를 변경하는 것으로 가정합니다.
-    // 실제 백엔드 API에 따라 이 부분은 수정되어야 합니다.
     let endpoint = '';
     if (status === 'wait') {
-      endpoint = '/ambulance/transfer/wait';
+      endpoint = '/api/v1/ambulance/transfer/wait';
     } else if (status === 'transfer') {
-      endpoint = '/ambulance/transfer';
+      endpoint = '/api/v1/ambulance/transfer';
     } else {
       throw new Error('Invalid ambulance status');
     }
-    const response = await axios.post(`${API_BASE_URL}${endpoint}`);
+    const response = await axios.post(`${API_BASE}${endpoint}`);
     return response.data;
   } catch (error) {
-    console.error(`Error updating ambulance status to ${status}:`, error);
+    console.error(`[API] updateAmbulanceStatus(${status}) 에러:`, error);
     throw error;
   }
 };
 
-// Patient API
+/**
+ * 환자 필수 정보 저장 (PUT)
+ * @param {Object} patientInfo - 환자 필수 정보
+ * @returns {Promise<any>}
+ */
 export const saveRequiredPatientInfo = async (patientInfo) => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/patient/required`, patientInfo);
-    return response.data;
-  } catch (error) {
-    console.error('Error saving required patient info:', error);
-    throw error;
-  }
-};
-
-export const saveOptionalPatientInfo = async (patientInfo) => {
-  try {
-    const response = await axios.patch(`${API_BASE_URL}/patient/optional`, patientInfo);
-    return response.data;
-  } catch (error) {
-    console.error('Error saving optional patient info:', error);
-    throw error;
-  }
-};
-
-export const getPatientInfo = async () => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/patient/`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching patient info:', error);
-    throw error;
-  }
-};
-
-// Dispatch API (Fire Station related)
-export const createDispatch = async (dispatchRequest) => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/dispatch/`, dispatchRequest);
-    return response.data;
-  } catch (error) {
-    console.error('Error creating dispatch:', error);
-    throw error;
-  }
-};
-
-export const getDispatchHistory = async () => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/dispatch/history`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching dispatch history:', error);
-    throw error;
-  }
-};
-
-// Hospital API
-export const updateHospitalDepartment = async (departmentUpdate) => {
-  try {
-    const response = await axios.patch(`${API_BASE_URL}/hospital/department`, departmentUpdate);
-    return response.data;
-  } catch (error) {
-    console.error('Error updating hospital department:', error);
-    throw error;
-  }
-};
-
-
-
-export const createAmbulanceToken = async (request) => {
-  try {
-    // 데이터 검증 및 변환
-    const sanitizedRequest = {
-      sessionId: request.sessionId ||  '', 
-      ambulanceId: Number(request.ambulanceId) || 0,
-      hospitalId: Number(request.hospitalId) || 0,
-      ktas: Number(request.ktas) || 0,
-      patientName: request.patientName || ''
-    };
-
-    console.log('전송할 데이터:', sanitizedRequest);
-    
-    const response = await axios.post(
-      // const response = await axios.post(`${API_BASE_URL}/video-call/ambulance/token`, request);
-      `http://localhost:8080/api/video-call/ambulance/token`, 
-      sanitizedRequest,
-      {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
+    const response = await axios.put(
+      `${API_BASE}/api/v1/patient/required`,
+      patientInfo
     );
     return response.data;
   } catch (error) {
-    console.error('서버 응답:', error.response?.data);
-    console.error('상태 코드:', error.response?.status);
+    console.error('[API] saveRequiredPatientInfo 에러:', error);
     throw error;
   }
 };
 
-
-
-export const getHospitalToken = async (sessionId, hospitalId) => {
+/**
+ * 환자 선택 정보 저장 (PATCH)
+ * @param {Object} patientDetails - 환자 선택 정보
+ * @returns {Promise<any>}
+ */
+export const saveOptionalPatientInfo = async (patientDetails) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/video-call/hospital/token`, { params: { sessionId,hospitalId } });
+    const response = await axios.patch(
+      `${API_BASE}/api/v1/patient/optional`,
+      patientDetails
+    );
     return response.data;
   } catch (error) {
-    console.error('Error getting hospital token:', error);
+    console.error('[API] saveOptionalPatientInfo 에러:', error);
     throw error;
   }
 };
 
+/**
+ * 환자 정보 조회 (GET)
+ * 주의: 현재 백엔드에서 500 오류가 발생하면 호출하지 마십시오.
+ * 필요시 백엔드 구현 후 사용 권장.
+ * @returns {Promise<any>}
+ */
+export const getPatientInfo = async () => {
+  try {
+    const response = await axios.get(`${API_BASE}/api/v1/patient/`);
+    return response.data;
+  } catch (error) {
+    console.error('[API] getPatientInfo 에러:', error);
+    throw error;
+  }
+};
+
+/**
+ * 이송 생성 (POST)
+ * @param {Object} dispatchRequest
+ * @returns {Promise<any>}
+ */
+export const createDispatch = async (dispatchRequest) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE}/api/v1/dispatch/`,
+      dispatchRequest
+    );
+    return response.data;
+  } catch (error) {
+    console.error('[API] createDispatch 에러:', error);
+    throw error;
+  }
+};
+
+/**
+ * 이송 이력 조회 (GET)
+ * @returns {Promise<any>}
+ */
+export const getDispatchHistory = async () => {
+  try {
+    const response = await axios.get(`${API_BASE}/api/v1/dispatch/history`);
+    return response.data;
+  } catch (error) {
+    console.error('[API] getDispatchHistory 에러:', error);
+    throw error;
+  }
+};
+
+/**
+ * 병원 진료과 정보 수정 (PATCH)
+ * @param {Object} departmentUpdate
+ * @returns {Promise<any>}
+ */
+export const updateHospitalDepartment = async (departmentUpdate) => {
+  try {
+    const response = await axios.patch(
+      `${API_BASE}/api/v1/hospital/department`,
+      departmentUpdate
+    );
+    return response.data;
+  } catch (error) {
+    console.error('[API] updateHospitalDepartment 에러:', error);
+    throw error;
+  }
+};
+
+/**
+ * 구급차용 화상 세션 생성 및 토큰 발급
+ * @param {Object} request - sessionId, ambulanceId, hospitalId, ktas, patientName 포함
+ * @returns {Promise<{ token: string, sessionId: string }>}
+ */
+export const createAmbulanceToken = async (request) => {
+  try {
+    const body = {
+      sessionId: request.sessionId || '',
+      ambulanceId: Number(request.ambulanceId) || 0,
+      hospitalId: Number(request.hospitalId) || 0,
+      ktas: Number(request.ktas) || 0,
+      patientName: request.patientName || '',
+    };
+    console.log('[API] createAmbulanceToken 요청 바디:', body);
+    const response = await axios.post(
+      `${API_BASE}/api/v1/video-call/ambulance/token`,
+      body,
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('[API] createAmbulanceToken 에러:', error.response?.data || error);
+    throw error;
+  }
+};
+
+/**
+ * 병원용 화상 토큰 발급 (GET)
+ * @param {string} sessionId
+ * @returns {Promise<{ token: string, sessionId: string }>}
+ */
+export const getHospitalToken = async (sessionId) => {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/api/v1/video-call/hospital/token`,
+      { params: { sessionId } }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('[API] getHospitalToken 에러:', error);
+    throw error;
+  }
+};
+
+/**
+ * 화상 통화 시작 (PUT)
+ * @param {Object} request - sessionId, optional hospitalId 포함
+ * @returns {Promise<any>}
+ */
 export const startVideoCall = async (request) => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/video-call/start-call`, request);
+    const response = await axios.put(
+      `${API_BASE}/api/v1/video-call/start-call`,
+      request
+    );
     return response.data;
   } catch (error) {
-    console.error('Error starting video call:', error);
+    console.error('[API] startVideoCall 에러:', error);
     throw error;
   }
 };
 
+/**
+ * 화상 통화 종료 (PUT)
+ * @param {Object} request - sessionId 포함
+ * @returns {Promise<any>}
+ */
 export const endVideoCall = async (request) => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/video-call/end-call`, request);
+    const response = await axios.put(
+      `${API_BASE}/api/v1/video-call/end-call`,
+      request
+    );
     return response.data;
   } catch (error) {
-    console.error('Error ending video call:', error);
+    console.error('[API] endVideoCall 에러:', error);
     throw error;
   }
 };
 
+/**
+ * 이송 완료 처리 (DELETE)
+ * @param {string} sessionId
+ * @param {number} hospitalId
+ * @returns {Promise<any>}
+ */
 export const completeTransport = async (sessionId, hospitalId) => {
   try {
-    const response = await axios.delete(`${API_BASE_URL}/video-call/session/${sessionId}/complete`, { params: { hospitalId } });
+    const response = await axios.delete(
+      `${API_BASE}/api/v1/video-call/session/${sessionId}/complete`,
+      { params: { hospitalId } }
+    );
     return response.data;
   } catch (error) {
-    console.error('Error completing transport:', error);
+    console.error('[API] completeTransport 에러:', error);
     throw error;
   }
 };
+
+

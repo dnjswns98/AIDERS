@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
-import BedCard from "../../components/hospital/BedCard";
-import useHospitalStore from "../../store/useHospitalStore";
-import useHospitalAlarmStore from "../../store/useHospitalAlarmStore";
-import { useAuthStore } from "../../store/useAuthStore";
+import HospitalHeader from "../../components/hospital/HospitalHeader";
+import useBedStore from "../../store/useBedStore";
+import TestHospitalCallPage from "./TestHospitalCallPage";
 
 const ambulanceData = [
   {
@@ -467,12 +465,8 @@ export default function DashboardPage() {
 
   return (
     <>
-      {isInitialSetup && (
-        <InitialSetupModal
-          onSave={handleInitialSetup}
-          onCancel={() => setIsInitialSetup(false)}
-        />
-      )}
+      <HospitalHeader />
+      <TestHospitalCallPage />
       
       <main style={{ 
         paddingTop: '0', 

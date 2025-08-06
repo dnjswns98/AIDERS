@@ -1,8 +1,8 @@
 import React, { forwardRef } from 'react';
 
-const RemoteVideo = forwardRef(({ hasRemoteStream }, ref) => {
+const RemoteVideo = forwardRef(({ hasRemoteStream, id }, ref) => {
   return (
-    <div className="remote-video w-full h-full bg-black flex items-center justify-center">
+    <div id={id} className="remote-video w-full h-full bg-black flex items-center justify-center">
       {hasRemoteStream ? (
         <video
           ref={ref}
