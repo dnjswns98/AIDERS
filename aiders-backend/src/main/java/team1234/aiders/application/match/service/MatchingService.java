@@ -1,6 +1,7 @@
 package team1234.aiders.application.match.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team1234.aiders.application.ambulance.entity.Ambulance;
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -27,6 +29,7 @@ public class MatchingService {
     private final ReportRepository reportRepository;
 
     record ScoredHospitalData(HospitalData data, double distance) {}
+    record HospitalScore(ScoredHospitalData hospitalData, double score) {}
 
     public Hospital getMatchedHospital(Long ambulanceId) {
         Ambulance ambulance = ambulanceRepository.findById(ambulanceId)
@@ -42,9 +45,11 @@ public class MatchingService {
     }
 
     public Hospital autoMatch(Long ambulanceId, double ambLat, double ambLng) {
-
+        log.info("🚑 [Start Auto-Matching] ambulanceId={}, lat={}, lng={}", ambulanceId, ambLat, ambLng);
         Ambulance ambulance = ambulanceRepository.findById(ambulanceId)
                 .orElseThrow(() -> new IllegalArgumentException("Ambulance not found"));
+        log.info("✅ [Ambulance Loaded] KTAS={}, AgeRange={}, Department={}",
+                ambulance.getPKtas(), ambulance.getPAgeRange(), ambulance.getPDepartment());
 
         // 환자 정보 기반 MatchingCondition 생성
         MatchingCondition condition = MatchingCondition.builder()
@@ -55,19 +60,25 @@ public class MatchingService {
 
         // 병원 목록 필터링 (동적 쿼리)
         List<HospitalData> hospitalDataList = hospitalRepository.searchHospitalsDynamic(condition);
+        log.info("🏥 [Number of Hospitals Matching Condition] = {}", hospitalDataList.size());
 
         if (hospitalDataList.isEmpty()) {
             throw new IllegalStateException("조건에 맞는 병원이 없습니다.");
         }
 
-        // 거리 기준 상위 10개 병원만 필터링
+        // 거리 기준 상위 25개 병원만 필터링
         List<ScoredHospitalData> nearestHospitals = hospitalDataList.stream()
                 .map(h -> new ScoredHospitalData(
                         h,
                         calculateDistance(ambLat, ambLng, h.getHospital().getLatitude(), h.getHospital().getLongitude())))
                 .sorted(Comparator.comparingDouble(ScoredHospitalData::distance)) // 거리 기준 정렬
-                .limit(10)
+                .limit(25)
                 .toList();
+
+        log.info("📍 [Top 25 Hospitals by Distance]");
+        for (ScoredHospitalData h : nearestHospitals) {
+            log.info("- {} (distance: {} km)", h.data().getHospital().getId(), h.distance());
+        }
 
         // 병원 이름 리스트
         List<String> topHospitalNames = nearestHospitals.stream()
@@ -86,17 +97,24 @@ public class MatchingService {
                 ));
 
         // 점수 계산 및 병원 선택
-        ScoredHospitalData selected = nearestHospitals.stream()
-                .max(Comparator.comparingDouble(h ->
+        List<HospitalScore> scoredList = nearestHospitals.stream()
+                .map(h -> new HospitalScore(h,
                         calculateScore(h.data(), h.distance(), ambulance, recentTransferCountMap)))
+                .toList();
+
+        // 점수 기준으로 최대값 선택
+        HospitalScore selected = scoredList.stream()
+                .max(Comparator.comparingDouble(HospitalScore::score))
                 .orElseThrow(() -> new IllegalStateException("No suitable hospital"));
 
         // 구급차에 병원 정보 저장
-        Hospital hospital = selected.data().getHospital();
+        Hospital hospital = selected.hospitalData().data().getHospital();
         ambulance.setHospital(hospital);
         ambulance.setHospitalName(hospital.getName());
         ambulance.setHospitalAddress(hospital.getAddress());
 
+        log.info("🎯 [Matching Completed] Selected Hospital: {})",
+                hospital.getId());
         return hospital;
     }
 
@@ -132,7 +150,19 @@ public class MatchingService {
         double bonus = calcDepartmentBonus(h, amb);
         double congestionScore = calcRelevantCongestion(h, amb);
 
-        return 20 * (urgencyFactor/(distance + 1)) + bonus - congestionScore - recentPenalty;
+        double score = 20 * (urgencyFactor/(distance + 1)) + bonus - congestionScore - recentPenalty;
+
+        log.info("Hospital: {}, Distance: {} km, Score: {} [Urgency/Distance: {}, Bonus: {}, Congestion: {}, Penalty: {}]",
+                h.getHospital().getId(),
+                String.format("%.2f", distance),
+                String.format("%.2f", score),
+                String.format("%.2f", 20 * (urgencyFactor / (distance + 1))),
+                bonus,
+                String.format("%.2f", congestionScore),
+                recentPenalty
+        );
+
+        return score;
     }
 
     // 보너스 점수 계산
