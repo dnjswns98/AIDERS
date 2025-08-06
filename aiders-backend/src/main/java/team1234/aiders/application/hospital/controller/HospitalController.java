@@ -9,7 +9,7 @@ import team1234.aiders.application.hospital.dto.HospitalLocationResponseDto;
 import team1234.aiders.application.hospital.dto.department.DepartmentResponseDto;
 import team1234.aiders.application.hospital.dto.department.DepartmentUpdateRequestDto;
 import team1234.aiders.application.hospital.dto.emergencybed.EmergencyBedResponseDto;
-import team1234.aiders.application.hospital.dto.emergencybed.EmergencyBedUpdateRequestDto;
+import team1234.aiders.application.hospital.dto.emergencybed.EmergencyBedRequestDto;
 import team1234.aiders.application.hospital.service.HospitalService;
 import team1234.aiders.application.hospital.util.BedType;
 import team1234.aiders.config.security.CustomUserDetails;
@@ -63,7 +63,7 @@ public class HospitalController {
     @PatchMapping("/bed")
     public ResponseEntity<Void> updateBedInfo(
             @AuthenticationPrincipal CustomUserDetails user,
-            @RequestBody EmergencyBedUpdateRequestDto request) {
+            @RequestBody EmergencyBedRequestDto request) {
         hospitalService.updateEmergencyBed(user, request);
         return ResponseEntity.ok().build();
     }
