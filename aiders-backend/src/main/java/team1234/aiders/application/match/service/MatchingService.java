@@ -143,23 +143,26 @@ public class MatchingService {
 
     // 점수 계산 함수
     private double calculateScore(HospitalData h, double distance, Ambulance amb, Map<String, Long> transferCountMap) {
-        double urgencyFactor = 6 - amb.getPKtas();
+        double normDistance = distance / 10.0;
         long transferCount = transferCountMap.getOrDefault(h.getHospital().getName(), 0L);
-        double recentPenalty = transferCount * 1.5;
+        double[] bedCounts = calcBedCounts(h, amb);
+        double pressureScore = (bedCounts[0] + 0.5 * transferCount) / bedCounts[1];
+        pressureScore = Math.min(pressureScore, 1.0);
 
-        double bonus = calcDepartmentBonus(h, amb);
-        double congestionScore = calcRelevantCongestion(h, amb);
+        double alpha = Math.min((6 - amb.getPKtas()) / 5.0, 0.9);
+        double beta = 1.0 - alpha;
 
-        double score = 20 * (urgencyFactor/(distance + 1)) + bonus - congestionScore - recentPenalty;
+//        double bonus = calcDepartmentBonus(h, amb);
 
-        log.info("Hospital: {}, Distance: {} km, Score: {} [Urgency/Distance: {}, Bonus: {}, Congestion: {}, Penalty: {}]",
+        double score = -(alpha * normDistance + beta * pressureScore);
+
+        log.info("Hospital: {}, Distance: {} km, Score: {} [unavail_rate: {}, transfer_rate: {}, pressureScore: {}]",
                 h.getHospital().getId(),
-                String.format("%.2f", distance),
-                String.format("%.2f", score),
-                String.format("%.2f", 20 * (urgencyFactor / (distance + 1))),
-                bonus,
-                String.format("%.2f", congestionScore),
-                recentPenalty
+                String.format("%.5f", distance),
+                String.format("%.5f", score),
+                String.format("%.5f", bedCounts[0]/bedCounts[1]),
+                String.format("%.5f", transferCount/bedCounts[1]),
+                String.format("%.5f", pressureScore)
         );
 
         return score;
@@ -192,7 +195,7 @@ public class MatchingService {
     }
 
     // 혼잡도 계산 (가용 병상 수/전체 병상 수)
-    private double calcRelevantCongestion(HospitalData h, Ambulance amb) {
+    private double[] calcBedCounts(HospitalData h, Ambulance amb) {
         int total = 0;
         int available = 0;
 
@@ -225,8 +228,8 @@ public class MatchingService {
             }
         }
 
-        if (total == 0) return 0;
-        return (1 - ((double) available / total)) * 10;
+
+        return new double[] {total - available, total};
     }
 
     private int safeInt(Integer value) {
