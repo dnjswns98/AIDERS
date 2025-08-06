@@ -18,7 +18,7 @@ export const useHospitalAlarmStore = create((set, get) => ({
   fetchAllAlarms: async (hospitalId) => {
     const id = hospitalId || get().hospitalId;
     if (!id) {
-      console.error('Hospital ID가 설정되지 않았습니다.');
+      // console.error('Hospital ID가 설정되지 않았습니다.');
       return { success: false, error: 'Hospital ID가 필요합니다.' };
     }
 
@@ -42,7 +42,7 @@ export const useHospitalAlarmStore = create((set, get) => ({
       
       return { success: true, data };
     } catch (error) {
-      console.error('전체 알림 조회 실패:', error);
+      // console.error('전체 알림 조회 실패:', error);
       set({ 
         error: error.message,
         loading: false
@@ -76,7 +76,7 @@ export const useHospitalAlarmStore = create((set, get) => ({
       
       return { success: true, data };
     } catch (error) {
-      console.error('매칭 알림 조회 실패:', error);
+      // console.error('매칭 알림 조회 실패:', error);
       set({ 
         error: error.message,
         loading: false
@@ -110,7 +110,7 @@ export const useHospitalAlarmStore = create((set, get) => ({
       
       return { success: true, data };
     } catch (error) {
-      console.error('통화 요청 알림 조회 실패:', error);
+      // console.error('통화 요청 알림 조회 실패:', error);
       set({ 
         error: error.message,
         loading: false
@@ -144,7 +144,7 @@ export const useHospitalAlarmStore = create((set, get) => ({
       
       return { success: true, data };
     } catch (error) {
-      console.error('수정 알림 조회 실패:', error);
+      // console.error('수정 알림 조회 실패:', error);
       set({ 
         error: error.message,
         loading: false
@@ -174,7 +174,7 @@ export const useHospitalAlarmStore = create((set, get) => ({
       
       return { success: true, message: '매칭 알림이 삭제되었습니다.' };
     } catch (error) {
-      console.error('매칭 알림 삭제 실패:', error);
+      // console.error('매칭 알림 삭제 실패:', error);
       set({ 
         error: error.message,
         loading: false
@@ -204,7 +204,7 @@ export const useHospitalAlarmStore = create((set, get) => ({
       
       return { success: true, message: '통화 요청 알림이 삭제되었습니다.' };
     } catch (error) {
-      console.error('통화 요청 알림 삭제 실패:', error);
+      // console.error('통화 요청 알림 삭제 실패:', error);
       set({ 
         error: error.message,
         loading: false
@@ -234,7 +234,7 @@ export const useHospitalAlarmStore = create((set, get) => ({
       
       return { success: true, message: '수정 알림이 삭제되었습니다.' };
     } catch (error) {
-      console.error('수정 알림 삭제 실패:', error);
+      // console.error('수정 알림 삭제 실패:', error);
       set({ 
         error: error.message,
         loading: false
@@ -270,7 +270,7 @@ export const useHospitalAlarmStore = create((set, get) => ({
       
       return { success: true, message: '모든 알림이 삭제되었습니다.' };
     } catch (error) {
-      console.error('모든 알림 삭제 실패:', error);
+      // console.error('모든 알림 삭제 실패:', error);
       set({ 
         error: error.message,
         loading: false

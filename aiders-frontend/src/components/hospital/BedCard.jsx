@@ -35,23 +35,36 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
     setIsUpdating(false);
   };
 
+  const handleStatusToggle = async (e) => {
+    e.stopPropagation();
+    if (isUpdating) return;
+    
+    setIsUpdating(true);
+    await onUpdate(bed.type, 'status', !bed.isAvailable);
+    setIsUpdating(false);
+  };
+
+
   const cardStyle = compact ? {
-    backgroundColor: '#f8fafc',
+    backgroundColor: bed.isAvailable === false ? '#f3f4f6' : '#f8fafc',
     borderRadius: '8px',
-    border: '1px solid #e2e8f0',
+    border: `1px solid ${bed.isAvailable === false ? '#d1d5db' : '#e2e8f0'}`,
     padding: '12px',
-    marginBottom: '8px'
+    marginBottom: '8px',
+    opacity: bed.isAvailable === false ? 0.6 : 1
   } : {
-    backgroundColor: 'white',
+    backgroundColor: bed.isAvailable === false ? '#f3f4f6' : 'white',
     borderRadius: '8px',
-    border: '1px solid #e5e7eb',
+    border: `1px solid ${bed.isAvailable === false ? '#d1d5db' : '#e5e7eb'}`,
     padding: '16px',
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
     minHeight: '200px',
     boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-    transition: 'all 0.2s'
+    transition: 'all 0.2s',
+    opacity: bed.isAvailable === false ? 0.6 : 1,
+    position: 'relative'
   };
 
   return (
@@ -78,23 +91,61 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
       }}>
         <span style={{
           fontWeight: '700',
-          color: '#1f2937',
+          color: bed.isAvailable === false ? '#9ca3af' : '#1f2937',
           fontSize: compact ? '16px' : '20px',
           letterSpacing: '-0.025em'
         }}>
           {bed.name} / {bed.category}
+          {bed.isAvailable === false && ' (운영중단)'}
         </span>
         
         {compact && (
-          <span style={{
-            fontSize: '12px',
-            padding: '4px 8px',
-            borderRadius: '4px',
-            backgroundColor: (bed.totalBeds > 0 && bed.totalBeds > bed.currentPatients) ? '#dcfce7' : '#fee2e2',
-            color: (bed.totalBeds > 0 && bed.totalBeds > bed.currentPatients) ? '#166534' : '#991b1b'
-          }}>
-            {(bed.totalBeds > 0 && bed.totalBeds > bed.currentPatients) ? '여유있음' : '만실'}
-          </span>
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+            <span style={{
+              fontSize: '12px',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              backgroundColor: bed.isAvailable === false ? '#fef3c7' : 
+                (bed.totalBeds > 0 && bed.totalBeds > bed.currentPatients) ? '#dcfce7' : '#fee2e2',
+              color: bed.isAvailable === false ? '#92400e' :
+                (bed.totalBeds > 0 && bed.totalBeds > bed.currentPatients) ? '#166534' : '#991b1b'
+            }}>
+              {bed.isAvailable === false ? '중단됨' :
+                (bed.totalBeds > 0 && bed.totalBeds > bed.currentPatients) ? '여유있음' : '만실'}
+            </span>
+          </div>
+        )}
+        
+        {/* 토글 스위치 - 오른쪽 상단 */}
+        {!compact && !readonly && (
+          <div
+            onClick={handleStatusToggle}
+            style={{
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
+              width: '44px',
+              height: '24px',
+              backgroundColor: bed.isAvailable ? '#22c55e' : '#ef4444',
+              borderRadius: '12px',
+              cursor: isUpdating ? 'not-allowed' : 'pointer',
+              transition: 'all 0.3s ease',
+              border: '2px solid transparent',
+              opacity: isUpdating ? 0.7 : 1
+            }}
+          >
+            <div style={{
+              position: 'absolute',
+              top: '2px',
+              left: bed.isAvailable ? '22px' : '2px',
+              width: '16px',
+              height: '16px',
+              backgroundColor: 'white',
+              borderRadius: '50%',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+            }} />
+          </div>
         )}
       </div>
 
@@ -291,7 +342,7 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
               color: '#0369a1',
               fontWeight: '500'
             }}>
-              실제 환자
+              환자 수
             </span>
             <div style={{
               display: 'flex',
@@ -365,6 +416,7 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
               </button>
             </div>
           </div>
+
         </>
       )}
     </div>

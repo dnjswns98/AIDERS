@@ -25,11 +25,11 @@ export const useHospitalStore = create((set, get) => ({
       }
 
       const data = await response.json();
-      console.log('🏥 병원 정보 조회 성공 (/api/v1/hospital/me):', {
-        name: data.name,
-        address: data.address,
-        fullData: data
-      });
+      // console.log('🏥 병원 정보 조회 성공 (/api/v1/hospital/me):', {
+      //   name: data.name,
+      //   address: data.address,
+      //   fullData: data
+      // });
       set({ 
         hospitalInfo: data,
         loading: false 
@@ -61,11 +61,11 @@ export const useHospitalStore = create((set, get) => ({
       }
 
       const data = await response.json();
-      console.log('📍 병원 위치 정보 조회 성공 (/api/v1/hospital/location):', {
-        latitude: data.latitude,
-        longitude: data.longitude,
-        fullData: data
-      });
+      // console.log('📍 병원 위치 정보 조회 성공 (/api/v1/hospital/location):', {
+      //   latitude: data.latitude,
+      //   longitude: data.longitude,
+      //   fullData: data
+      // });
       set({ 
         hospitalLocation: data,
         loading: false 
@@ -97,9 +97,9 @@ export const useHospitalStore = create((set, get) => ({
       }
 
       const data = await response.json();
-      console.log('🏥 진료과 상태 조회 성공 (/api/v1/hospital/department):', {
-        fullData: data
-      });
+      // console.log('🏥 진료과 상태 조회 성공 (/api/v1/hospital/department):', {
+      //   fullData: data
+      // });
       set({ 
         departmentStatus: data,
         loading: false 
@@ -149,8 +149,8 @@ export const useHospitalStore = create((set, get) => ({
 
   // 베드 정보 조회
   fetchBedInfo: async () => {
-    console.log('🔍 fetchBedInfo 시작 - API 요청 전');
-    console.log('🔍 API URL:', `${import.meta.env.VITE_API_BASE_URL}/api/v1/hospital/bed`);
+    // console.log('🔍 fetchBedInfo 시작 - API 요청 전');
+    // console.log('🔍 API URL:', `${import.meta.env.VITE_API_BASE_URL}/api/v1/hospital/bed`);
     
     set({ loading: true, error: null });
     
@@ -159,18 +159,18 @@ export const useHospitalStore = create((set, get) => ({
         method: 'GET'
       });
       
-      console.log('🔍 fetchBedInfo - Response 상태:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
-      });
+      // console.log('🔍 fetchBedInfo - Response 상태:', {
+      //   status: response.status,
+      //   statusText: response.statusText,
+      //   ok: response.ok
+      // });
 
       if (!response.ok) {
         const errorText = await response.text();
         
         // 500 에러 또는 병상 정보가 없는 경우 처리
         if (response.status === 500 || errorText.includes('병상 정보가 없습니다')) {
-          console.log('병상 정보가 없어서 기본값으로 초기화합니다.');
+          // console.log('병상 정보가 없어서 기본값으로 초기화합니다.');
           
           const defaultBedInfo = {
             generalTotalBed: 0,
@@ -204,24 +204,24 @@ export const useHospitalStore = create((set, get) => ({
       }
 
       const data = await response.json();
-      console.log('🛏️ 베드 정보 조회 성공 (/api/v1/hospital/bed):', {
-        fullData: data,
-        allKeys: Object.keys(data)
-      });
+      // console.log('🛏️ 베드 정보 조회 성공 (/api/v1/hospital/bed):', {
+      //   fullData: data,
+      //   allKeys: Object.keys(data)
+      // });
       
-      // 실제 필드명 확인을 위한 상세 로그
-      console.log('🔍 베드 정보 상세 분석:', {
-        generalTotalBed: data.generalTotalBed,
-        generalAvailableBed: data.generalAvailableBed,
-        generalIsAvailable: data.generalIsAvailable,
-        generalIsExist: data.generalIsExist,
-        pediatricTotalBed: data.pediatricTotalBed,
-        pediatricAvailableBed: data.pediatricAvailableBed,
-        traumaTotalBed: data.traumaTotalBed,
-        traumaAvailableBed: data.traumaAvailableBed,
-        neonatalTotalBed: data.neonatalTotalBed,
-        neonatalAvailableBed: data.neonatalAvailableBed
-      });
+      // // 실제 필드명 확인을 위한 상세 로그
+      // console.log('🔍 베드 정보 상세 분석:', {
+      //   generalTotalBed: data.generalTotalBed,
+      //   generalAvailableBed: data.generalAvailableBed,
+      //   generalIsAvailable: data.generalIsAvailable,
+      //   generalIsExist: data.generalIsExist,
+      //   pediatricTotalBed: data.pediatricTotalBed,
+      //   pediatricAvailableBed: data.pediatricAvailableBed,
+      //   traumaTotalBed: data.traumaTotalBed,
+      //   traumaAvailableBed: data.traumaAvailableBed,
+      //   neonatalTotalBed: data.neonatalTotalBed,
+      //   neonatalAvailableBed: data.neonatalAvailableBed
+      // });
       set({ 
         bedInfo: data,
         loading: false 
@@ -233,7 +233,7 @@ export const useHospitalStore = create((set, get) => ({
       
       // 병상 정보가 없는 경우 기본값으로 처리
       if (error.message.includes('병상 정보가 없습니다') || error.message.includes('500')) {
-        console.log('에러 처리: 병상 정보가 없어서 기본값으로 초기화합니다.');
+        // console.log('에러 처리: 병상 정보가 없어서 기본값으로 초기화합니다.');
         
         const defaultBedInfo = {
           generalTotalBed: 0,
@@ -300,7 +300,7 @@ export const useHospitalStore = create((set, get) => ({
         ...updateData  // 업데이트할 데이터로 덮어쓰기
       };
       
-      console.log('🔍 완전한 베드 업데이트 데이터:', completeData);
+      // console.log('🔍 완전한 베드 업데이트 데이터:', completeData);
 
       const response = await fetchWithAuth(`${import.meta.env.VITE_API_BASE_URL}/api/v1/hospital/bed`, {
         method: 'PATCH',
@@ -309,18 +309,18 @@ export const useHospitalStore = create((set, get) => ({
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('🚨 베드 업데이트 실패 응답:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorText: errorText
-        });
+        // console.error('🚨 베드 업데이트 실패 응답:', {
+        //   status: response.status,
+        //   statusText: response.statusText,
+        //   errorText: errorText
+        // });
         
         // 특정 에러 메시지에 대한 처리
         if (errorText.includes('병상 정보가 없습니다') || response.status === 500) {
           set({ loading: false });
           
           // 베드 정보가 없으면 초기 베드 생성 시도 
-          console.log('베드 정보가 없어서 초기 생성 시도:', completeData);
+          // console.log('베드 정보가 없어서 초기 생성 시도:', completeData);
           
           try {
             // 기본값으로 다시 시도 (모든 베드를 최소 1로 설정해서 데이터 생성)
@@ -343,7 +343,7 @@ export const useHospitalStore = create((set, get) => ({
               neonatalIsExist: true
             };
             
-            console.log('🔄 재시도 데이터:', initData);
+            // console.log('🔄 재시도 데이터:', initData);
             
             const retryResponse = await fetchWithAuth(`${import.meta.env.VITE_API_BASE_URL}/api/v1/hospital/bed`, {
               method: 'PATCH',
@@ -352,10 +352,10 @@ export const useHospitalStore = create((set, get) => ({
             
             if (!retryResponse.ok) {
               const retryErrorText = await retryResponse.text();
-              console.error('🚨 재시도도 실패:', {
-                status: retryResponse.status,
-                errorText: retryErrorText
-              });
+              // console.error('🚨 재시도도 실패:', {
+              //   status: retryResponse.status,
+              //   errorText: retryErrorText
+              // });
               
               // 재시도도 실패하면 로컬에만 저장
               const newBedInfo = { ...currentBedInfo, ...updateData };
