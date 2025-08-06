@@ -37,6 +37,10 @@ logs/
 test.*
 debug.*
 
+# .properties 파일
+aiders-backend/src/main/resources/application*.properties
+aiders-backend/src/test/resources/application*.properties
+
 # MySQL 임시 설정 폴더들 (docker-compose로 대체)
 mysql-config/
 mysql-init/
