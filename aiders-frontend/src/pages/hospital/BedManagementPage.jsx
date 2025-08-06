@@ -19,6 +19,7 @@ export default function BedManagementPage() {
   } = useHospitalStore();
 
   const [beds, setBeds] = useState([]);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -42,7 +43,9 @@ export default function BedManagementPage() {
         type: 'GENERAL',
         totalBeds: bedInfo?.generalTotalBed || 0,
         currentPatients: (bedInfo?.generalTotalBed || 0) - (bedInfo?.generalAvailableBed || 0),
-        status: bedInfo?.generalIsAvailable ? 'available' : 'disabled'
+        status: bedInfo?.generalIsAvailable ? 'available' : 'disabled',
+        isAvailable: bedInfo?.generalIsAvailable,
+        isExist: bedInfo?.generalIsExist
       },
       {
         id: 2,
@@ -51,7 +54,9 @@ export default function BedManagementPage() {
         type: 'PEDIATRIC',
         totalBeds: bedInfo?.pediatricTotalBed || 0,
         currentPatients: (bedInfo?.pediatricTotalBed || 0) - (bedInfo?.pediatricAvailableBed || 0),
-        status: bedInfo?.pediatricIsAvailable ? 'available' : 'disabled'
+        status: bedInfo?.pediatricIsAvailable ? 'available' : 'disabled',
+        isAvailable: bedInfo?.pediatricIsAvailable,
+        isExist: bedInfo?.pediatricIsExist
       },
       {
         id: 3,
@@ -60,7 +65,9 @@ export default function BedManagementPage() {
         type: 'TRAUMA',
         totalBeds: bedInfo?.traumaTotalBed || 0,
         currentPatients: (bedInfo?.traumaTotalBed || 0) - (bedInfo?.traumaAvailableBed || 0),
-        status: bedInfo?.traumaIsAvailable ? 'available' : 'disabled'
+        status: bedInfo?.traumaIsAvailable ? 'available' : 'disabled',
+        isAvailable: bedInfo?.traumaIsAvailable,
+        isExist: bedInfo?.traumaIsExist
       },
       {
         id: 4,
@@ -69,12 +76,16 @@ export default function BedManagementPage() {
         type: 'NEONATAL',
         totalBeds: bedInfo?.neonatalTotalBed || 0,
         currentPatients: (bedInfo?.neonatalTotalBed || 0) - (bedInfo?.neonatalAvailableBed || 0),
-        status: bedInfo?.neonatalIsAvailable ? 'available' : 'disabled'
+        status: bedInfo?.neonatalIsAvailable ? 'available' : 'disabled',
+        isAvailable: bedInfo?.neonatalIsAvailable,
+        isExist: bedInfo?.neonatalIsExist
       }
     ];
     
     console.log('🔍 BedManagementPage - 변환된 beds:', transformedBeds);
-    setBeds(transformedBeds);
+    // isExist가 false인 병상은 제외하고 표시
+    const visibleBeds = transformedBeds.filter(bed => bed.isExist !== false);
+    setBeds(visibleBeds);
   }, [bedInfo]);
 
   const handleBedUpdate = async (bedType, updateType, value) => {
@@ -102,6 +113,7 @@ export default function BedManagementPage() {
           alert('베드 환자 수 변경에 실패했습니다: ' + (result?.error || '알 수 없는 오류'));
         }
       } else if (updateType === 'total') {
+        
         // 총 베드 수 변경 (베드 정보 업데이트)
         if (value < 0) {
           alert('베드 수는 0보다 작을 수 없습니다.');
@@ -132,13 +144,56 @@ export default function BedManagementPage() {
           alert('베드 정보 업데이트에 실패했습니다: ' + (result?.error || '알 수 없는 오류'));
         }
       } else if (updateType === 'status') {
-        // 상태 변경 (진료과 상태 업데이트)
-        console.log('Status update:', bedType, value);
-        // TODO: department API 연결
+        // 상태 변경 (병상 운영 상태 업데이트)
+        console.log('🔍 BedManagementPage - 병상 운영 상태 변경:', {
+          bedType,
+          newIsAvailable: value
+        });
+        
+        const updateData = {};
+        
+        if (bedType === 'GENERAL') {
+          updateData.generalIsAvailable = value;
+        } else if (bedType === 'PEDIATRIC') {
+          updateData.pediatricIsAvailable = value;
+        } else if (bedType === 'TRAUMA') {
+          updateData.traumaIsAvailable = value;
+        } else if (bedType === 'NEONATAL') {
+          updateData.neonatalIsAvailable = value;
+        }
+        
+        console.log('🔍 BedManagementPage - 병상 상태 업데이트 데이터:', updateData);
+
+        const result = await updateBedInfo(updateData);
+        if (!result?.success) {
+          alert('병상 운영 상태 변경에 실패했습니다: ' + (result?.error || '알 수 없는 오류'));
+        }
       }
     } catch (error) {
       console.error('베드 업데이트 중 오류 발생:', error);
       alert('베드 업데이트 중 오류가 발생했습니다: ' + error.message);
+    }
+  };
+
+  const handleExistToggle = async (bedKey, newIsExist) => {
+    try {
+      console.log('🔍 BedManagementPage - 병상 존재 여부 변경:', {
+        bedKey,
+        newIsExist
+      });
+      
+      const updateData = {};
+      updateData[`${bedKey}IsExist`] = newIsExist;
+      
+      console.log('🔍 BedManagementPage - 병상 존재 여부 업데이트 데이터:', updateData);
+
+      const result = await updateBedInfo(updateData);
+      if (!result?.success) {
+        alert('병상 존재 여부 변경에 실패했습니다: ' + (result?.error || '알 수 없는 오류'));
+      }
+    } catch (error) {
+      console.error('병상 존재 여부 업데이트 중 오류 발생:', error);
+      alert('병상 존재 여부 업데이트 중 오류가 발생했습니다: ' + error.message);
     }
   };
 
@@ -190,7 +245,8 @@ export default function BedManagementPage() {
             <div style={{
               display: 'flex',
               gap: '16px',
-              marginBottom: '24px'
+              marginBottom: '24px',
+              alignItems: 'center'
             }}>
               <div style={{
                 backgroundColor: 'white',
@@ -222,6 +278,32 @@ export default function BedManagementPage() {
                 <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>이용 가능</div>
                 <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#16a34a' }}>{stats.availableBeds}</div>
               </div>
+              
+              {/* 편집 아이콘 */}
+              <button
+                onClick={() => setShowEditModal(true)}
+                style={{
+                  backgroundColor: '#f3f4f6',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  padding: '16px',
+                  cursor: 'pointer',
+                  fontSize: '20px',
+                  color: '#6b7280',
+                  transition: 'all 0.2s',
+                  marginLeft: 'auto'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#e5e7eb';
+                  e.target.style.color = '#374151';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#f3f4f6';
+                  e.target.style.color = '#6b7280';
+                }}
+              >
+                ⚙️
+              </button>
             </div>
           </div>
 
@@ -278,23 +360,178 @@ export default function BedManagementPage() {
                 </div>
               )}
               <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                gap: '16px',
+                maxHeight: 'calc(100vh - 400px)',
+                overflowY: 'auto',
+                paddingRight: '8px',
                 marginTop: '24px'
               }}>
-                {beds.map((bed) => (
-                  <BedCard 
-                    key={bed.id} 
-                    bed={bed} 
-                    onUpdate={handleBedUpdate}
-                  />
-                ))}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr',
+                  gap: '16px'
+                }}>
+                  {beds.map((bed) => (
+                    <BedCard 
+                      key={bed.id} 
+                      bed={bed} 
+                      onUpdate={handleBedUpdate}
+                    />
+                  ))}
+                </div>
               </div>
             </>
           )}
         </div>
       </main>
+      
+      {/* 병상 존재 여부 편집 모달 */}
+      {showEditModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+          onClick={(e) => {
+            // 모달 배경 클릭 시에는 아무 동작하지 않음 (모달 닫지 않음)
+            e.stopPropagation();
+          }}
+        >
+          <div 
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              padding: '24px',
+              width: '90%',
+              maxWidth: '500px',
+              maxHeight: '80vh',
+              overflow: 'auto'
+            }}
+            onClick={(e) => {
+              // 모달 콘텐츠 클릭 시 이벤트 전파 중단 (모달 닫지 않음)
+              e.stopPropagation();
+            }}
+          >
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px'
+            }}>
+              <h2 style={{
+                fontSize: '20px',
+                fontWeight: 'bold',
+                color: '#1f2937',
+                margin: 0
+              }}>
+                병상 존재 여부 설정
+              </h2>
+              <button
+                onClick={() => setShowEditModal(false)}
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#6b7280',
+                  padding: '4px'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div style={{
+              marginBottom: '16px',
+              padding: '12px',
+              backgroundColor: '#f0f9ff',
+              borderRadius: '8px',
+              fontSize: '14px',
+              color: '#0369a1'
+            }}>
+              💡 병상이 존재하지 않으면 메인 화면에서 완전히 숨겨집니다.
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {[
+                { type: 'GENERAL', name: '일반병동', key: 'general' },
+                { type: 'PEDIATRIC', name: '소아병동', key: 'pediatric' },
+                { type: 'TRAUMA', name: '외상센터', key: 'trauma' },
+                { type: 'NEONATAL', name: '신생아실', key: 'neonatal' }
+              ].map(({ type, name, key }) => {
+                const currentBed = beds.find(b => b.type === type);
+                const isExist = bedInfo?.[`${key}IsExist`];
+                
+                return (
+                  <div key={type} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '8px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <span style={{
+                      fontSize: '16px',
+                      fontWeight: '500',
+                      color: '#374151'
+                    }}>
+                      {name}
+                    </span>
+                    
+                    <button
+                      onClick={() => handleExistToggle(key, !isExist)}
+                      style={{
+                        backgroundColor: isExist ? '#16a34a' : '#dc2626',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '6px 12px',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {isExist ? '존재함' : '존재하지 않음'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div style={{
+              marginTop: '24px',
+              display: 'flex',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                onClick={() => setShowEditModal(false)}
+                style={{
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '10px 20px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -1,9 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import HospitalHeader from "../../components/hospital/HospitalHeader";
+import VideoCallManager from "../../components/hospital/VideoCallManager";
 import useEmergencyStore from "../../store/useEmergencyStore";
+import { useAuthStore } from "../../store/useAuthStore";
 
 const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance }) => {
-  const { ambulances } = useEmergencyStore();
+  const { ambulances, fetchHospitalAmbulances } = useEmergencyStore();
+  
+  // 컴포넌트 마운트 시 병원 구급차 데이터 로드
+  useEffect(() => {
+    fetchHospitalAmbulances();
+  }, [fetchHospitalAmbulances]);
   return (
     <div style={{
       width: '320px',
@@ -141,7 +148,7 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance }) => {
   );
 };
 
-const VideoCallTab = ({ selectedAmbulance }) => {
+const VideoCallTab = ({ selectedAmbulance, hospitalId, onCallStatusChange }) => {
   return (
     <div style={{
       height: 'calc(100vh - 160px)',
@@ -173,118 +180,16 @@ const VideoCallTab = ({ selectedAmbulance }) => {
             color: '#1f2937',
             margin: 0
           }}>구급차 화상통화</h3>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <div style={{
-              width: '8px',
-              height: '8px',
-              backgroundColor: '#10b981',
-              borderRadius: '50%'
-            }}></div>
-            <span style={{
-              fontSize: '14px',
-              color: '#10b981',
-              fontWeight: '600'
-            }}>연결됨</span>
-          </div>
         </div>
 
-        {/* 비디오 영역 */}
-        <div style={{
-          flex: 1,
-          backgroundColor: '#000',
-          borderRadius: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-          minHeight: '400px'
-        }}>
-          <div style={{
-            textAlign: 'center',
-            color: 'white'
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📹</div>
-            <p style={{ fontSize: '16px', margin: 0 }}>구급차 화상통화 연결 중...</p>
-          </div>
-          
-          {/* 내 화면 (PIP) */}
-          <div style={{
-            position: 'absolute',
-            top: '16px',
-            right: '16px',
-            width: '160px',
-            height: '120px',
-            backgroundColor: '#374151',
-            borderRadius: '8px',
-            border: '2px solid white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <div style={{
-              textAlign: 'center',
-              color: 'white',
-              fontSize: '12px'
-            }}>
-              <div style={{ fontSize: '24px', marginBottom: '4px' }}>👨‍⚕️</div>
-              <p style={{ margin: 0 }}>내 화면</p>
-            </div>
-          </div>
-        </div>
-
-        {/* 통화 컨트롤 */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '16px',
-          marginTop: '20px',
-          padding: '16px',
-          backgroundColor: '#f9fafb',
-          borderRadius: '8px'
-        }}>
-          <button style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            border: 'none',
-            backgroundColor: '#6b7280',
-            color: 'white',
-            fontSize: '20px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>🎤</button>
-          <button style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            border: 'none',
-            backgroundColor: '#6b7280',
-            color: 'white',
-            fontSize: '20px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>📹</button>
-          <button style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            border: 'none',
-            backgroundColor: '#ef4444',
-            color: 'white',
-            fontSize: '20px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>📞</button>
+        {/* VideoCallManager - 실제 WebRTC 연결 */}
+        <div style={{ flex: 1 }}>
+          <VideoCallManager 
+            selectedAmbulance={selectedAmbulance}
+            hospitalId={hospitalId}
+            onCallStatusChange={onCallStatusChange}
+            renderMode="full"
+          />
         </div>
       </div>
 
@@ -402,7 +307,7 @@ const VideoCallTab = ({ selectedAmbulance }) => {
   );
 };
 
-const DetailInfoTab = ({ selectedAmbulance, newTreatment, setNewTreatment, addTreatmentRecord }) => {
+const DetailInfoTab = ({ selectedAmbulance, newTreatment, setNewTreatment, addTreatmentRecord, hospitalId, isCallActive, currentCallAmbulance }) => {
   const patientDetails = selectedAmbulance?.patientDetails;
 
   return (
@@ -678,84 +583,13 @@ const DetailInfoTab = ({ selectedAmbulance, newTreatment, setNewTreatment, addTr
             marginBottom: '12px'
           }}>화상통화</h4>
           
-          <div style={{
-            backgroundColor: '#000',
-            borderRadius: '8px',
-            height: '200px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            marginBottom: '12px'
-          }}>
-            <div style={{
-              textAlign: 'center',
-              color: 'white'
-            }}>
-              <div style={{ fontSize: '32px', marginBottom: '8px' }}>📹</div>
-              <p style={{ fontSize: '14px', margin: 0 }}>구급차 화상통화</p>
-            </div>
-            
-            {/* 내 화면 (PIP) */}
-            <div style={{
-              position: 'absolute',
-              top: '8px',
-              right: '8px',
-              width: '80px',
-              height: '60px',
-              backgroundColor: '#374151',
-              borderRadius: '4px',
-              border: '1px solid white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <div style={{
-                textAlign: 'center',
-                color: 'white',
-                fontSize: '10px'
-              }}>
-                <div style={{ fontSize: '16px', marginBottom: '2px' }}>👨‍⚕️</div>
-              </div>
-            </div>
-          </div>
-
-          {/* 간단한 통화 컨트롤 */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: '8px'
-          }}>
-            <button style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              border: 'none',
-              backgroundColor: '#6b7280',
-              color: 'white',
-              fontSize: '14px',
-              cursor: 'pointer'
-            }}>🎤</button>
-            <button style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              border: 'none',
-              backgroundColor: '#6b7280',
-              color: 'white',
-              fontSize: '14px',
-              cursor: 'pointer'
-            }}>📹</button>
-            <button style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              border: 'none',
-              backgroundColor: '#ef4444',
-              color: 'white',
-              fontSize: '14px',
-              cursor: 'pointer'
-            }}>📞</button>
+          <div style={{ height: '240px' }}>
+            <VideoCallManager 
+              selectedAmbulance={isCallActive ? currentCallAmbulance : selectedAmbulance}
+              hospitalId={hospitalId}
+              onCallStatusChange={() => {}} // DetailInfoTab는 읽기 전용
+              renderMode="compact"
+            />
           </div>
         </div>
 
@@ -889,8 +723,21 @@ const DetailInfoTab = ({ selectedAmbulance, newTreatment, setNewTreatment, addTr
 
 export default function EmergencyPatientPage() {
   const [activeTab, setActiveTab] = useState('video');
-  const { selectedAmbulance, selectAmbulance, addTreatmentRecord } = useEmergencyStore();
+  const { selectedAmbulance, selectAmbulance, addTreatmentRecord, fetchHospitalAmbulances } = useEmergencyStore();
   const [newTreatment, setNewTreatment] = useState('');
+  const [isCallActive, setIsCallActive] = useState(false);
+  const [currentCallAmbulance, setCurrentCallAmbulance] = useState(null);
+  const { user } = useAuthStore();
+
+  const handleCallStatusChange = (isActive, ambulance) => {
+    setIsCallActive(isActive);
+    setCurrentCallAmbulance(ambulance);
+  };
+
+  // 페이지 마운트 시 병원 구급차 데이터 로드
+  useEffect(() => {
+    fetchHospitalAmbulances();
+  }, []);
 
   return (
     <>
@@ -982,8 +829,24 @@ export default function EmergencyPatientPage() {
           </div>
 
           {/* 탭 콘텐츠 */}
-          {activeTab === 'video' && <VideoCallTab selectedAmbulance={selectedAmbulance} />}
-          {activeTab === 'detail' && <DetailInfoTab selectedAmbulance={selectedAmbulance} newTreatment={newTreatment} setNewTreatment={setNewTreatment} addTreatmentRecord={addTreatmentRecord} />}
+          {activeTab === 'video' && (
+            <VideoCallTab 
+              selectedAmbulance={selectedAmbulance} 
+              hospitalId={user?.userId}
+              onCallStatusChange={handleCallStatusChange}
+            />
+          )}
+          {activeTab === 'detail' && (
+            <DetailInfoTab 
+              selectedAmbulance={selectedAmbulance} 
+              newTreatment={newTreatment} 
+              setNewTreatment={setNewTreatment} 
+              addTreatmentRecord={addTreatmentRecord}
+              hospitalId={user?.userId}
+              isCallActive={isCallActive}
+              currentCallAmbulance={currentCallAmbulance}
+            />
+          )}
         </div>
       </main>
     </>

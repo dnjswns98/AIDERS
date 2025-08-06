@@ -126,7 +126,7 @@ export const createAmbulanceToken = async (request) => {
 
 export const getHospitalToken = async (sessionId, hospitalId) => {
   try {
-    const response = await axios.get(`http://localhost:8080/api/video-call/hospital/token`, { params: { sessionId,hospitalId } });
+    const response = await axios.get(`${API_BASE_URL}/video-call/hospital/token`, { params: { sessionId,hospitalId } });
     return response.data;
   } catch (error) {
     console.error('Error getting hospital token:', error);
@@ -136,7 +136,7 @@ export const getHospitalToken = async (sessionId, hospitalId) => {
 
 export const startVideoCall = async (request) => {
   try {
-    const response = await axios.put(`http://localhost:8080/api/video-call/start-call`, request);
+    const response = await axios.put(`${API_BASE_URL}/video-call/start-call`, request);
     return response.data;
   } catch (error) {
     console.error('Error starting video call:', error);
@@ -146,7 +146,7 @@ export const startVideoCall = async (request) => {
 
 export const endVideoCall = async (request) => {
   try {
-    const response = await axios.put(`http://localhost:8080/api/video-call/end-call`, request);
+    const response = await axios.put(`${API_BASE_URL}/video-call/end-call`, request);
     return response.data;
   } catch (error) {
     console.error('Error ending video call:', error);
@@ -156,7 +156,7 @@ export const endVideoCall = async (request) => {
 
 export const completeTransport = async (sessionId, hospitalId) => {
   try {
-    const response = await axios.delete(`http://localhost:8080/api/video-call/session/${sessionId}/complete`, { params: { hospitalId } });
+    const response = await axios.delete(`${API_BASE_URL}/video-call/session/${sessionId}/complete`, { params: { hospitalId } });
     return response.data;
   } catch (error) {
     console.error('Error completing transport:', error);

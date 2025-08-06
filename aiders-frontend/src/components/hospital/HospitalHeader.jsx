@@ -28,7 +28,7 @@ export default function HospitalHeader() {
   // 현재 경로에 따라 activeMenu 설정
   const getCurrentMenu = () => {
     const currentItem = menuItems.find(item => item.path === location.pathname);
-    return currentItem ? currentItem.label : "상황판";
+    return currentItem ? currentItem.label : "구급환자";
   };
 
   const activeMenu = getCurrentMenu();
@@ -97,6 +97,9 @@ export default function HospitalHeader() {
                     onClick={() => {
                       if (item.label === "알림") {
                         setNotificationModalOpen(true);
+                      } else if (item.label === "상황판") {
+                        // 상황판은 새 창으로 열기
+                        window.open(item.path, '_blank', 'width=1200,height=800');
                       } else {
                         navigate(item.path);
                       }
