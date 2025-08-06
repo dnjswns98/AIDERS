@@ -28,13 +28,13 @@ public class AuthService {
         CustomUserDetails userDetails = loadUserDetails(request.getUserKey());
         checkPassword(request.getPassword(), userDetails.getPassword());
 
-        JwtUserDto jwtUser = createJwtUser(userDetails.getId(), userDetails.getUserKey());
+        JwtUserDto jwtUser = createJwtUser(userDetails.getId(), userDetails.getUserKey(),  userDetails.getRole());
         String accessToken = jwtProvider.generateToken(jwtUser);
         String refreshToken = jwtProvider.generateRefreshToken(jwtUser);
 
         updateRefreshToken(userDetails.getUserKey(), refreshToken);
 
-        return new LoginResponseDto(userDetails.getRole(), accessToken, refreshToken);
+        return new LoginResponseDto(accessToken, refreshToken);
     }
 
     public AccessTokenResponseDto reissue(RefreshRequestDto request) {
@@ -46,7 +46,7 @@ public class AuthService {
         checkStoredRefreshToken(refreshToken, user.getRefreshToken());
 
         String newAccessToken = jwtProvider.generateToken(
-                createJwtUser(user.getId(), user.getUserKey())
+                createJwtUser(user.getId(), user.getUserKey(), user.getRole())
         );
 
         return new AccessTokenResponseDto(newAccessToken);
@@ -91,7 +91,7 @@ public class AuthService {
                 .orElseThrow(() -> new UsernameNotFoundException("사용자 없음"));
     }
 
-    private JwtUserDto createJwtUser(Long id, String userKey) {
-        return new JwtUserDto(id, userKey);
+    private JwtUserDto createJwtUser(Long id, String userKey, String role) {
+        return new JwtUserDto(id, userKey, role);
     }
 }

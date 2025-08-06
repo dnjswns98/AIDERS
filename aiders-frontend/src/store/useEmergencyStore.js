@@ -9,11 +9,140 @@ import {
 } from "../api/api";
 import { useAuthStore } from "./useAuthStore";
 
+// 병원용 모킹 데이터 (실제로는 API에서 가져와야 함)
+const mockHospitalAmbulances = [
+  {
+    id: 'amb001',
+    vehicleNumber: '서울응급01호',
+    carNumber: '서울응급01호',
+    status: 'connected',
+    priority: '응급',
+    condition: '심근경색 의심',
+    distance: '2.3km',
+    eta: '5분',
+    callTime: '14:25',
+    patientInfo: {
+      name: '김영수',
+      basicInfo: '남성, 65세',
+      gender: '남',
+      age: '65세'
+    },
+    patientDetails: {
+      ktasLevel: '1등급',
+      department: '심장내과',
+      chiefComplaint: '가슴 통증, 호흡곤란',
+      vitalSigns: {
+        bloodPressure: '180/110 mmHg',
+        pulse: '110 bpm',
+        respiration: '24 /min',
+        temperature: '36.8°C',
+        oxygenSaturation: '92%',
+        consciousness: 'Alert'
+      },
+      admissionRoute: '119 신고 후 현장 출동',
+      duration: '30분전 발생',
+      onsetSituation: '계단 오르던 중 갑작스런 가슴 통증',
+      accompanyingSymptoms: '식은땀, 어지러움',
+      pastHistory: {
+        hypertension: '있음(10년)',
+        diabetes: '없음',
+        hypothyroidism: '없음',
+        osteoporosis: '없음'
+      },
+      familyHistory: {
+        father: '심근경색(65세)',
+        mother: '고혈압',
+        siblings: '특이사항 없음'
+      },
+      medications: [
+        { name: '암로디핀', frequency: '1일 1회', indication: '고혈압' },
+        { name: '아스피린', frequency: '1일 1회', indication: '심혈관 예방' }
+      ],
+      transportInfo: {
+        dispatchTime: '14:20',
+        arrivalTime: '14:25',
+        departureTime: '14:35',
+        hospitalArrival: '예상 14:50',
+        totalDistance: '8.5km'
+      }
+    },
+    treatmentRecords: [
+      { action: '산소 공급 시작', detail: '15L/min 마스크 적용', time: '14:30' },
+      { action: '정맥로 확보', detail: '18G 캐뉼라 좌측 전완에 삽입', time: '14:32' },
+      { action: 'ECG 모니터링', detail: 'ST elevation 확인', time: '14:33' }
+    ]
+  },
+  {
+    id: 'amb002',
+    vehicleNumber: '서울응급02호',
+    carNumber: '서울응급02호',
+    status: 'waiting',
+    priority: '긴급',
+    condition: '교통사고 외상',
+    distance: '4.1km',
+    eta: '12분',
+    callTime: '14:18',
+    patientInfo: {
+      name: '박미영',
+      basicInfo: '여성, 45세',
+      gender: '여',
+      age: '45세'
+    },
+    patientDetails: {
+      ktasLevel: '2등급',
+      department: '외상외과',
+      chiefComplaint: '복부 외상, 의식 저하',
+      vitalSigns: {
+        bloodPressure: '90/60 mmHg',
+        pulse: '125 bpm',
+        respiration: '28 /min',
+        temperature: '36.2°C',
+        oxygenSaturation: '95%',
+        consciousness: 'Drowsy'
+      }
+    },
+    treatmentRecords: []
+  },
+  {
+    id: 'amb003',
+    vehicleNumber: '서울응급03호', 
+    carNumber: '서울응급03호',
+    status: 'connected',
+    priority: '응급',
+    condition: '의식잃음',
+    distance: '3.2km',
+    eta: '8분',
+    callTime: '14:15',
+    patientInfo: {
+      name: '이준호',
+      basicInfo: '남성, 28세',
+      gender: '남',
+      age: '28세'
+    },
+    patientDetails: {
+      ktasLevel: '1등급',
+      department: '신경외과',
+      chiefComplaint: '의식 소실, 경련',
+      vitalSigns: {
+        bloodPressure: '160/100 mmHg',
+        pulse: '95 bpm',
+        respiration: '20 /min',
+        temperature: '37.8°C',
+        oxygenSaturation: '98%',
+        consciousness: 'Unconscious'
+      }
+    },
+    treatmentRecords: []
+  }
+];
+
 const useEmergencyStore = create((set, get) => ({
   // 선택된 구급차
   selectedAmbulance: null,
   // 구급차 목록 (실제로는 로그인된 구급차 정보만 가져옴)
   ambulances: [],
+  // 병원용 구급차 목록 (모킹 데이터)
+  hospitalAmbulances: mockHospitalAmbulances,
 
 
   
@@ -126,7 +255,7 @@ const useEmergencyStore = create((set, get) => ({
         return newState;
       });
     } catch (error) {
-      console.error(`Failed to update ambulance ${ambulanceId} status:`, error);
+      // console.error(`Failed to update ambulance ${ambulanceId} status:`, error);
     }
   },
 

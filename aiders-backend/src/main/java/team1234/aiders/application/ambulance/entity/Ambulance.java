@@ -70,8 +70,20 @@ public class Ambulance extends User {
             String passwordResetKey,
             Firestation firestation
     ) {
-        super(userKey, role, password, passwordResetKey);
+        super(userKey, password, passwordResetKey, role);
         this.firestation = firestation;
+    }
+
+    public void setHospital(Hospital hospital) {
+        this.hospital = hospital;
+    }
+
+    public void setHospitalName(String name) {
+        this.hospitalName = name;
+    }
+
+    public void setHospitalAddress(String address) {
+        this.hospitalAddress = address;
     }
 
     public void updateRequiredPatientInfo(PatientRequiredInfoRequestDto dto) {

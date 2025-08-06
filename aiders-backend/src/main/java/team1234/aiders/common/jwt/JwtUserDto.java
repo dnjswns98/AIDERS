@@ -6,9 +6,11 @@ import lombok.Getter;
 public class JwtUserDto {
     private Long userId;
     private String userKey;
+    private String role;
 
-    public JwtUserDto(Long userId, String userKey) {
+    public JwtUserDto(Long userId, String userKey, String role) {
         this.userId = userId;
         this.userKey = userKey;
+        this.role = role;
     }
 }

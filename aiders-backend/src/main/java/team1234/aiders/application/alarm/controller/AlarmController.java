@@ -18,7 +18,7 @@ import java.util.NoSuchElementException;
 @RequiredArgsConstructor
 @Controller // WebSocket용
 @RestController // REST API용
-@RequestMapping("/api/alarm")
+@RequestMapping("/api/v1/alarm")
 public class AlarmController {
     private final SimpMessagingTemplate messagingTemplate;
     private final AlarmService alarmService;

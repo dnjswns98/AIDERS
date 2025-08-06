@@ -46,7 +46,9 @@ public class SecurityConfig {
 
     //TODO: ADMIN 전용 API 경로들
     private static final String[] ADMIN_ENDPOINT = {
-
+            "/api/v1/user/",
+            "/api/v1/regist/**",
+            "/api/v1/user/{userId}"
     };
 
     //TODO: AMBULANCE 전용 API 경로들
@@ -97,7 +99,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "https://localhost:5173", "http://localhost:8080", "https://localhost:8080"));
+        config.setAllowedOrigins(List.of("http://localhost:5173", "https://localhost:5173", "http://localhost:8080", "https://localhost:8080", "https://i13d107.p.ssafy.io"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization", "SET_COOKIE"));
