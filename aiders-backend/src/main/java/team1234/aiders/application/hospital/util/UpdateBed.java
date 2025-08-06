@@ -15,11 +15,19 @@ public class UpdateBed {
     }
 
     public static void updateGeneralBed(EmergencyBedRequestDto dto, EmergencyBed bed) {
+        boolean needStatusFalse =
+                dto.getGeneralAvailableBed() == null && dto.getGeneralTotalBed() == null;
+
         if (dto.getGeneralAvailableBed() != null) {
             bed.updateGeneralAvailable(dto.getGeneralAvailableBed());
         }
         if (dto.getGeneralTotalBed() != null) {
             bed.updateGeneralTotal(dto.getGeneralTotalBed());
+        }
+        if (needStatusFalse) {
+            bed.updateGeneralIsAvailable(false);
+            bed.updateGeneralIsExist(false);
+            return;
         }
         if (dto.getGeneralIsAvailable() != null) {
             bed.updateGeneralIsAvailable(dto.getGeneralIsAvailable());
@@ -30,11 +38,19 @@ public class UpdateBed {
     }
 
     public static void updatePediatricBed(EmergencyBedRequestDto dto, EmergencyBed bed) {
+        boolean needStatusFalse =
+                dto.getPediatricAvailableBed() == null && dto.getPediatricTotalBed() == null;
+
         if (dto.getPediatricAvailableBed() != null) {
             bed.updatePediatricAvailable(dto.getPediatricAvailableBed());
         }
         if (dto.getPediatricTotalBed() != null) {
             bed.updatePediatricTotal(dto.getPediatricTotalBed());
+        }
+        if (needStatusFalse) {
+            bed.updatePediatricIsAvailable(false);
+            bed.updatePediatricIsExist(false);
+            return;
         }
         if (dto.getPediatricIsAvailable() != null) {
             bed.updatePediatricIsAvailable(dto.getPediatricIsAvailable());
@@ -45,11 +61,19 @@ public class UpdateBed {
     }
 
     public static void updateTraumaBed(EmergencyBedRequestDto dto, EmergencyBed bed) {
+        boolean needStatusFalse =
+                dto.getTraumaAvailableBed() == null && dto.getTraumaTotalBed() == null;
+
         if (dto.getTraumaAvailableBed() != null) {
             bed.updateTraumaAvailable(dto.getTraumaAvailableBed());
         }
         if (dto.getTraumaTotalBed() != null) {
             bed.updateTraumaTotal(dto.getTraumaTotalBed());
+        }
+        if (needStatusFalse) {
+            bed.updateTraumaIsAvailable(false);
+            bed.updateTraumaIsExist(false);
+            return;
         }
         if (dto.getTraumaIsAvailable() != null) {
             bed.updateTraumaIsAvailable(dto.getTraumaIsAvailable());
@@ -60,11 +84,19 @@ public class UpdateBed {
     }
 
     public static void updateNeonatalBed(EmergencyBedRequestDto dto, EmergencyBed bed) {
+        boolean needStatusFalse =
+                dto.getNeonatalAvailableBed() == null && dto.getNeonatalTotalBed() == null;
+
         if (dto.getNeonatalAvailableBed() != null) {
             bed.updateNeonatalAvailable(dto.getNeonatalAvailableBed());
         }
         if (dto.getNeonatalTotalBed() != null) {
             bed.updateNeonatalTotal(dto.getNeonatalTotalBed());
+        }
+        if (needStatusFalse) {
+            bed.updateNeonatalIsAvailable(false);
+            bed.updateNeonatalIsExist(false);
+            return;
         }
         if (dto.getNeonatalIsAvailable() != null) {
             bed.updateNeonatalIsAvailable(dto.getNeonatalIsAvailable());
