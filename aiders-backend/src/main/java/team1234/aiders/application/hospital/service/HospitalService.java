@@ -61,6 +61,13 @@ public class HospitalService {
         dept.updateDepartment(request.getDepartmentCode(), request.getIsExist(), request.getIsAvailable());
     }
 
+    public void createBedInfo(CustomUserDetails user, EmergencyBedRequestDto request) {
+        Hospital hospital = findHospital(user.getId());
+
+        EmergencyBed bed = EmergencyBed.createEmergencyBed(hospital, request);
+        emergencyBedRepository.save(bed);
+    }
+
     @Transactional(readOnly = true)
     public EmergencyBedResponseDto getBedInfo(CustomUserDetails user) {
         EmergencyBed bed = findBedByUser(user);

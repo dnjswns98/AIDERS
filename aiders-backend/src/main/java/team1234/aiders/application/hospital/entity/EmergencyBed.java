@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import team1234.aiders.application.hospital.dto.emergencybed.EmergencyBedRequestDto;
 import team1234.aiders.application.hospital.util.BedType;
 
 @Entity
@@ -124,4 +125,40 @@ public class EmergencyBed {
             case NEONATAL -> this.neonatalAvailableBed += 1;
         }
     }
+
+    public static EmergencyBed createEmergencyBed(Hospital hospital, EmergencyBedRequestDto dto) {
+        EmergencyBed bed = new EmergencyBed();
+        bed.hospital = hospital;
+
+        // General
+        boolean isGeneralEmpty = dto.getGeneralAvailableBed() == null && dto.getGeneralTotalBed() == null;
+        bed.generalAvailableBed = dto.getGeneralAvailableBed();
+        bed.generalTotalBed = dto.getGeneralTotalBed();
+        bed.generalIsAvailable = isGeneralEmpty ? false : (dto.getGeneralIsAvailable() != null ? dto.getGeneralIsAvailable() : true);
+        bed.generalIsExist = isGeneralEmpty ? false : (dto.getGeneralIsExist() != null ? dto.getGeneralIsExist() : true);
+
+        // Pediatric
+        boolean isPediatricEmpty = dto.getPediatricAvailableBed() == null && dto.getPediatricTotalBed() == null;
+        bed.pediatricAvailableBed = dto.getPediatricAvailableBed();
+        bed.pediatricTotalBed = dto.getPediatricTotalBed();
+        bed.pediatricIsAvailable = isPediatricEmpty ? false : (dto.getPediatricIsAvailable() != null ? dto.getPediatricIsAvailable() : true);
+        bed.pediatricIsExist = isPediatricEmpty ? false : (dto.getPediatricIsExist() != null ? dto.getPediatricIsExist() : true);
+
+        // Trauma
+        boolean isTraumaEmpty = dto.getTraumaAvailableBed() == null && dto.getTraumaTotalBed() == null;
+        bed.traumaAvailableBed = dto.getTraumaAvailableBed();
+        bed.traumaTotalBed = dto.getTraumaTotalBed();
+        bed.traumaIsAvailable = isTraumaEmpty ? false : (dto.getTraumaIsAvailable() != null ? dto.getTraumaIsAvailable() : true);
+        bed.traumaIsExist = isTraumaEmpty ? false : (dto.getTraumaIsExist() != null ? dto.getTraumaIsExist() : true);
+
+        // Neonatal
+        boolean isNeonatalEmpty = dto.getNeonatalAvailableBed() == null && dto.getNeonatalTotalBed() == null;
+        bed.neonatalAvailableBed = dto.getNeonatalAvailableBed();
+        bed.neonatalTotalBed = dto.getNeonatalTotalBed();
+        bed.neonatalIsAvailable = isNeonatalEmpty ? false : (dto.getNeonatalIsAvailable() != null ? dto.getNeonatalIsAvailable() : true);
+        bed.neonatalIsExist = isNeonatalEmpty ? false : (dto.getNeonatalIsExist() != null ? dto.getNeonatalIsExist() : true);
+
+        return bed;
+    }
+
 }

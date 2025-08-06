@@ -54,6 +54,14 @@ public class HospitalController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/bed")
+    public ResponseEntity<Void> createBed(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestBody EmergencyBedRequestDto dto) {
+        hospitalService.createBedInfo(user, dto);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/bed")
     public ResponseEntity<EmergencyBedResponseDto> getBedInfo(@AuthenticationPrincipal CustomUserDetails user) {
         EmergencyBedResponseDto response = hospitalService.getBedInfo(user);
