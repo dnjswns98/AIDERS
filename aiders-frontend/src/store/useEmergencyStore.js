@@ -5,6 +5,8 @@ import {
   updateAmbulanceStatus,
   saveRequiredPatientInfo,
   saveOptionalPatientInfo,
+  requestHospitalMatching,        // 🔥 새로 추가: 병원 자동 매칭 API
+  getMatchedHospital             // 🔥 새로 추가: 매칭된 병원 조회 API
 } from "../api/api";
 import { useAuthStore } from "./useAuthStore";
 
@@ -342,10 +344,10 @@ const filterEmptyValues = (obj) => {
 
 // 🔥 API 전송용 데이터 검증, 필터링, 매핑 + 위치 정보 추가 (순수 문자열 버전)
 const validateAndFilterApiData = async (data, type = 'optional', includeLocation = false) => {
-  // if (!data || typeof data !== 'object') {
-  //   console.log(`[Filter] ${type} 데이터가 유효하지 않음:`, data);
-  //   return null;
-  // }
+  if (!data || typeof data !== 'object') {
+    console.log(`[Filter] ${type} 데이터가 유효하지 않음:`, data);
+    return null;
+  }
   
   // 1단계: 백엔드 필드명과 타입에 맞게 매핑 (순수 문자열 처리)
   const mappedData = mapToBackendFields(data, type);
@@ -399,9 +401,15 @@ const useEmergencyStore = create((set, get) => ({
   currentLocation: null,
   locationError: null,
 
+  // 🔥 새로 추가: 병원 자동 매칭 관련 상태들
+  matchedHospitals: [],
+  hospitalMatchingStatus: 'idle', // 'idle', 'loading', 'success', 'error'
+  hospitalMatchingError: null,
+  isHospitalMatching: false,
+
   // 🔥 fetchAmbulances (순수 문자열 버전)
   fetchAmbulances: async () => {
-    console.log("=== fetchAmbulances 시작 (순수 문자열 버전) ===");
+    console.log("=== fetchAmbulances 시작 (병원 자동 매칭 포함) ===");
     try {
       const authState = useAuthStore.getState();
       const currentUser = authState.user;
@@ -474,20 +482,20 @@ const useEmergencyStore = create((set, get) => ({
         };
       }
 
-      console.log("선택된 구급차로 설정할 데이터 (순수 문자열 버전):", currentAmbulance);
+      console.log("선택된 구급차로 설정할 데이터 (병원 매칭 포함):", currentAmbulance);
 
       set({ selectedAmbulance: currentAmbulance, ambulances: [currentAmbulance] });
 
-      console.log("=== fetchAmbulances 완료 (순수 문자열 버전) ===");
+      console.log("=== fetchAmbulances 완료 (병원 매칭 포함) ===");
     } catch (error) {
       console.error("fetchAmbulances 오류:", error);
       set({ selectedAmbulance: null, ambulances: [] });
     }
   },
 
-  // 🔥 완전히 수정된 updatePatientInfo - 순수 문자열 처리
+  // 🔥 완전히 수정된 updatePatientInfo - 병원 자동 매칭 트리거 포함
   updatePatientInfo: async (ambulanceId, newPatientData) => {
-    console.log("=== updatePatientInfo 시작 (순수 문자열 처리) ===");
+    console.log("=== updatePatientInfo 시작 (병원 자동 매칭 트리거 포함) ===");
     console.log("ambulanceId (userId):", ambulanceId);
     console.log("newPatientData:", newPatientData);
 
@@ -508,6 +516,8 @@ const useEmergencyStore = create((set, get) => ({
     console.log("업데이트 전 상태 selectedAmbulance:", currentState.selectedAmbulance);
 
     let apiSuccess = false;
+    let hospitalMatchingTriggered = false;
+
     try {
       // 🔥 핵심 수정 1: 필수 정보 = KTAS(Integer) + 진료과목(String) + 위치 정보
       if (
@@ -539,17 +549,12 @@ const useEmergencyStore = create((set, get) => ({
           );
           
           if (validatedRequired) {
-            console.log("🔥 필수 정보 저장 시도 (순수 문자열 형식):", validatedRequired);
-            console.log("🔥 예상 DB 저장 형태 (순수 문자열):", {
-              "pKtas": `${validatedRequired.ktas} (Integer)`,
-              "pDepartment": `"${validatedRequired.department}" (String)`,
-              "pLatitude": `${validatedRequired.latitude} (Double)`,
-              "pLongitude": `${validatedRequired.longitude} (Double)`
-            });
+            console.log("🔥 필수 정보 저장 시도 (병원 매칭 트리거 준비):", validatedRequired);
             
             await saveRequiredPatientInfo(validatedRequired);
             console.log("✅ 필수 정보 저장 성공!");
             
+            // 🔥 위치 정보 저장
             if (validatedRequired.latitude && validatedRequired.longitude) {
               set({ 
                 currentLocation: {
@@ -560,6 +565,11 @@ const useEmergencyStore = create((set, get) => ({
                 locationError: null
               });
             }
+
+            // 🔥 핵심: 필수 정보 저장 후 자동으로 병원 매칭 트리거
+            hospitalMatchingTriggered = true;
+            console.log("🏥 필수 정보 저장 완료! 병원 자동 매칭 트리거 예약...");
+            
           } else {
             console.warn("⚠️ 필수 정보가 검증을 통과하지 못함");
           }
@@ -585,11 +595,6 @@ const useEmergencyStore = create((set, get) => ({
         
         if (filteredPatientInfo) {
           console.log("🔥 선택 환자 정보 저장 시도 (순수 문자열):", filteredPatientInfo);
-          console.log("🔥 예상 DB 저장 형태 (순수 문자열):", {
-            "pName": `"${filteredPatientInfo.name || ''}" (String)`,
-            "pSex": `${filteredPatientInfo.sex || 'null'} (Integer: 1=남, 2=여)`,
-            "pAgeRange": `"${filteredPatientInfo.ageRange || 'UNDECIDED'}" (Enum)`
-          });
           
           await saveOptionalPatientInfo(filteredPatientInfo);
           console.log("✅ 선택 환자 정보 저장 성공!");
@@ -615,13 +620,6 @@ const useEmergencyStore = create((set, get) => ({
         
         if (filteredOtherDetails) {
           console.log("🔥 추가 선택 정보 저장 시도 (순수 문자열):", filteredOtherDetails);
-          console.log("🔥 예상 DB 저장 형태 (순수 문자열):", {
-            "pMedicalRecord": `"${filteredOtherDetails.medicalRecord || ''}" (String)`,
-            "pFamilyHistory": `"${filteredOtherDetails.familyHistory || ''}" (순수 문자열)`,
-            "pPastHistory": `"${filteredOtherDetails.pastHistory || ''}" (순수 문자열)`,
-            "pMedicine": `"${filteredOtherDetails.medicine || ''}" (순수 문자열)`,
-            "pVitalSigns": `"${filteredOtherDetails.vitalSigns || ''}" (순수 문자열)`
-          });
           
           await saveOptionalPatientInfo(filteredOtherDetails);
           console.log("✅ 추가 선택 정보 저장 성공!");
@@ -631,7 +629,17 @@ const useEmergencyStore = create((set, get) => ({
       }
 
       apiSuccess = true;
-      console.log("🎉 모든 API 호출 완료! (순수 문자열로 저장됨)");
+      console.log("🎉 모든 환자 정보 저장 완료!");
+
+      // 🔥 병원 자동 매칭 실행 (환자 정보 저장 후)
+      if (hospitalMatchingTriggered) {
+        try {
+          console.log("🏥 병원 자동 매칭 시작...");
+          await get().triggerHospitalMatching(ambulanceId);
+        } catch (matchingError) {
+          console.warn("⚠️ 병원 매칭은 실패했지만 환자 정보 저장은 성공:", matchingError.message);
+        }
+      }
 
     } catch (error) {
       console.warn("❌ API 호출 실패하였으나 로컬 스토어 업데이트 계속:", error.message);
@@ -697,20 +705,227 @@ const useEmergencyStore = create((set, get) => ({
 
       setTimeout(() => {
         const updatedState = get();
-        console.log("=== 업데이트 후 상태 확인 (순수 문자열 버전) ===");
+        console.log("=== 업데이트 후 상태 확인 (병원 매칭 포함) ===");
         console.log("selectedAmbulance:", updatedState.selectedAmbulance);
         console.log("현재 위치:", updatedState.currentLocation);
+        console.log("매칭된 병원:", updatedState.matchedHospitals);
       }, 50);
 
-      if (apiSuccess) {
-        console.log("🎉 API 저장 및 로컬 업데이트 모두 성공! (순수 문자열로 저장)");
-      } else {
-        console.log("⚠️ API 저장은 실패했지만 로컬 업데이트 성공");
+      if (apiSuccess && hospitalMatchingTriggered) {
+        console.log("🎉 환자 정보 저장 및 병원 자동 매칭 트리거 완료!");
+      } else if (apiSuccess) {
+        console.log("🎉 환자 정보 저장 완료! (병원 매칭 조건 미충족)");
       }
     } catch (err) {
       console.error("로컬 상태 업데이트 실패:", err);
       throw err;
     }
+  },
+
+  // 🔥 새로 추가: 병원 자동 매칭 트리거 함수 (백엔드 MatchController 연동)
+  triggerHospitalMatching: async (ambulanceId) => {
+    console.log("=== triggerHospitalMatching 시작 (백엔드 MatchController 연동) ===");
+    console.log("ambulanceId:", ambulanceId);
+
+    if (!ambulanceId) {
+      console.error("ambulanceId가 없습니다. 병원 매칭 중단");
+      return;
+    }
+
+    const currentState = get();
+    const selectedAmbulance = currentState.selectedAmbulance;
+    const currentLocation = currentState.currentLocation;
+
+    if (!selectedAmbulance) {
+      console.error("selectedAmbulance가 없습니다. 병원 매칭 중단");
+      return;
+    }
+
+    // 🔥 병원 매칭 상태 업데이트
+    set({ 
+      isHospitalMatching: true, 
+      hospitalMatchingStatus: 'loading',
+      hospitalMatchingError: null 
+    });
+
+    try {
+      // 🔥 현재 위치 확인 (필수)
+      let locationData = currentLocation;
+      
+      if (!locationData) {
+        console.log("현재 위치가 없어서 새로 가져옵니다...");
+        locationData = await get().getCurrentLocation();
+      }
+
+      if (!locationData || !locationData.latitude || !locationData.longitude) {
+        throw new Error("위치 정보를 가져올 수 없습니다. GPS를 확인해주세요.");
+      }
+
+      // 🔥 병원 매칭 요청 데이터 구성 (백엔드 MatchRequest 형태)
+      const matchingRequestData = {
+        ambulanceId: ambulanceId,
+        latitude: locationData.latitude,
+        longitude: locationData.longitude
+      };
+
+      console.log("🏥 병원 매칭 요청 데이터 (백엔드 MatchRequest 형태):", matchingRequestData);
+
+      // 🔥 백엔드 병원 매칭 API 호출 (PATCH /api/v1/match/{uid})
+      const matchingResult = await requestHospitalMatching(matchingRequestData);
+      
+      console.log("🏥 병원 매칭 결과 (MatchResponse):", matchingResult);
+
+      // 🔥 매칭 결과를 스토어에 저장 (MatchResponse 형태 처리)
+      if (matchingResult) {
+        // MatchResponse: { hospitalId, name, address }
+        const hospitalData = {
+          id: matchingResult.hospitalId,
+          hospitalId: matchingResult.hospitalId,
+          name: matchingResult.name,
+          address: matchingResult.address,
+          // 🔥 추가 정보는 기본값으로 설정 (실제로는 별도 API나 확장 필요)
+          distance: "매칭됨",
+          eta: "최적화됨",
+          departments: [selectedAmbulance.patientDetails?.department || "응급의학과"],
+          availableBeds: "확인 중",
+          emergencyLevel: "Level1",
+          isAvailable: true,
+          // 지도 표시용 좌표 (실제로는 백엔드에서 받아와야 함)
+          latitude: 37.5799, // 기본값 (서울대병원)
+          longitude: 126.9988
+        };
+
+        set({ 
+          matchedHospitals: [hospitalData], // 단일 병원을 배열로 처리
+          hospitalMatchingStatus: 'success',
+          hospitalMatchingError: null,
+          isHospitalMatching: false
+        });
+
+        console.log("✅ 병원 자동 매칭 완료!");
+        console.log("매칭된 병원:", hospitalData);
+        return matchingResult;
+      } else {
+        throw new Error("병원 매칭 결과가 비어있습니다.");
+      }
+
+    } catch (error) {
+      console.error("❌ 병원 자동 매칭 실패:", error);
+      
+      set({ 
+        hospitalMatchingStatus: 'error',
+        hospitalMatchingError: error.message || '병원 매칭에 실패했습니다.',
+        isHospitalMatching: false,
+        matchedHospitals: []
+      });
+
+      throw error;
+    }
+  },
+
+  // 🔥 새로 추가: 병원 매칭 상태 조회 함수 (백엔드 MatchController 연동)
+  checkHospitalMatchingStatus: async (ambulanceId) => {
+    console.log("=== checkHospitalMatchingStatus 시작 (백엔드 MatchController 연동) ===");
+    
+    if (!ambulanceId) {
+      console.error("ambulanceId가 없습니다.");
+      return;
+    }
+
+    try {
+      // 🔥 백엔드에서 매칭된 병원 조회 (GET /api/v1/match/{uid})
+      const statusResult = await getMatchedHospital(ambulanceId);
+      console.log("병원 매칭 상태 조회 결과 (MatchResponse):", statusResult);
+
+      if (statusResult) {
+        // MatchResponse 형태를 프론트엔드 형태로 변환
+        const hospitalData = {
+          id: statusResult.hospitalId,
+          hospitalId: statusResult.hospitalId,
+          name: statusResult.name,
+          address: statusResult.address,
+          distance: "기존 매칭",
+          eta: "기존 매칭",
+          departments: ["응급의학과"],
+          availableBeds: "확인 중",
+          emergencyLevel: "Level1",
+          isAvailable: true,
+          latitude: 37.5799,
+          longitude: 126.9988
+        };
+
+        set({ 
+          matchedHospitals: [hospitalData],
+          hospitalMatchingStatus: 'success',
+          hospitalMatchingError: null
+        });
+
+        console.log("✅ 기존 매칭된 병원 조회 완료:", hospitalData);
+      } else {
+        // 매칭된 병원이 없는 경우
+        set({ 
+          matchedHospitals: [],
+          hospitalMatchingStatus: 'idle'
+        });
+        console.log("ℹ️ 매칭된 병원이 없습니다.");
+      }
+
+      return statusResult;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        // 404는 매칭된 병원이 없다는 의미이므로 에러가 아님
+        console.log("ℹ️ 매칭된 병원이 없습니다 (404).");
+        set({ 
+          matchedHospitals: [],
+          hospitalMatchingStatus: 'idle',
+          hospitalMatchingError: null
+        });
+      } else {
+        console.error("병원 매칭 상태 조회 실패:", error);
+        set({ 
+          hospitalMatchingStatus: 'error',
+          hospitalMatchingError: '매칭 상태 조회에 실패했습니다.'
+        });
+      }
+    }
+  },
+
+  // 🔥 새로 추가: 병원 매칭 취소 함수 (로컬 상태 초기화)
+  cancelHospitalMatching: async (ambulanceId) => {
+    console.log("=== cancelHospitalMatching 시작 ===");
+    
+    if (!ambulanceId) {
+      console.error("ambulanceId가 없습니다.");
+      return;
+    }
+
+    try {
+      // 🔥 실제로는 백엔드 취소 API 호출해야 하지만 현재는 없으므로 로컬 상태만 초기화
+      // await cancelHospitalMatching(ambulanceId);
+      
+      set({ 
+        matchedHospitals: [],
+        hospitalMatchingStatus: 'idle',
+        hospitalMatchingError: null,
+        isHospitalMatching: false
+      });
+      
+      console.log("병원 매칭 취소 완료 (로컬 상태 초기화)");
+    } catch (error) {
+      console.error("병원 매칭 취소 실패:", error);
+      throw error;
+    }
+  },
+
+  // 🔥 새로 추가: 병원 매칭 상태 초기화 함수
+  resetHospitalMatching: () => {
+    console.log("병원 매칭 상태 초기화");
+    set({ 
+      matchedHospitals: [],
+      hospitalMatchingStatus: 'idle',
+      hospitalMatchingError: null,
+      isHospitalMatching: false
+    });
   },
 
   // 🔥 현재 위치 가져오는 함수
@@ -836,21 +1051,27 @@ const useEmergencyStore = create((set, get) => ({
     return stats;
   },
 
-  // 🔥 완전 순수 문자열 디버깅 함수
+  // 🔥 완전 개선된 디버깅 함수 (병원 자동 매칭 정보 포함)
   debugCurrentState: () => {
     const state = get();
     const authState = useAuthStore.getState();
     
-    console.log("=== 현재 스토어 상태 (순수 문자열 버전) ===");
+    console.log("=== 현재 스토어 상태 (병원 자동 매칭 완전 연동) ===");
     console.log("🚑 Emergency Store:");
     console.log("  selectedAmbulance:", state.selectedAmbulance);
     console.log("  selectedAmbulance.id (userId):", state.selectedAmbulance?.id);
     console.log("  selectedAmbulance.carNumber (userKey):", state.selectedAmbulance?.carNumber);
     console.log("  ambulances 개수:", state.ambulances.length);
     
-    console.log("📍 위치 정보 (대시보드에서):");
+    console.log("📍 위치 정보:");
     console.log("  현재 위치:", state.currentLocation);
     console.log("  위치 에러:", state.locationError);
+    
+    console.log("🏥 병원 자동 매칭 정보:");
+    console.log("  매칭된 병원들:", state.matchedHospitals);
+    console.log("  매칭 상태:", state.hospitalMatchingStatus);
+    console.log("  매칭 에러:", state.hospitalMatchingError);
+    console.log("  매칭 진행 중:", state.isHospitalMatching);
     
     console.log("🔐 Auth Store:");
     console.log("  user:", authState.user);
@@ -876,25 +1097,39 @@ const useEmergencyStore = create((set, get) => ({
       console.log("  DB 저장 형태 (순수 문자열):", mappedPatientDetails);
     }
     
-    console.log("🔄 순수 문자열 필드 매핑:");
-    console.log("  프론트 → DB 저장 형태:");
-    console.log("  ktasLevel → pKtas (Integer)");
-    console.log("  department → pDepartment (String)");
-    console.log("  gender → pSex (Integer: 1=남, 2=여)");
-    console.log("  ageRange → pAgeRange (PatientAgeRange enum)");
-    console.log("  name → pName (String)");
-    console.log("  chiefComplaint → pMedicalRecord (String)");
-    console.log("  familyHistory → pFamilyHistory (순수 문자열)");
-    console.log("  pastHistory → pPastHistory (순수 문자열)");
-    console.log("  medications → pMedicine (순수 문자열)");
-    console.log("  vitalSigns → pVitalSigns (순수 문자열)");
-    console.log("  latitude → pLatitude (Double)");
-    console.log("  longitude → pLongitude (Double)");
+    console.log("🔄 백엔드 연동 정보:");
+    console.log("  병원 매칭 API: PATCH /api/v1/match/{uid}");
+    console.log("  매칭 조회 API: GET /api/v1/match/{uid}");
+    console.log("  MatchRequest: { latitude, longitude }");
+    console.log("  MatchResponse: { hospitalId, name, address }");
+    console.log("  MatchingService: 복잡한 점수 계산 알고리즘");
     
-    console.log("🎯 이제 JSON 문자열 완전 제거! 모든 필드가 순수 문자열로 저장됨!");
+    console.log("🎯 병원 자동 매칭 플로우:");
+    console.log("  1. 환자 정보 입력 (KTAS + 진료과목)");
+    console.log("  2. saveRequiredPatientInfo() 호출 (위치 포함)");
+    console.log("  3. 자동으로 triggerHospitalMatching() 호출");
+    console.log("  4. 백엔드 MatchingService 알고리즘 실행");
+    console.log("  5. 최적 병원 반환 및 상태 업데이트");
+    
+    console.log("🚀 이제 완전 자동화됨! 환자 정보 입력하면 바로 병원 매칭!");
     
     console.log("==================");
     return { emergencyState: state, authState };
+  },
+
+  // 🔥 병원 자동 매칭 테스트 함수
+  testHospitalMatching: async (testData) => {
+    console.log("=== 병원 자동 매칭 테스트 (백엔드 연동) ===");
+    console.log("테스트 데이터:", testData);
+    
+    try {
+      const result = await requestHospitalMatching(testData);
+      console.log("병원 매칭 테스트 결과 (MatchResponse):", result);
+      return result;
+    } catch (error) {
+      console.error("병원 매칭 테스트 실패:", error);
+      throw error;
+    }
   },
 
   // 🔥 순수 문자열 매핑 테스트 함수

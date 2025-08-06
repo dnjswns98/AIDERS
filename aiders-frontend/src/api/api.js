@@ -4,7 +4,6 @@ import axios from 'axios';
 
 // 🔥 환경변수명 변경: API_BASE → API_BASE_URL
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 console.log('[API] API_BASE_URL 설정:', API_BASE_URL);
 
 // 🔥 axios 인스턴스 생성 (JWT 토큰 자동 첨부용)
@@ -122,7 +121,7 @@ apiClient.interceptors.response.use(
  * 구급차 상태 업데이트
  * @param {number} ambulanceId - 현재는 ambulanceId 미사용, 백엔드 API에 따라 수정 필요
  * @param {string} status - 'wait' 또는 'transfer'
- * @returns {Promise<any>}
+ * @returns {Promise}
  */
 export const updateAmbulanceStatus = async (ambulanceId, status) => {
   try {
@@ -149,7 +148,7 @@ export const updateAmbulanceStatus = async (ambulanceId, status) => {
 /**
  * 환자 필수 정보 저장 (PUT) - 🔥 위치 정보 포함 가능
  * @param {Object} patientInfo - KTAS + 진료과목 + 위치 정보(옵션)
- * @returns {Promise<any>}
+ * @returns {Promise}
  */
 export const saveRequiredPatientInfo = async (patientInfo) => {
   try {
@@ -161,7 +160,6 @@ export const saveRequiredPatientInfo = async (patientInfo) => {
     console.log('[API] saveRequiredPatientInfo 성공! 🎉');
     console.log('[API] 응답 데이터:', response.data);
     console.log("_______________________");
-    
     return response.data;
   } catch (error) {
     console.error('[API] saveRequiredPatientInfo 실패:', error.message);
@@ -195,7 +193,7 @@ export const saveRequiredPatientInfo = async (patientInfo) => {
 /**
  * 환자 선택 정보 저장 (PATCH) - 🔥 위치 정보 포함 가능
  * @param {Object} patientDetails - 선택 정보 + 위치 정보(옵션)
- * @returns {Promise<any>}
+ * @returns {Promise}
  */
 export const saveOptionalPatientInfo = async (patientDetails) => {
   try {
@@ -206,7 +204,6 @@ export const saveOptionalPatientInfo = async (patientDetails) => {
     
     console.log('[API] saveOptionalPatientInfo 성공! 🎉');
     console.log('[API] 응답 데이터:', response.data);
-    
     return response.data;
   } catch (error) {
     console.error('[API] saveOptionalPatientInfo 실패:', error.message);
@@ -226,21 +223,123 @@ export const saveOptionalPatientInfo = async (patientDetails) => {
 
 /**
  * 환자 정보 조회 (GET)
- * @returns {Promise<any>}
+ * @returns {Promise}
  */
 export const getPatientInfo = async () => {
   try {
     console.log('[API] getPatientInfo 호출');
-    
     const response = await apiClient.get('/api/v1/patient/');
-    
     console.log('[API] getPatientInfo 성공:', response.data);
     return response.data;
   } catch (error) {
     console.error('[API] getPatientInfo 실패:', error.message);
-    
     if (error.response?.status === 500) {
       console.error('[API] 백엔드에서 500 에러 발생. 이 API는 현재 사용하지 마세요.');
+    }
+    throw error;
+  }
+};
+
+// 🔥 새로 추가: 병원 자동 매칭 API들 (백엔드 MatchController 기준)
+
+/**
+ * 병원 자동 매칭 실행 (PATCH)
+ * @param {Object} matchingData - { ambulanceId, latitude, longitude }
+ * @returns {Promise<{hospitalId: number, name: string, address: string}>}
+ */
+export const requestHospitalMatching = async (matchingData) => {
+  try {
+    console.log('[API] 🏥 병원 자동 매칭 요청 시작');
+    console.log('[API] 매칭 요청 데이터:', matchingData);
+    
+    const { ambulanceId, latitude, longitude, ...otherData } = matchingData;
+    
+    // 🔥 백엔드 MatchRequest 형태에 맞게 요청 데이터 구성
+    const requestBody = {
+      latitude: latitude,
+      longitude: longitude
+    };
+    
+    console.log('[API] 🏥 전송할 요청 바디 (MatchRequest 형태):', requestBody);
+    console.log('[API] 🏥 ambulanceId (Path Variable):', ambulanceId);
+    
+    // 🔥 백엔드 스펙: PATCH /api/v1/match/{uid}
+    const response = await apiClient.patch(`/api/v1/match/${ambulanceId}`, requestBody);
+    
+    console.log('[API] 🏥 병원 자동 매칭 성공! 🎉');
+    console.log('[API] 🏥 매칭 결과 (MatchResponse):', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('[API] 🏥 병원 자동 매칭 실패:', error);
+    
+    if (error.response) {
+      console.error('[API] 🏥 서버 응답 에러:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        url: error.response.config?.url,
+        method: error.response.config?.method,
+        sentData: error.response.config?.data
+      });
+      
+      if (error.response.status === 400) {
+        console.error('[API] 🏥 400 Bad Request - 요청 데이터나 ambulanceId 확인 필요');
+        console.error('[API] 🏥 전송한 데이터:', { ambulanceId, requestBody: error.response.config?.data });
+      } else if (error.response.status === 404) {
+        console.error('[API] 🏥 404 Not Found - ambulanceId를 찾을 수 없음');
+      } else if (error.response.status === 500) {
+        console.error('[API] 🏥 500 Internal Server Error - 백엔드 병원 매칭 로직 에러');
+        console.error('[API] 🏥 백엔드 MatchingService.autoMatch() 메서드 확인 필요');
+      }
+    } else if (error.request) {
+      console.error('[API] 🏥 네트워크 요청 실패:', error.request);
+    } else {
+      console.error('[API] 🏥 요청 설정 에러:', error.message);
+    }
+    
+    throw error;
+  }
+};
+
+/**
+ * 매칭된 병원 정보 조회 (GET)
+ * @param {number|string} ambulanceId - 구급차 ID
+ * @returns {Promise<{hospitalId: number, name: string, address: string}>}
+ */
+export const getMatchedHospital = async (ambulanceId) => {
+  try {
+    console.log('[API] 🏥 매칭된 병원 정보 조회 시작');
+    console.log('[API] 🏥 ambulanceId:', ambulanceId);
+    
+    // 🔥 백엔드 스펙: GET /api/v1/match/{uid}
+    const response = await apiClient.get(`/api/v1/match/${ambulanceId}`);
+    
+    console.log('[API] 🏥 매칭된 병원 정보 조회 성공! 🎉');
+    console.log('[API] 🏥 매칭된 병원 (MatchResponse):', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('[API] 🏥 매칭된 병원 정보 조회 실패:', error);
+    
+    if (error.response) {
+      console.error('[API] 🏥 서버 응답 에러:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        url: error.response.config?.url
+      });
+      
+      if (error.response.status === 400) {
+        console.error('[API] 🏥 400 Bad Request - ambulanceId 형태 확인 필요');
+      } else if (error.response.status === 404) {
+        console.error('[API] 🏥 404 Not Found - ambulanceId를 찾을 수 없거나 매칭된 병원이 없음');
+      } else if (error.response.status === 500) {
+        console.error('[API] 🏥 500 Internal Server Error - 백엔드 병원 조회 로직 에러');
+        console.error('[API] 🏥 백엔드 MatchingService.getMatchedHospital() 메서드 확인 필요');
+      }
+    } else {
+      console.error('[API] 🏥 네트워크 또는 요청 설정 에러:', error.message);
     }
     
     throw error;
@@ -250,14 +349,12 @@ export const getPatientInfo = async () => {
 /**
  * 이송 생성 (POST)
  * @param {Object} dispatchRequest
- * @returns {Promise<any>}
+ * @returns {Promise}
  */
 export const createDispatch = async (dispatchRequest) => {
   try {
     console.log('[API] createDispatch 호출:', dispatchRequest);
-    
     const response = await apiClient.post('/api/v1/dispatch/', dispatchRequest);
-    
     console.log('[API] createDispatch 성공:', response.data);
     return response.data;
   } catch (error) {
@@ -268,14 +365,12 @@ export const createDispatch = async (dispatchRequest) => {
 
 /**
  * 이송 이력 조회 (GET)
- * @returns {Promise<any>}
+ * @returns {Promise}
  */
 export const getDispatchHistory = async () => {
   try {
     console.log('[API] getDispatchHistory 호출');
-    
     const response = await apiClient.get('/api/v1/dispatch/history');
-    
     console.log('[API] getDispatchHistory 성공:', response.data);
     return response.data;
   } catch (error) {
@@ -287,14 +382,12 @@ export const getDispatchHistory = async () => {
 /**
  * 병원 진료과 정보 수정 (PATCH)
  * @param {Object} departmentUpdate
- * @returns {Promise<any>}
+ * @returns {Promise}
  */
 export const updateHospitalDepartment = async (departmentUpdate) => {
   try {
     console.log('[API] updateHospitalDepartment 호출:', departmentUpdate);
-    
     const response = await apiClient.patch('/api/v1/hospital/department', departmentUpdate);
-    
     console.log('[API] updateHospitalDepartment 성공:', response.data);
     return response.data;
   } catch (error) {
@@ -322,7 +415,6 @@ export const createAmbulanceToken = async (request) => {
     console.log('[API] 요청 바디:', body);
     
     const response = await apiClient.post('/api/v1/video-call/ambulance/token', body);
-    
     console.log('[API] createAmbulanceToken 성공:', response.data);
     return response.data;
   } catch (error) {
@@ -339,11 +431,9 @@ export const createAmbulanceToken = async (request) => {
 export const getHospitalToken = async (sessionId) => {
   try {
     console.log('[API] getHospitalToken 호출:', sessionId);
-    
-    const response = await apiClient.get('/api/v1/video-call/hospital/token', { 
-      params: { sessionId } 
+    const response = await apiClient.get('/api/v1/video-call/hospital/token', {
+      params: { sessionId }
     });
-    
     console.log('[API] getHospitalToken 성공:', response.data);
     return response.data;
   } catch (error) {
@@ -355,14 +445,12 @@ export const getHospitalToken = async (sessionId) => {
 /**
  * 화상 통화 시작 (PUT)
  * @param {Object} request - sessionId, optional hospitalId 포함
- * @returns {Promise<any>}
+ * @returns {Promise}
  */
 export const startVideoCall = async (request) => {
   try {
     console.log('[API] startVideoCall 호출:', request);
-    
     const response = await apiClient.put('/api/v1/video-call/start-call', request);
-    
     console.log('[API] startVideoCall 성공:', response.data);
     return response.data;
   } catch (error) {
@@ -374,14 +462,12 @@ export const startVideoCall = async (request) => {
 /**
  * 화상 통화 종료 (PUT)
  * @param {Object} request - sessionId 포함
- * @returns {Promise<any>}
+ * @returns {Promise}
  */
 export const endVideoCall = async (request) => {
   try {
     console.log('[API] endVideoCall 호출:', request);
-    
     const response = await apiClient.put('/api/v1/video-call/end-call', request);
-    
     console.log('[API] endVideoCall 성공:', response.data);
     return response.data;
   } catch (error) {
@@ -394,16 +480,14 @@ export const endVideoCall = async (request) => {
  * 이송 완료 처리 (DELETE)
  * @param {string} sessionId
  * @param {number} hospitalId
- * @returns {Promise<any>}
+ * @returns {Promise}
  */
 export const completeTransport = async (sessionId, hospitalId) => {
   try {
     console.log('[API] completeTransport 호출:', { sessionId, hospitalId });
-    
-    const response = await apiClient.delete(`/api/v1/video-call/session/${sessionId}/complete`, { 
-      params: { hospitalId } 
+    const response = await apiClient.delete(`/api/v1/video-call/session/${sessionId}/complete`, {
+      params: { hospitalId }
     });
-    
     console.log('[API] completeTransport 성공:', response.data);
     return response.data;
   } catch (error) {
@@ -413,6 +497,7 @@ export const completeTransport = async (sessionId, hospitalId) => {
 };
 
 // 🔥 디버깅용 함수 - 현실적인 버전
+
 /**
  * API 클라이언트 상태 확인용 함수
  */
@@ -430,7 +515,7 @@ export const debugApiClient = () => {
     console.error('persist 저장소 파싱 실패:', error);
   }
   
-  console.log('=== API 클라이언트 디버깅 정보 (현실적 버전) ===');
+  console.log('=== API 클라이언트 디버깅 정보 (병원 매칭 포함) ===');
   console.log('API_BASE_URL:', API_BASE_URL);
   console.log('직접 저장된 토큰 존재:', !!directToken);
   console.log('persist 저장소 토큰 존재:', !!persistToken);
@@ -439,26 +524,33 @@ export const debugApiClient = () => {
   console.log('apiClient 기본 설정:', apiClient.defaults);
   
   console.log('📋 실제 백엔드에 존재하는 API 함수들:');
-  console.log('  ✅ updateAmbulanceStatus');
-  console.log('  ✅ saveRequiredPatientInfo (위치 정보 포함 가능)');
-  console.log('  ✅ saveOptionalPatientInfo (위치 정보 포함 가능)');
-  console.log('  ✅ getPatientInfo');
-  console.log('  ✅ createDispatch');
-  console.log('  ✅ getDispatchHistory');
-  console.log('  ✅ updateHospitalDepartment');
-  console.log('  ✅ 화상 통화 관련 API들...');
-  console.log('  ✅ debugApiClient');
+  console.log(' ✅ updateAmbulanceStatus');
+  console.log(' ✅ saveRequiredPatientInfo (위치 정보 포함 가능)');
+  console.log(' ✅ saveOptionalPatientInfo (위치 정보 포함 가능)');
+  console.log(' ✅ getPatientInfo');
+  console.log(' ✅ createDispatch');
+  console.log(' ✅ getDispatchHistory');
+  console.log(' ✅ updateHospitalDepartment');
+  console.log(' ✅ 화상 통화 관련 API들...');
+  
+  console.log('🏥 새로 추가된 병원 자동 매칭 API들:');
+  console.log(' ✅ requestHospitalMatching (PATCH /api/v1/match/{uid})');
+  console.log(' ✅ getMatchedHospital (GET /api/v1/match/{uid})');
   
   console.log('🚫 제거된 백엔드에 없는 가상 API들:');
-  console.log('  ❌ sendLocationUpdate (백엔드에 없음)');
-  console.log('  ❌ getAmbulanceStatus (백엔드에 없음)');
-  console.log('  ❌ getNearbyHospitals (백엔드에 없음)');
+  console.log(' ❌ sendLocationUpdate (백엔드에 없음)');
+  console.log(' ❌ getAmbulanceStatus (백엔드에 없음)');
+  console.log(' ❌ getNearbyHospitals (백엔드에 없음)');
   
-  console.log('💡 위치 정보 전송 방법:');
-  console.log('  📍 구급차 대시보드 지도에서 getCurrentPosition() 사용');
-  console.log('  📍 환자 정보 저장시 위치 정보를 함께 포함해서 전송');
-  console.log('  📍 별도의 위치 전송 API 호출 불필요');
+  console.log('💡 병원 자동 매칭 사용법:');
+  console.log(' 🏥 requestHospitalMatching({ ambulanceId, latitude, longitude })');
+  console.log(' 🏥 getMatchedHospital(ambulanceId)');
+  console.log(' 🏥 응답: { hospitalId, name, address }');
   
+  console.log('📍 위치 정보 전송 방법:');
+  console.log(' 📍 구급차 대시보드 지도에서 getCurrentPosition() 사용');
+  console.log(' 📍 환자 정보 저장시 위치 정보를 함께 포함해서 전송');
+  console.log(' 📍 병원 매칭시 위치 정보를 requestHospitalMatching()에 전달');
   console.log('===============================================');
   
   return {
@@ -475,12 +567,12 @@ if (import.meta.env.DEV) {
   console.log('[API] 개발 모드: window.debugApiClient() 함수 사용 가능');
 }
 
-// 🔥 모듈 로드 시점 로그 - 현실적 버전
+// 🔥 모듈 로드 시점 로그 - 병원 매칭 포함 버전
 (() => {
   const authStorage = localStorage.getItem('auth-storage');
   const directToken = localStorage.getItem('accessToken');
   
-  console.log('[API] 모듈 로드 시점 (현실적 버전):');
+  console.log('[API] 모듈 로드 시점 (병원 자동 매칭 포함 버전):');
   console.log('- persist 저장소 존재:', !!authStorage);
   console.log('- 직접 토큰 존재:', !!directToken);
   
@@ -494,5 +586,6 @@ if (import.meta.env.DEV) {
   }
   
   console.log('[API] 📍 위치 정보는 기존 환자 정보 API에 포함해서 전송됩니다');
+  console.log('[API] 🏥 병원 자동 매칭 API 2개 추가됨');
   console.log('[API] 🚫 백엔드에 없는 가상 API들 모두 제거됨');
 })();
