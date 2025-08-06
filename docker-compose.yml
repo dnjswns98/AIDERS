@@ -21,7 +21,7 @@ services:
     command: [
       "mysqld",
       "--character-set-server=utf8mb4",
-      "--collation-server=utf8mb4_unicode_ci", 
+      "--collation-server=utf8mb4_unicode_ci",
       "--default-time-zone=+09:00",
       "--init-connect=SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
       "--skip-character-set-client-handshake"
@@ -43,6 +43,10 @@ services:
       - ${OPENVIDU_PORT}:4443
     environment:
       - OPENVIDU_SECRET=${OPENVIDU_SECRET}
+      - DOMAIN_OR_PUBLIC_IP=${DOMAIN_OR_PUBLIC_IP}
+      - OPENVIDU_PUBLICURL=${OPENVIDU_PUBLICURL}
+      - HTTPS_PORT=${HTTPS_PORT}
+      - HTTP_PORT=${HTTP_PORT}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
@@ -60,6 +64,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - OPENVIDU_URL=http://aiders-openvidu:4443/
       - OPENVIDU_SECRET=${OPENVIDU_SECRET}
     depends_on:
       mysql:
@@ -80,6 +85,7 @@ services:
       - ${FRONTEND_PORT}:${FRONTEND_INTERNAL_PORT}
     environment:
       - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+      - VITE_OPENVIDU_URL=${VITE_OPENVIDU_URL}
     command: sh -c "cd /app && npm run dev -- --host 0.0.0.0"
     depends_on:
       - aiders-app
