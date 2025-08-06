@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import team1234.aiders.application.hospital.dto.emergencybed.EmergencyBedRequestDto;
 import team1234.aiders.application.hospital.util.BedType;
 
 @Entity
@@ -19,109 +20,108 @@ public class EmergencyBed {
     @JoinColumn(name = "hospital_id")
     private Hospital hospital;
 
-    private Integer generalAvailableBed;
-    private Integer generalTotalBed;
-    private Boolean generalIsAvailable;
-    private Boolean generalIsExist;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "available", column = @Column(name = "general_available_bed")),
+            @AttributeOverride(name = "total", column = @Column(name = "general_total_bed")),
+            @AttributeOverride(name = "isAvailable", column = @Column(name = "general_is_available")),
+            @AttributeOverride(name = "isExist", column = @Column(name = "general_is_exist"))
+    })
+    private BedInfo general;
 
-    private Integer pediatricAvailableBed;
-    private Integer pediatricTotalBed;
-    private Boolean pediatricIsAvailable;
-    private Boolean pediatricIsExist;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "available", column = @Column(name = "pediatric_available_bed")),
+            @AttributeOverride(name = "total", column = @Column(name = "pediatric_total_bed")),
+            @AttributeOverride(name = "isAvailable", column = @Column(name = "pediatric_is_available")),
+            @AttributeOverride(name = "isExist", column = @Column(name = "pediatric_is_exist"))
+    })
+    private BedInfo pediatric;
 
-    private Integer traumaAvailableBed;
-    private Integer traumaTotalBed;
-    private Boolean traumaIsAvailable;
-    private Boolean traumaIsExist;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "available", column = @Column(name = "trauma_available_bed")),
+            @AttributeOverride(name = "total", column = @Column(name = "trauma_total_bed")),
+            @AttributeOverride(name = "isAvailable", column = @Column(name = "trauma_is_available")),
+            @AttributeOverride(name = "isExist", column = @Column(name = "trauma_is_exist"))
+    })
+    private BedInfo trauma;
 
-    private Integer neonatalAvailableBed;
-    private Integer neonatalTotalBed;
-    private Boolean neonatalIsAvailable;
-    private Boolean neonatalIsExist;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "available", column = @Column(name = "neonatal_available_bed")),
+            @AttributeOverride(name = "total", column = @Column(name = "neonatal_total_bed")),
+            @AttributeOverride(name = "isAvailable", column = @Column(name = "neonatal_is_available")),
+            @AttributeOverride(name = "isExist", column = @Column(name = "neonatal_is_exist"))
+    })
+    private BedInfo neonatal;
 
-    // General
-    public void updateGeneralAvailable(Integer value) {
-        this.generalAvailableBed = value;
+    public static EmergencyBed from(Hospital hospital, EmergencyBedRequestDto dto) {
+        EmergencyBed bed = new EmergencyBed();
+        bed.hospital = hospital;
+        bed.general = BedInfo.from(dto.getGeneralAvailableBed(), dto.getGeneralTotalBed(), dto.getGeneralIsAvailable(), dto.getGeneralIsExist());
+        bed.pediatric = BedInfo.from(dto.getPediatricAvailableBed(), dto.getPediatricTotalBed(), dto.getPediatricIsAvailable(), dto.getPediatricIsExist());
+        bed.trauma = BedInfo.from(dto.getTraumaAvailableBed(), dto.getTraumaTotalBed(), dto.getTraumaIsAvailable(), dto.getTraumaIsExist());
+        bed.neonatal = BedInfo.from(dto.getNeonatalAvailableBed(), dto.getNeonatalTotalBed(), dto.getNeonatalIsAvailable(), dto.getNeonatalIsExist());
+        return bed;
     }
 
-    public void updateGeneralTotal(Integer value) {
-        this.generalTotalBed = value;
+    public void update(EmergencyBedRequestDto dto) {
+        updateGeneral(dto);
+        updatePediatric(dto);
+        updateTrauma(dto);
+        updateNeonatal(dto);
     }
 
-    public void updateGeneralIsAvailable(Boolean value) {
-        this.generalIsAvailable = value;
+    public void updateGeneral(EmergencyBedRequestDto dto) {
+        general = general.update(dto.getGeneralAvailableBed(), dto.getGeneralTotalBed(), dto.getGeneralIsAvailable(), dto.getGeneralIsExist());
     }
 
-    public void updateGeneralIsExist(Boolean value) {
-        this.generalIsExist = value;
+    public void updatePediatric(EmergencyBedRequestDto dto) {
+        pediatric = pediatric.update(dto.getPediatricAvailableBed(), dto.getPediatricTotalBed(), dto.getPediatricIsAvailable(), dto.getPediatricIsExist());
     }
 
-    // Pediatric
-    public void updatePediatricAvailable(Integer value) {
-        this.pediatricAvailableBed = value;
+    public void updateTrauma(EmergencyBedRequestDto dto) {
+        trauma = trauma.update(dto.getTraumaAvailableBed(), dto.getTraumaTotalBed(), dto.getTraumaIsAvailable(), dto.getTraumaIsExist());
     }
 
-    public void updatePediatricTotal(Integer value) {
-        this.pediatricTotalBed = value;
+    public void updateNeonatal(EmergencyBedRequestDto dto) {
+        neonatal = neonatal.update(dto.getNeonatalAvailableBed(), dto.getNeonatalTotalBed(), dto.getNeonatalIsAvailable(), dto.getNeonatalIsExist());
     }
 
-    public void updatePediatricIsAvailable(Boolean value) {
-        this.pediatricIsAvailable = value;
-    }
-
-    public void updatePediatricIsExist(Boolean value) {
-        this.pediatricIsExist = value;
-    }
-
-    // Trauma
-    public void updateTraumaAvailable(Integer value) {
-        this.traumaAvailableBed = value;
-    }
-
-    public void updateTraumaTotal(Integer value) {
-        this.traumaTotalBed = value;
-    }
-
-    public void updateTraumaIsAvailable(Boolean value) {
-        this.traumaIsAvailable = value;
-    }
-
-    public void updateTraumaIsExist(Boolean value) {
-        this.traumaIsExist = value;
-    }
-
-    // Neonatal
-    public void updateNeonatalAvailable(Integer value) {
-        this.neonatalAvailableBed = value;
-    }
-
-    public void updateNeonatalTotal(Integer value) {
-        this.neonatalTotalBed = value;
-    }
-
-    public void updateNeonatalIsAvailable(Boolean value) {
-        this.neonatalIsAvailable = value;
-    }
-
-    public void updateNeonatalIsExist(Boolean value) {
-        this.neonatalIsExist = value;
-    }
-
-    public void decreaseAvailableBed(BedType type) {
-        switch (type) {
-            case GENERAL -> this.generalAvailableBed -= 1;
-            case PEDIATRIC -> this.pediatricAvailableBed -= 1;
-            case TRAUMA -> this.traumaAvailableBed -= 1;
-            case NEONATAL -> this.neonatalAvailableBed -= 1;
+    public void increaseAvailable(BedType type) {
+        if (type == BedType.GENERAL) {
+            general = general.increaseAvailable();
+            return;
+        }
+        if (type == BedType.PEDIATRIC) {
+            pediatric = pediatric.increaseAvailable();
+            return;
+        }
+        if (type == BedType.TRAUMA) {
+            trauma = trauma.increaseAvailable();
+            return;
+        }
+        if (type == BedType.NEONATAL) {
+            neonatal = neonatal.increaseAvailable();
         }
     }
 
-    public void increaseAvailableBed(BedType type) {
-        switch (type) {
-            case GENERAL -> this.generalAvailableBed += 1;
-            case PEDIATRIC -> this.pediatricAvailableBed += 1;
-            case TRAUMA -> this.traumaAvailableBed += 1;
-            case NEONATAL -> this.neonatalAvailableBed += 1;
+    public void decreaseAvailable(BedType type) {
+        if (type == BedType.GENERAL) {
+            general = general.decreaseAvailable();
+            return;
+        }
+        if (type == BedType.PEDIATRIC) {
+            pediatric = pediatric.decreaseAvailable();
+            return;
+        }
+        if (type == BedType.TRAUMA) {
+            trauma = trauma.decreaseAvailable();
+            return;
+        }
+        if (type == BedType.NEONATAL) {
+            neonatal = neonatal.decreaseAvailable();
         }
     }
 }
