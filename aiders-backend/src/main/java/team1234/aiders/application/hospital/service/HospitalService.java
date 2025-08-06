@@ -16,7 +16,6 @@ import team1234.aiders.application.hospital.repository.EmergencyBedRepository;
 import team1234.aiders.application.hospital.repository.HospitalDepartmentRepository;
 import team1234.aiders.application.hospital.repository.HospitalRepository;
 import team1234.aiders.application.hospital.util.BedType;
-import team1234.aiders.application.hospital.util.UpdateBed;
 import team1234.aiders.config.security.CustomUserDetails;
 
 @Service
@@ -63,8 +62,7 @@ public class HospitalService {
 
     public void createBedInfo(CustomUserDetails user, EmergencyBedRequestDto request) {
         Hospital hospital = findHospital(user.getId());
-
-        EmergencyBed bed = EmergencyBed.createEmergencyBed(hospital, request);
+        EmergencyBed bed = EmergencyBed.from(hospital, request);
         emergencyBedRepository.save(bed);
     }
 
@@ -74,19 +72,19 @@ public class HospitalService {
         return EmergencyBedResponseDto.fromEntity(bed);
     }
 
-    public void updateEmergencyBed(CustomUserDetails user , EmergencyBedRequestDto request) {
+    public void updateEmergencyBed(CustomUserDetails user, EmergencyBedRequestDto request) {
         EmergencyBed bed = findBedByUser(user);
-        UpdateBed.updateAll(request, bed);
+        bed.update(request);
     }
 
     public void decreaseBedManually(CustomUserDetails user, BedType bedType) {
         EmergencyBed bed = findBedByUser(user);
-        bed.decreaseAvailableBed(bedType);
+        bed.decreaseAvailable(bedType);
     }
 
     public void increaseBedManually(CustomUserDetails user, BedType bedType) {
         EmergencyBed bed = findBedByUser(user);
-        bed.increaseAvailableBed(bedType);
+        bed.increaseAvailable(bedType);
     }
 
     private Hospital findHospital(Long user) {

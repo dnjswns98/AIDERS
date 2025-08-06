@@ -26,25 +26,25 @@ public class EmergencyBedResponseDto {
     private final Boolean neonatalIsExist;
 
     private EmergencyBedResponseDto(EmergencyBed bed) {
-        this.generalAvailableBed = bed.getGeneralAvailableBed();
-        this.generalTotalBed = bed.getGeneralTotalBed();
-        this.generalIsAvailable = bed.getGeneralIsAvailable();
-        this.generalIsExist = bed.getGeneralIsExist();
+        this.generalAvailableBed = bed.getGeneral().getAvailable();
+        this.generalTotalBed = bed.getGeneral().getTotal();
+        this.generalIsAvailable = bed.getGeneral().getIsAvailable();
+        this.generalIsExist = bed.getGeneral().getIsExist();
 
-        this.pediatricAvailableBed = bed.getPediatricAvailableBed();
-        this.pediatricTotalBed = bed.getPediatricTotalBed();
-        this.pediatricIsAvailable = bed.getPediatricIsAvailable();
-        this.pediatricIsExist = bed.getPediatricIsExist();
+        this.pediatricAvailableBed = bed.getPediatric().getAvailable();
+        this.pediatricTotalBed = bed.getPediatric().getTotal();
+        this.pediatricIsAvailable = bed.getPediatric().getIsAvailable();
+        this.pediatricIsExist = bed.getPediatric().getIsExist();
 
-        this.traumaAvailableBed = bed.getTraumaAvailableBed();
-        this.traumaTotalBed = bed.getTraumaTotalBed();
-        this.traumaIsAvailable = bed.getTraumaIsAvailable();
-        this.traumaIsExist = bed.getTraumaIsExist();
+        this.traumaAvailableBed = bed.getTrauma().getAvailable();
+        this.traumaTotalBed = bed.getTrauma().getTotal();
+        this.traumaIsAvailable = bed.getTrauma().getIsAvailable();
+        this.traumaIsExist = bed.getTrauma().getIsExist();
 
-        this.neonatalAvailableBed = bed.getNeonatalAvailableBed();
-        this.neonatalTotalBed = bed.getNeonatalTotalBed();
-        this.neonatalIsAvailable = bed.getNeonatalIsAvailable();
-        this.neonatalIsExist = bed.getNeonatalIsExist();
+        this.neonatalAvailableBed = bed.getNeonatal().getAvailable();
+        this.neonatalTotalBed = bed.getNeonatal().getTotal();
+        this.neonatalIsAvailable = bed.getNeonatal().getIsAvailable();
+        this.neonatalIsExist = bed.getNeonatal().getIsExist();
     }
 
     public static EmergencyBedResponseDto fromEntity(EmergencyBed bed) {

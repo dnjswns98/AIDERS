@@ -168,34 +168,39 @@ public class MatchingService {
 
         switch (amb.getPAgeRange()) {
             case NEWBORN -> {
-                if(h.getBed().getNeonatalIsExist() && h.getBed().getNeonatalIsAvailable()) {
-                    total += h.getBed().getNeonatalTotalBed();
-                    available += h.getBed().getNeonatalAvailableBed();
+                if (h.getBed().getNeonatal().getIsExist() && h.getBed().getNeonatal().getIsAvailable()) {
+                    total += safeInt(h.getBed().getNeonatal().getTotal());
+                    available += safeInt(h.getBed().getNeonatal().getAvailable());
                 }
             }
             case INFANT, KIDS, TEENAGER -> {
-                if (h.getBed().getPediatricIsExist() && h.getBed().getPediatricIsAvailable()) {
-                    total += h.getBed().getPediatricTotalBed();
-                    available += h.getBed().getPediatricAvailableBed();
+                if (h.getBed().getPediatric().getIsExist() && h.getBed().getPediatric().getIsAvailable()) {
+                    total += safeInt(h.getBed().getPediatric().getTotal());
+                    available += safeInt(h.getBed().getPediatric().getAvailable());
                 }
             }
             case ADULT, ELDERLY, UNDECIDED -> {
-                if (h.getBed().getGeneralIsExist() && h.getBed().getGeneralIsAvailable()) {
-                    total += h.getBed().getGeneralTotalBed();
-                    available += h.getBed().getGeneralAvailableBed();
+                if (h.getBed().getGeneral().getIsExist() && h.getBed().getGeneral().getIsAvailable()) {
+                    total += safeInt(h.getBed().getGeneral().getTotal());
+                    available += safeInt(h.getBed().getGeneral().getAvailable());
                 }
             }
         }
 
         // 외상 환자라면 trauma 병상도 고려
         if (amb.getPDepartment() != null && amb.getPDepartment().contains("외과")) {
-            if (h.getBed().getTraumaIsExist() && h.getBed().getTraumaIsAvailable()) {
-                total += h.getBed().getTraumaTotalBed();
-                available += h.getBed().getTraumaAvailableBed();
+            if (h.getBed().getTrauma().getIsExist() && h.getBed().getTrauma().getIsAvailable()) {
+                total += safeInt(h.getBed().getTrauma().getTotal());
+                available += safeInt(h.getBed().getTrauma().getAvailable());
             }
         }
 
         if (total == 0) return 0;
-        return (1 - ((double) available / total)) * 10; // 혼잡도 점수
+        return (1 - ((double) available / total)) * 10;
     }
+
+    private int safeInt(Integer value) {
+        return value != null ? value : 0;
+    }
+
 }

@@ -52,29 +52,47 @@ public class HospitalQueryRepositoryImpl implements HospitalQueryRepository {
         // 연령대 + 외상 병상 조건 필터링
         switch (condition.getAgeRange()) {
             case "NEWBORN" -> {
-                builder.and(b.neonatalIsExist.isTrue().and(b.neonatalAvailableBed.gt(0)));
+                builder.and(
+                        b.neonatal.isExist.isTrue()
+                                .and(b.neonatal.isAvailable.isTrue())
+                                .and(b.neonatal.available.gt(0))
+                );
             }
-
             case "INFANT", "KIDS", "TEENAGER" -> {
                 BooleanBuilder ageBuilder = new BooleanBuilder();
-                ageBuilder.or(b.pediatricIsExist.isTrue().and(b.pediatricAvailableBed.gt(0)));
-                ageBuilder.or(b.generalIsExist.isTrue().and(b.generalAvailableBed.gt(0)));
-
+                ageBuilder.or(
+                        b.pediatric.isExist.isTrue()
+                                .and(b.pediatric.isAvailable.isTrue())
+                                .and(b.pediatric.available.gt(0))
+                );
+                ageBuilder.or(
+                        b.general.isExist.isTrue()
+                                .and(b.general.isAvailable.isTrue())
+                                .and(b.general.available.gt(0))
+                );
                 if (condition.isTrauma()) {
-                    ageBuilder.or(b.traumaIsExist.isTrue().and(b.traumaAvailableBed.gt(0)));
+                    ageBuilder.or(
+                            b.trauma.isExist.isTrue()
+                                    .and(b.trauma.isAvailable.isTrue())
+                                    .and(b.trauma.available.gt(0))
+                    );
                 }
-
                 builder.and(ageBuilder);
             }
-
             case "ADULT", "ELDERLY", "UNDECIDED" -> {
                 BooleanBuilder adultBuilder = new BooleanBuilder();
-                adultBuilder.or(b.generalIsExist.isTrue().and(b.generalAvailableBed.gt(0)));
-
+                adultBuilder.or(
+                        b.general.isExist.isTrue()
+                                .and(b.general.isAvailable.isTrue())
+                                .and(b.general.available.gt(0))
+                );
                 if (condition.isTrauma()) {
-                    adultBuilder.or(b.traumaIsExist.isTrue().and(b.traumaAvailableBed.gt(0)));
+                    adultBuilder.or(
+                            b.trauma.isExist.isTrue()
+                                    .and(b.trauma.isAvailable.isTrue())
+                                    .and(b.trauma.available.gt(0))
+                    );
                 }
-
                 builder.and(adultBuilder);
             }
         }
