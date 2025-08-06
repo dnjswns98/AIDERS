@@ -180,19 +180,30 @@ export const useOpenVidu = ({
 
         if (!existingSubscriber) {
           try {
-            const subscriber = sessionContext.session.subscribe(event.stream);
+            const subscriber = sessionContext.session.subscribe(event.stream, 'remote-video-container');
+
+            subscriber.on('vidieoElementCreated',(event)=>{
+              const remote = event.element.srcObject;
+              const local = sessionContext.publisher?.stream?.getMediaStream();
+
+              if(remote && local){
+                startCall(local,remote);
+              }
+            })
+
+
             sessionContext.subscribers.push(subscriber);
             console.log("[streamCreated] 새 구독자 추가");
-
-            // 스트림 연결
             
-            if (subscriber.stream?.hasVideo && sessionContext.publisher) {
-              console.log("local!!:",sessionContext.publisher.stream.getMediaStream(),"||| remote!!!!:",subscriber.stream.getMediaStream())
-              startCall(
-                sessionContext.publisher.stream.getMediaStream(),
-                subscriber.stream.getMediaStream()
-              );
-            }
+            // 스트림 연결
+            // console.log("subscriber.stream::::",subscriber.stream)
+            // if (subscriber.stream?.hasVideo && sessionContext.publisher) {
+            //   console.log("local!!:",sessionContext.publisher.stream.getMediaStream(),"||| remote!!!!:",subscriber.stream.getMediaStream())
+            //   startCall(
+            //     sessionContext.publisher.stream.getMediaStream(),
+            //     subscriber.stream.getMediaStream()
+            //   );
+            // }
           } catch (error) {
             console.error("[streamCreated] 구독 중 오류:", error);
           }

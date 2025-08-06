@@ -13,6 +13,7 @@ const VideoDisplay = ({
       <RemoteVideo 
         ref={remoteVideoRef} 
         hasRemoteStream={hasRemoteStream} 
+        id = "remote-video-container"
       />
     </div>
   );
