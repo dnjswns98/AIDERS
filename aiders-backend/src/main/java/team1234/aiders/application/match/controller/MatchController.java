@@ -32,6 +32,8 @@ public class MatchController {
                         .hospitalId(hospital.getId())
                         .name(hospital.getName())
                         .address(hospital.getAddress())
+                        .latitude(hospital.getLatitude())
+                        .longitude(hospital.getLongitude())
                         .build()
         );
     }

@@ -9,4 +9,6 @@ public class MatchResponse {
     private Long hospitalId;
     private String name;
     private String address;
+    private double latitude;
+    private double longitude;
 }
