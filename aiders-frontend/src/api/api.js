@@ -702,7 +702,25 @@ export const completeTransport = async (sessionId, hospitalId) => {
   }
 };
 
-// 🔥 디버깅용 함수 - 병원 좌표 조회 기능 포함 버전
+/**
+ * 대기목록에서 구급차 삭제 (DELETE)
+ * @param {string|number} hospitalId - 병원 ID
+ * @param {string} sessionId - 세션 ID (구급차 번호)
+ * @returns {Promise}
+ */
+export const removeFromWaitingList = async (hospitalId, sessionId) => {
+  try {
+    console.log('[API] removeFromWaitingList 호출:', { hospitalId, sessionId });
+    const response = await apiClient.delete(`/api/v1/redis/waiting/${hospitalId}/${sessionId}`);
+    console.log('[API] removeFromWaitingList 성공:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('[API] removeFromWaitingList 실패:', error.message);
+    throw error;
+  }
+};
+
+// 🔥 디버깅용 함수 - 현실적인 버전
 
 /**
  * API 클라이언트 상태 확인용 함수 (병원 좌표 조회 기능 포함)

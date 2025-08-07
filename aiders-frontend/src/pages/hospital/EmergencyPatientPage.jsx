@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import HospitalHeader from "../../components/hospital/HospitalHeader";
 import VideoCallManager from "../../components/hospital/VideoCallManager";
+import WebRtcCall from "../../components/webRTC/WebRtcCall";
 import useEmergencyStore from "../../store/useEmergencyStore";
 import useWaitingAmbulanceStore from "../../store/useWaitingAmbulanceStore";
 import { useAuthStore } from "../../store/useAuthStore";
+import { startVideoCall, removeFromWaitingList } from "../../api/api";
 
-const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance }) => {
+const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) => {
   const { ambulances, isLoading, error, fetchWaitingAmbulances } =
     useWaitingAmbulanceStore();
 
@@ -93,39 +95,31 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance }) => {
         ) : (
           ambulances.map((ambulance) => (
             <div
-              key={ambulance.id}
-              onClick={() => onSelectAmbulance(ambulance)}
+              key={ambulance.sessionId || ambulance.ambulanceId || ambulance.id}
               style={{
                 padding: "16px",
-                backgroundColor:
-                  selectedAmbulance?.id === ambulance.id
-                    ? "#eff6ff"
-                    : "#f8fafc",
-                border:
-                  selectedAmbulance?.id === ambulance.id
-                    ? "2px solid #3b82f6"
-                    : "1px solid #e2e8f0",
+                backgroundColor: "#f8fafc",
+                border: "1px solid #e2e8f0",
                 borderRadius: "8px",
-                cursor: "pointer",
                 transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                if (selectedAmbulance?.id !== ambulance.id) {
-                  e.target.style.backgroundColor = "#f1f5f9";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedAmbulance?.id !== ambulance.id) {
-                  e.target.style.backgroundColor = "#f8fafc";
-                }
               }}
             >
               <div
+                onClick={() => onSelectAmbulance(ambulance)}
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
                   marginBottom: "8px",
+                  cursor: "pointer",
+                  padding: "4px",
+                  borderRadius: "4px",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "rgba(59, 130, 246, 0.1)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
                 }}
               >
                 <span
@@ -149,28 +143,38 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance }) => {
                       width: "8px",
                       height: "8px",
                       backgroundColor: ambulance.isInCall
-                        ? "#ef4444"
-                        : "#10b981",
+                        ? "#10b981"
+                        : "#f59e0b",
                       borderRadius: "50%",
                     }}
                   ></div>
                   <span
                     style={{
                       fontSize: "12px",
-                      color: ambulance.isInCall ? "#ef4444" : "#10b981",
+                      color: ambulance.isInCall ? "#10b981" : "#f59e0b",
                       fontWeight: "600",
                     }}
                   >
-                    {ambulance.isInCall ? "통화중" : "대기중"}
+                    {ambulance.isInCall ? "연결중" : "대기중"}
                   </span>
                 </div>
               </div>
 
               <div
+                onClick={() => onSelectAmbulance(ambulance)}
                 style={{
                   fontSize: "12px",
                   color: "#6b7280",
                   marginBottom: "8px",
+                  cursor: "pointer",
+                  padding: "4px",
+                  borderRadius: "4px",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "rgba(59, 130, 246, 0.1)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
                 }}
               >
                 <div style={{ marginBottom: "2px" }}>
@@ -199,47 +203,89 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance }) => {
                   alignItems: "center",
                 }}
               >
-
-                <span
+                <div
+                  onClick={() => onSelectAmbulance(ambulance)}
                   style={{
-                    fontSize: "11px",
-                    color: "#9ca3af",
-                  }}
-                >
-                  등록시간:{" "}
-                  {ambulance.createdAt
-                    ? new Date(ambulance.createdAt).toLocaleString("ko-KR")
-                    : "방금전"}
-                </span>
-                <span
-                  style={{
-                    fontSize: "11px",
-                    padding: "2px 6px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "4px",
+                    cursor: "pointer",
+                    padding: "4px",
                     borderRadius: "4px",
-                    backgroundColor:
-                      ambulance.ktas <= 2
-                        ? "#fee2e2"
-                        : ambulance.ktas <= 3
-                        ? "#fef3c7"
-                        : "#f3f4f6",
-                    color:
-                      ambulance.ktas <= 2
-                        ? "#991b1b"
-                        : ambulance.ktas <= 3
-                        ? "#92400e"
-                        : "#374151",
-                    fontWeight: "600",
+                    flex: 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "rgba(59, 130, 246, 0.1)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
                   }}
                 >
-                  {ambulance.ktas ? `KTAS ${ambulance.ktas}` : "미분류"}
-                </span>
-                                <button
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      color: "#9ca3af",
+                    }}
+                  >
+                    등록시간:{" "}
+                    {ambulance.createdAt
+                      ? new Date(ambulance.createdAt).toLocaleString("ko-KR")
+                      : "방금전"}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      backgroundColor:
+                        ambulance.ktas <= 2
+                          ? "#fee2e2"
+                          : ambulance.ktas <= 3
+                          ? "#fef3c7"
+                          : "#f3f4f6",
+                      color:
+                        ambulance.ktas <= 2
+                          ? "#991b1b"
+                          : ambulance.ktas <= 3
+                          ? "#92400e"
+                          : "#374151",
+                      fontWeight: "600",
+                      alignSelf: "flex-start",
+                    }}
+                  >
+                    {ambulance.ktas ? `KTAS ${ambulance.ktas}` : "미분류"}
+                  </span>
+                </div>
+                <button
                   onClick={(e) => {
-                    e.stopPropagation(); // 카드 클릭 이벤트 방지!
-                    // 여기에 통화 시작 로직(예: props로 받은 onStartCall(ambulance) 등)
+                    e.stopPropagation();
+                    onStartCall(ambulance);
+                  }}
+                  disabled={ambulance.isInCall}
+                  style={{
+                    backgroundColor: ambulance.isInCall ? "#9ca3af" : "#3b82f6",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "8px 12px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: ambulance.isInCall ? "not-allowed" : "pointer",
+                    transition: "all 0.2s",
+                    minWidth: "70px",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!ambulance.isInCall) {
+                      e.target.style.backgroundColor = "#2563eb";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!ambulance.isInCall) {
+                      e.target.style.backgroundColor = "#3b82f6";
+                    }
                   }}
                 >
-                  통화 시작
+                  {ambulance.isInCall ? "통화중" : "통화 시작"}
                 </button>
               </div>
             </div>
@@ -1210,11 +1256,71 @@ export default function EmergencyPatientPage() {
   const [newTreatment, setNewTreatment] = useState("");
   const [isCallActive, setIsCallActive] = useState(false);
   const [currentCallAmbulance, setCurrentCallAmbulance] = useState(null);
+  const [webRtcSessionId, setWebRtcSessionId] = useState(null);
   const { user } = useAuthStore();
 
   const handleCallStatusChange = (isActive, ambulance) => {
     setIsCallActive(isActive);
     setCurrentCallAmbulance(ambulance);
+  };
+
+  const handleStartCall = async (ambulance) => {
+    console.log('[EmergencyPatient] WebRTC 통화 시작:', ambulance);
+    
+    try {
+      // 1. PUT /api/v1/video-call/start-call 호출로 상태를 통화중으로 변경
+      await startVideoCall({
+        sessionId: ambulance.sessionId || ambulance.ambulanceId,
+        hospitalId: parseInt(user?.userId) // Long 타입으로 전달
+      });
+      console.log('[EmergencyPatient] 통화 상태 변경 성공');
+      
+      // 2. 로컬 상태 업데이트
+      setWebRtcSessionId(ambulance.sessionId || ambulance.ambulanceId);
+      setIsCallActive(true);
+      setCurrentCallAmbulance(ambulance);
+      selectAmbulance(ambulance);
+      
+      // 3. 구급차 목록 새로고침
+      const { fetchWaitingAmbulances } = useWaitingAmbulanceStore.getState();
+      if (user?.userId) {
+        fetchWaitingAmbulances(user.userId);
+      }
+    } catch (error) {
+      console.error('[EmergencyPatient] 통화 시작 실패:', error);
+      alert('통화 시작에 실패했습니다: ' + error.message);
+    }
+  };
+
+  const handleEndCall = async () => {
+    console.log('[EmergencyPatient] WebRTC 통화 종료');
+    
+    try {
+      // 통화 중인 구급차가 있을 때만 삭제 처리
+      if (currentCallAmbulance && user?.userId) {
+        const sessionId = webRtcSessionId || currentCallAmbulance.sessionId || currentCallAmbulance.ambulanceId;
+        
+        // 1. DELETE /api/v1/redis/waiting/{hospitalId}/{sessionId} 호출로 대기목록에서 삭제
+        await removeFromWaitingList(user.userId, sessionId);
+        console.log('[EmergencyPatient] 대기목록에서 구급차 삭제 성공');
+        
+        // 2. 구급차 목록 새로고침
+        const { fetchWaitingAmbulances } = useWaitingAmbulanceStore.getState();
+        fetchWaitingAmbulances(user.userId);
+      }
+      
+      // 3. 로컬 상태 초기화
+      setWebRtcSessionId(null);
+      setIsCallActive(false);
+      setCurrentCallAmbulance(null);
+    } catch (error) {
+      console.error('[EmergencyPatient] 통화 종료 처리 실패:', error);
+      // 에러가 발생해도 로컬 상태는 초기화
+      setWebRtcSessionId(null);
+      setIsCallActive(false);
+      setCurrentCallAmbulance(null);
+      alert('통화 종료 처리 중 오류가 발생했습니다: ' + error.message);
+    }
   };
 
   // 페이지 마운트 시 병원 구급차 데이터 로드
@@ -1239,6 +1345,7 @@ export default function EmergencyPatientPage() {
         <AmbulanceList
           selectedAmbulance={selectedAmbulance}
           onSelectAmbulance={selectAmbulance}
+          onStartCall={handleStartCall}
         />
 
         {/* 오른쪽 메인 콘텐츠 */}
@@ -1334,11 +1441,277 @@ export default function EmergencyPatientPage() {
 
           {/* 탭 콘텐츠 */}
           {activeTab === "video" && (
-            <VideoCallTab
-              selectedAmbulance={selectedAmbulance}
-              hospitalId={user?.userId}
-              onCallStatusChange={handleCallStatusChange}
-            />
+            <div
+              style={{
+                height: "calc(100vh - 160px)",
+                display: "flex",
+                gap: "20px",
+                padding: "20px",
+              }}
+            >
+              {/* 메인 화상통화 영역 */}
+              <div
+                style={{
+                  flex: 2,
+                  backgroundColor: "white",
+                  borderRadius: "12px",
+                  padding: "20px",
+                  display: "flex",
+                  flexDirection: "column",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "20px",
+                    paddingBottom: "16px",
+                    borderBottom: "2px solid #e5e7eb",
+                  }}
+                >
+                  <h3
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                      color: "#1f2937",
+                      margin: 0,
+                    }}
+                  >
+                    구급차 화상통화
+                    {currentCallAmbulance && (
+                      <span style={{ fontSize: "14px", color: "#6b7280", marginLeft: "10px" }}>
+                        (구급차 ID: {currentCallAmbulance.ambulanceId})
+                      </span>
+                    )}
+                  </h3>
+                  {isCallActive && (
+                    <button
+                      onClick={handleEndCall}
+                      style={{
+                        backgroundColor: "#ef4444",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        padding: "8px 16px",
+                        fontSize: "14px",
+                        cursor: "pointer",
+                        fontWeight: "600",
+                      }}
+                    >
+                      통화 종료
+                    </button>
+                  )}
+                </div>
+
+                {/* WebRTC 화상통화 */}
+                <div style={{ flex: 1 }}>
+                  {isCallActive && webRtcSessionId ? (
+                    <WebRtcCall
+                      sessionId={webRtcSessionId}
+                      hospitalId={user?.userId}
+                      onLeave={handleEndCall}
+                      patientName={currentCallAmbulance?.patientName || ""}
+                      ktas={currentCallAmbulance?.ktas || ""}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "100%",
+                        backgroundColor: "#f9fafb",
+                        borderRadius: "8px",
+                        border: "2px dashed #d1d5db",
+                      }}
+                    >
+                      <div style={{ fontSize: "48px", marginBottom: "16px" }}>📹</div>
+                      <h4
+                        style={{
+                          fontSize: "18px",
+                          color: "#6b7280",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        화상통화 대기중
+                      </h4>
+                      <p style={{ fontSize: "14px", color: "#9ca3af" }}>
+                        왼쪽 구급차 목록에서 "통화 시작" 버튼을 클릭하여 화상통화를 시작하세요.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 사이드 정보 패널 */}
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                }}
+              >
+                {/* 환자 기본 정보 */}
+                <div
+                  style={{
+                    backgroundColor: "white",
+                    borderRadius: "12px",
+                    padding: "20px",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                  }}
+                >
+                  <h4
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "bold",
+                      color: "#1f2937",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    환자 정보
+                  </h4>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                      fontSize: "14px",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#6b7280" }}>환자명:</span>
+                      <span style={{ fontWeight: "600" }}>
+                        {selectedAmbulance?.patientName || currentCallAmbulance?.patientName || "선택된 구급차 없음"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#6b7280" }}>KTAS:</span>
+                      <span
+                        style={{
+                          padding: "4px 8px",
+                          backgroundColor:
+                            (selectedAmbulance?.ktas || currentCallAmbulance?.ktas) <= 2
+                              ? "#fee2e2"
+                              : (selectedAmbulance?.ktas || currentCallAmbulance?.ktas) <= 3
+                              ? "#fef3c7"
+                              : "#f3f4f6",
+                          color:
+                            (selectedAmbulance?.ktas || currentCallAmbulance?.ktas) <= 2
+                              ? "#991b1b"
+                              : (selectedAmbulance?.ktas || currentCallAmbulance?.ktas) <= 3
+                              ? "#92400e"
+                              : "#374151",
+                          borderRadius: "4px",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {(selectedAmbulance?.ktas || currentCallAmbulance?.ktas) ? 
+                          `KTAS ${selectedAmbulance?.ktas || currentCallAmbulance?.ktas}` : "미분류"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#6b7280" }}>통화 상태:</span>
+                      <span
+                        style={{
+                          color: isCallActive ? "#10b981" : "#6b7280",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {isCallActive ? "연결됨" : "대기중"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 구급차 정보 */}
+                <div
+                  style={{
+                    backgroundColor: "white",
+                    borderRadius: "12px",
+                    padding: "20px",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                  }}
+                >
+                  <h4
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "bold",
+                      color: "#1f2937",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    구급차 정보
+                  </h4>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                      fontSize: "14px",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#6b7280" }}>구급차 ID:</span>
+                      <span style={{ fontWeight: "600" }}>
+                        {selectedAmbulance?.ambulanceId || currentCallAmbulance?.ambulanceId || "-"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#6b7280" }}>세션 ID:</span>
+                      <span style={{ fontWeight: "600", fontSize: "12px" }}>
+                        {webRtcSessionId || selectedAmbulance?.sessionId || currentCallAmbulance?.sessionId || "-"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#6b7280" }}>등록시간:</span>
+                      <span style={{ fontWeight: "600", fontSize: "12px" }}>
+                        {(selectedAmbulance?.createdAt || currentCallAmbulance?.createdAt) ?
+                          new Date(selectedAmbulance?.createdAt || currentCallAmbulance?.createdAt).toLocaleString("ko-KR") : "-"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 실시간 메모 */}
+                <div
+                  style={{
+                    backgroundColor: "white",
+                    borderRadius: "12px",
+                    padding: "20px",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                    flex: 1,
+                  }}
+                >
+                  <h4
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "bold",
+                      color: "#1f2937",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    실시간 메모
+                  </h4>
+                  <textarea
+                    placeholder="통화 중 중요 사항을 기록하세요..."
+                    style={{
+                      width: "100%",
+                      height: "120px",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                      padding: "12px",
+                      fontSize: "14px",
+                      resize: "none",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
           )}
           {activeTab === "detail" && (
             <DetailInfoTab
