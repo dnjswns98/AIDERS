@@ -7,15 +7,25 @@ import { useFullScreen } from "../../hooks/useFullScreen";
 import VideoDisplay from "./VideoDisplay";
 import CallControls from "./CallControls";
 
-export default function WebRtcCall({ sessionId, ambulanceId, hospitalId, onLeave }) {
+export default function WebRtcCall({ sessionId, ambulanceId, hospitalId, patientName, ktas, onLeave }) {
   const { togglePipMode } = useWebRtc();
   const location = useLocation();
+  
+  console.log('[WebRtcCall] 전달받은 props:', {
+    sessionId,
+    ambulanceId,
+    hospitalId,
+    patientName,
+    ktas
+  });
   
   // 커스텀 훅들로 로직 완전 분리
   const { joinSession, leaveSession } = useOpenVidu({ 
     sessionId, 
     ambulanceId,
     hospitalId, // hospitalId 전달 추가
+    ktas, // KTAS 정보 전달
+    patientName, // 환자명 전달
     onError: (error) => {
       alert(error.message);
     }
@@ -30,8 +40,15 @@ export default function WebRtcCall({ sessionId, ambulanceId, hospitalId, onLeave
   const { isFullScreen, toggleFullScreen } = useFullScreen();
 
   // 컴포넌트 생명주기 관리
-useEffect(() => {
-  joinSession();
+  useEffect(() => {
+    console.log('[WebRtcCall] 세션 참가 시작:', {
+      sessionId,
+      ambulanceId,
+      hospitalId,
+      patientName,
+      ktas
+    });
+    joinSession();
 
   // beforeunload 이벤트는 페이지를 완전히 벗어날 때만 호출되도록:
   const handleBeforeUnload = (event) => {
