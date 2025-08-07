@@ -42,7 +42,7 @@ public class LocationSocketService {
         double distance = calculateDistance(lat, lng, hospitalLat, hospitalLng);
 
         // 양측에 메시지 전송
-        DistanceMessage message = new DistanceMessage(ambulanceId, hospital.getId(), distance);
+        DistanceMessage message = new DistanceMessage(ambulanceId, hospital.getId(), lat, lng, distance);
 
         // 병원에게
         messagingTemplate.convertAndSend("/topic/location/hospital/" + hospital.getId(), message);
