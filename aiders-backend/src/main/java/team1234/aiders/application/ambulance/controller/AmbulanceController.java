@@ -19,7 +19,7 @@ import java.util.List;
 @RequestMapping("/api/v1/ambulance")
 public class AmbulanceController {
 
-    private AmbulanceService ambulanceService;
+    private final AmbulanceService ambulanceService;
 
     @GetMapping("/list")
     public ResponseEntity<List<AmbulanceResponseDto>> getAllAmbulances(@AuthenticationPrincipal CustomUserDetails user) {
