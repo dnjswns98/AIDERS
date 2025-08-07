@@ -5,12 +5,12 @@ import useEmergencyStore from "../../store/useEmergencyStore";
 import { useAuthStore } from "../../store/useAuthStore";
 
 const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance }) => {
-  const { ambulances, fetchHospitalAmbulances } = useEmergencyStore();
+  const { ambulances, fetchAmbulances } = useEmergencyStore();
   
   // 컴포넌트 마운트 시 병원 구급차 데이터 로드
   useEffect(() => {
-    fetchHospitalAmbulances();
-  }, [fetchHospitalAmbulances]);
+    fetchAmbulances();
+  }, [fetchAmbulances]);
   return (
     <div style={{
       width: '320px',
@@ -736,7 +736,8 @@ export default function EmergencyPatientPage() {
 
   // 페이지 마운트 시 병원 구급차 데이터 로드
   useEffect(() => {
-    fetchHospitalAmbulances();
+    const { fetchAmbulances } = useEmergencyStore.getState();
+    fetchAmbulances();
   }, []);
 
   return (

@@ -27,14 +27,14 @@ const AppContent = () => {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        console.log('[App] 앱 초기화 시작 - JWT 토큰 복원 중...');
+        // console.log('[App] 앱 초기화 시작 - JWT 토큰 복원 중...');
         
         // 🔥 useAuthStore의 initialize 함수 호출
         await initialize();
         
-        console.log('[App] 앱 초기화 완료');
-        console.log('[App] 복원된 사용자 정보:', useAuthStore.getState().user);
-        console.log('[App] 인증 상태:', useAuthStore.getState().isAuthenticated);
+        // console.log('[App] 앱 초기화 완료');
+        // console.log('[App] 복원된 사용자 정보:', useAuthStore.getState().user);
+        // console.log('[App] 인증 상태:', useAuthStore.getState().isAuthenticated);
         
         setIsInitialized(true);
       } catch (error) {
@@ -51,7 +51,7 @@ const AppContent = () => {
   useEffect(() => {
     const pipLocalVideoElement = document.getElementById('pipLocalVideo');
     if (pipLocalVideoElement && localStream) {
-      console.log('[App] PiP Local Video 스트림 연결');
+      // console.log('[App] PiP Local Video 스트림 연결');
       pipLocalVideoElement.srcObject = localStream;
     }
   }, [localStream]);
@@ -60,23 +60,23 @@ const AppContent = () => {
   useEffect(() => {
     const pipRemoteVideoElement = document.getElementById('pipRemoteVideo');
     if (pipRemoteVideoElement && remoteStream) {
-      console.log('[App] PiP Remote Video 스트림 연결');
+      // console.log('[App] PiP Remote Video 스트림 연결');
       pipRemoteVideoElement.srcObject = remoteStream;
     }
   }, [remoteStream]);
 
   // 🔥 사용자 인증 상태 변화 감지
   useEffect(() => {
-    console.log('[App] 사용자 인증 상태 변화:', {
-      isAuthenticated,
-      userId: user?.userId,
-      userKey: user?.userKey
-    });
+    // console.log('[App] 사용자 인증 상태 변화:', {
+    //   isAuthenticated,
+    //   userId: user?.userId,
+    //   userKey: user?.userKey
+    // });
   }, [isAuthenticated, user]);
 
   // 🔥 경로 변경 감지 (디버깅용)
   useEffect(() => {
-    console.log('[App] 현재 경로:', location.pathname);
+    // console.log('[App] 현재 경로:', location.pathname);
   }, [location.pathname]);
 
   // 🔥 PiP 모드 표시 조건
@@ -85,12 +85,12 @@ const AppContent = () => {
   // - 현재 페이지가 지도 페이지가 아닐 때만 표시
   const shouldShowPip = isCallActive && isPipMode && location.pathname !== '/emergency/map';
 
-  console.log('[App] PiP 모드 상태:', {
-    isCallActive,
-    isPipMode,
-    currentPath: location.pathname,
-    shouldShowPip
-  });
+  // console.log('[App] PiP 모드 상태:', {
+  //   isCallActive,
+  //   isPipMode,
+  //   currentPath: location.pathname,
+  //   shouldShowPip
+  // });
 
   // 🔥 앱이 초기화되지 않았으면 로딩 화면 표시
   if (!isInitialized) {
@@ -154,10 +154,10 @@ const AppContent = () => {
               playsInline={true} // 🔥 모바일에서 전체화면 방지
               className="absolute top-0 left-0 w-1/3 h-1/3 object-cover z-10 border border-white rounded-sm"
               onLoadedMetadata={(e) => {
-                console.log('[App] PiP Local video 메타데이터 로드됨:', {
-                  width: e.target.videoWidth,
-                  height: e.target.videoHeight
-                });
+                // console.log('[App] PiP Local video 메타데이터 로드됨:', {
+                //   width: e.target.videoWidth,
+                //   height: e.target.videoHeight
+                // });
               }}
               onError={(e) => {
                 console.error('[App] PiP Local video 에러:', e);
@@ -173,10 +173,10 @@ const AppContent = () => {
               playsInline={true} // 🔥 모바일에서 전체화면 방지
               className="w-full h-full object-cover"
               onLoadedMetadata={(e) => {
-                console.log('[App] PiP Remote video 메타데이터 로드됨:', {
-                  width: e.target.videoWidth,
-                  height: e.target.videoHeight
-                });
+                // console.log('[App] PiP Remote video 메타데이터 로드됨:', {
+                //   width: e.target.videoWidth,
+                //   height: e.target.videoHeight
+                // });
               }}
               onError={(e) => {
                 console.error('[App] PiP Remote video 에러:', e);
@@ -213,7 +213,7 @@ const AppContent = () => {
 
 // 🔥 메인 App 컴포넌트 - Context Providers 래핑
 const App = () => {
-  console.log('[App] 메인 App 컴포넌트 렌더링 시작');
+  // console.log('[App] 메인 App 컴포넌트 렌더링 시작');
 
   return (
     <AppProvider>
