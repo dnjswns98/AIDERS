@@ -1,6 +1,11 @@
+import { useState, useEffect } from "react";
 import HospitalHeader from "../../components/hospital/HospitalHeader";
+import { useAuthStore } from "../../store/useAuthStore";
+import useHospitalStore from "../../store/useHospitalStore";
 import useBedStore from "../../store/useBedStore";
+import BedCard from "../../components/hospital/BedCard";
 import TestHospitalCallPage from "./TestHospitalCallPage";
+import WaitingAmbulanceList from '../../components/hospital/WaitingAmbulanceList';
 
 const ambulanceData = [
   {
@@ -223,11 +228,6 @@ export default function DashboardPage() {
     updateBedInfo
   } = useHospitalStore();
   
-  const {
-    allAlarms,
-    fetchAllAlarms,
-    setHospitalId
-  } = useHospitalAlarmStore();
 
   const [beds, setBeds] = useState([]);
   const [isInitialSetup, setIsInitialSetup] = useState(false);
@@ -244,8 +244,6 @@ export default function DashboardPage() {
       
       if (user?.userId) {
         // console.log('🔍 병원 ID 설정:', user.userId);
-        // 병원 ID 설정
-        setHospitalId(user.userId);
         
         // 병원 정보, 위치, 베드 정보, 알림 조회 (에러 발생 시 개별 처리)
         try {
@@ -270,11 +268,6 @@ export default function DashboardPage() {
           console.error('병상 정보 조회 실패:', error);
         }
 
-        try {
-          await fetchAllAlarms(user.userId);
-        } catch (error) {
-          console.error('알림 조회 실패:', error);
-        }
       }
     };
 
@@ -659,7 +652,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 우측: 구급차 정보 */}
+          {/* 우측: 대기중인 구급차 - 실제 API 연동 */}
           <div style={{
             backgroundColor: 'white',
             borderLeft: '1px solid #e5e7eb',
@@ -667,96 +660,7 @@ export default function DashboardPage() {
             paddingTop: '36px',
             overflow: 'auto'
           }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: '16px',
-              paddingBottom: '12px',
-              borderBottom: '2px solid #e5e7eb'
-            }}>
-              <div style={{
-                fontSize: '20px',
-                marginRight: '8px'
-              }}>🚑</div>
-              <h3 style={{
-                fontSize: '16px',
-                fontWeight: 'bold',
-                color: '#1f2937',
-                margin: 0
-              }}>접수된 구급차</h3>
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {allAlarms.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
-                  현재 접수된 구급차가 없습니다.
-                </div>
-              ) : (
-                allAlarms.slice(0, 10).map((alarm) => (
-                <div key={alarm.id} style={{
-                  padding: '12px',
-                  backgroundColor: '#fefefe',
-                  borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
-                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '12px'
-                  }}>
-                    <span style={{
-                      fontWeight: '600',
-                      color: '#1f2937',
-                      fontSize: '14px'
-                    }}>{alarm.ambulanceKey || '구급차'}</span>
-                    <span style={{
-                      fontSize: '12px',
-                      padding: '4px 8px',
-                      borderRadius: '12px',
-                      backgroundColor: alarm.type === 'MATCHING' ? '#fee2e2' : '#fef3c7',
-                      color: alarm.type === 'MATCHING' ? '#991b1b' : '#92400e',
-                      fontWeight: '600'
-                    }}>
-                      {alarm.type === 'MATCHING' ? '매칭' : alarm.type === 'REQUEST' ? '통화요청' : '수정'}
-                    </span>
-                  </div>
-                  
-                  <div style={{
-                    fontSize: '13px',
-                    lineHeight: '1.4',
-                    color: '#4b5563'
-                  }}>
-                    <div style={{ marginBottom: '6px' }}>
-                      <strong>메시지:</strong> {alarm.message || '알림 내용 없음'}
-                    </div>
-                    <div style={{ marginBottom: '6px' }}>
-                      <strong>시간:</strong> {new Date(alarm.createdAt).toLocaleString('ko-KR')}
-                    </div>
-                  </div>
-                  
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginTop: '12px',
-                    padding: '8px',
-                    backgroundColor: '#ecfdf5',
-                    borderRadius: '6px'
-                  }}>
-                    <span style={{
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#065f46'
-                    }}>
-                      🚨 {alarm.type === 'MATCHING' ? '매칭 완료' : alarm.type === 'REQUEST' ? '통화 요청' : '정보 수정'}
-                    </span>
-                  </div>
-                </div>
-                ))
-              )}
-            </div>
+            <WaitingAmbulanceList />
           </div>
         </div>
       </main>
