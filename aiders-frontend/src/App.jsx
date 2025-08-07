@@ -27,7 +27,7 @@ const AppContent = () => {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        console.log('[App] 앱 초기화 시작 - JWT 토큰 복원 중...');
+        // console.log('[App] 앱 초기화 시작 - JWT 토큰 복원 중...');
         
         // 🔥 useAuthStore의 initialize 함수 호출
         await initialize();
@@ -85,12 +85,12 @@ const AppContent = () => {
   // - 현재 페이지가 지도 페이지가 아닐 때만 표시
   const shouldShowPip = isCallActive && isPipMode && location.pathname !== '/emergency/map';
 
-  console.log('[App] PiP 모드 상태:', {
-    isCallActive,
-    isPipMode,
-    currentPath: location.pathname,
-    shouldShowPip
-  });
+  // console.log('[App] PiP 모드 상태:', {
+  //   isCallActive,
+  //   isPipMode,
+  //   currentPath: location.pathname,
+  //   shouldShowPip
+  // });
 
   // 🔥 앱이 초기화되지 않았으면 로딩 화면 표시
   if (!isInitialized) {

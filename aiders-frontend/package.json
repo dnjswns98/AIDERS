@@ -13,6 +13,7 @@
   "dependencies": {
     "@webrtc-remote-control/react": "^0.1.3",
     "axios": "^1.11.0",
+    "onnxruntime-web": "^1.14.0",
     "openvidu-browser": "^2.31.0",
     "peerjs": "^1.5.5",
     "react": "^19.1.0",
@@ -20,6 +21,8 @@
     "react-native-webrtc": "^124.0.5",
     "react-router-dom": "^7.7.1",
     "react-use-websocket": "^4.13.0",
+    "sockjs-client": "^1.6.1",
+    "stompjs": "^2.3.3",
     "webrtc": "^1.14.1",
     "zustand": "^5.0.6"
   },
@@ -40,5 +43,5 @@
     "tailwindcss": "^4.1.11",
     "vite": "^7.0.4"
   },
-  "proxy":"http://localhost:8080"
+  "proxy": "http://localhost:8080"
 }
