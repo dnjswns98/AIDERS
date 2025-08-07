@@ -9,7 +9,11 @@ import InputModeToggle from "../../components/Emergency/PatientInput/InputModeTo
 import PatientBasicInfoForm from "../../components/Emergency/PatientInput/PatientBasicInfoForm";
 import PatientDetailInput from "../../components/Emergency/PatientInput/PatientDetailInput";
 
-// 🔥 안전한 데이터 추출 헬퍼 함수들
+// 🔥 필기 인식 관련 컴포넌트 및 훅 임포트 (이전 대화에서 제안한 것들)
+import HandwritingTextInput from "../../components/Emergency/HandwritingTextInput";
+import { useCRNNModel } from "../../hooks/useCRNNModel";
+
+// 🔥 안전한 데이터 추출 헬퍼 함수들 (기존 유지)
 const safeGetValue = (value, fallback = "") => {
   if (value === null || value === undefined) return fallback;
   if (typeof value === 'string' && value.trim() === '') return fallback;
@@ -26,7 +30,6 @@ const safeGetKtasLevel = (ktasLevel) => {
   const cleaned = safeGetValue(ktasLevel);
   if (!cleaned) return "";
   
-  // "1등급" → "1" 추출
   if (typeof cleaned === 'string' && cleaned.includes('등급')) {
     const number = cleaned.replace(/[^0-9]/g, '');
     return number || "";
@@ -39,7 +42,6 @@ const safeGetComplexObject = (obj, path, fallback = "") => {
   if (!obj || typeof obj !== 'object') return fallback;
   
   try {
-    // path가 "familyHistory.father" 형태인 경우
     if (path.includes('.')) {
       const keys = path.split('.');
       let result = obj;
@@ -77,7 +79,6 @@ const safeGetMedications = (medications) => {
     }
     
     if (typeof medications === 'string') {
-      // JSON 문자열인 경우
       if (medications.startsWith('[')) {
         const parsed = JSON.parse(medications);
         return safeGetMedications(parsed);
@@ -97,7 +98,7 @@ export default function AmbulancePatientInputPage() {
   const { state } = useLocation();
   const isEditMode = state?.isEditMode || false;
 
-  // 🔥 스토어에서 가져오기 - userId 기반
+  // 🔥 스토어에서 가져오기
   const { 
     selectedAmbulance, 
     updatePatientInfo, 
@@ -106,7 +107,10 @@ export default function AmbulancePatientInputPage() {
   } = useEmergencyStore();
   const { user } = useAuthStore();
 
-  // 🔥 폼 데이터 상태 관리 - 완전 초기화
+  // 🔥 CRNN 모델 훅 (필기 인식용)
+  const { isModelLoaded, isProcessing, convertHandwritingToText, initializeModel } = useCRNNModel();
+
+  // 🔥 폼 데이터 상태 관리 (기존 유지)
   const [formData, setFormData] = useState({
     ktasLevel: "",
     department: "",
@@ -121,38 +125,64 @@ export default function AmbulancePatientInputPage() {
     vitalSigns: "",
   });
 
-  const [inputMode, setInputMode] = useState("drawing");
+  // 🔥 필기/타이핑 통합 상태 관리 (새로 추가)
+  const [inputModes, setInputModes] = useState({
+    name: "typing",
+    chiefComplaint: "typing", 
+    treatmentDetails: "typing",
+    familyHistory: "typing",
+    pastHistory: "typing",
+    medications: "typing",
+    vitalSigns: "typing"
+  });
+
+  // 🔥 필기 데이터 상태 관리 (새로 추가)
+  const [handwritingData, setHandwritingData] = useState({
+    name: "",
+    chiefComplaint: "",
+    treatmentDetails: "",
+    familyHistory: "",
+    pastHistory: "",
+    medications: "",
+    vitalSigns: ""
+  });
+
+  // 🔥 기존 상태들 유지
+  const [inputMode, setInputMode] = useState("drawing"); // 전역 모드 (기존 로직 호환)
   const detailInputRefs = useRef([]);
   const [currentDrawingIndex, setCurrentDrawingIndex] = useState(0);
   const mainContentRef = useRef(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const [isDataLoaded, setIsDataLoaded] = useState(false); // 🔥 데이터 로딩 상태 추가
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-  // 🔥 컴포넌트 마운트 시 디버깅 정보 출력 및 fetchAmbulances 강제 호출 (userId 기반)
+  // 🔥 컴포넌트 마운트 시 CRNN 모델 초기화 (새로 추가)
   useEffect(() => {
-    console.log("=== AmbulancePatientInputPage 마운트됨 (편집 모드 개선) ===");
+    console.log("🤖 [CRNN] 모델 초기화 시작");
+    initializeModel();
+  }, [initializeModel]);
+
+  // 🔥 기존 컴포넌트 마운트 로직 유지
+  useEffect(() => {
+    console.log("=== AmbulancePatientInputPage 마운트됨 (필기 인식 통합 버전) ===");
+    console.log("CRNN 모델 로드 상태:", isModelLoaded);
     console.log("현재 로그인 유저:", user);
     console.log("userId:", user?.userId);
     console.log("userKey (차량번호):", user?.userKey);
     console.log("현재 selectedAmbulance:", selectedAmbulance);
     console.log("편집 모드:", isEditMode);
     
-    // 디버깅용 현재 상태 출력
     debugCurrentState();
     
-    // selectedAmbulance가 없거나 userId와 다르면 강제로 fetchAmbulances 호출
     if (!selectedAmbulance) {
       console.log("selectedAmbulance가 없어서 fetchAmbulances 강제 호출");
       fetchAmbulances();
     } else if (selectedAmbulance.id !== user?.userId) {
       console.log("selectedAmbulance ID와 현재 userId가 다름. 재조회 필요");
-      console.log("selectedAmbulance.id:", selectedAmbulance.id);
-      console.log("user.userId:", user?.userId);
       fetchAmbulances();
     }
   }, []);
 
-  // 🔥 selectedAmbulance 변화 감지 (userId 기반)
+  // 🔥 기존 selectedAmbulance 변화 감지 로직 유지
   useEffect(() => {
     console.log("selectedAmbulance 변화 감지:", selectedAmbulance);
     if (selectedAmbulance) {
@@ -163,65 +193,26 @@ export default function AmbulancePatientInputPage() {
     }
   }, [selectedAmbulance]);
 
-  // 🔥 편집 모드일 때 기존 데이터로 폼 초기화 - 완전 개선
+  // 🔥 기존 편집 모드 폼 초기화 로직 유지
   useEffect(() => {
     if (isEditMode && selectedAmbulance && !isDataLoaded) {
-      console.log("=== 편집 모드 폼 데이터 초기화 시작 (개선된 버전) ===");
-      console.log("selectedAmbulance 전체:", selectedAmbulance);
-      console.log("patientInfo:", selectedAmbulance.patientInfo);
-      console.log("patientDetails:", selectedAmbulance.patientDetails);
+      console.log("=== 편집 모드 폼 데이터 초기화 시작 (필기 인식 통합 버전) ===");
       
-      // 🔥 안전한 데이터 추출
       const patientInfo = selectedAmbulance.patientInfo || {};
       const patientDetails = selectedAmbulance.patientDetails || {};
       
-      console.log("=== 필드별 데이터 추출 과정 ===");
-      
-      // KTAS 추출
       const extractedKtas = safeGetKtasLevel(patientDetails.ktasLevel);
-      console.log("KTAS 추출:", patientDetails.ktasLevel, "→", extractedKtas);
-      
-      // 진료과목 추출
       const extractedDepartment = safeGetValue(patientDetails.department);
-      console.log("진료과목 추출:", patientDetails.department, "→", extractedDepartment);
-      
-      // 성별 추출
       const extractedGender = safeGetValue(patientInfo.gender);
-      console.log("성별 추출:", patientInfo.gender, "→", extractedGender);
-      
-      // 나이대 추출
       const extractedAgeRange = safeGetValue(patientDetails.ageRange);
-      console.log("나이대 추출:", patientDetails.ageRange, "→", extractedAgeRange);
-      
-      // 이름 추출
       const extractedName = safeGetValue(patientInfo.name);
-      console.log("이름 추출:", patientInfo.name, "→", extractedName);
-      
-      // 주증상 추출
       const extractedChiefComplaint = safeGetValue(patientDetails.chiefComplaint);
-      console.log("주증상 추출:", patientDetails.chiefComplaint, "→", extractedChiefComplaint);
-      
-      // 처치내용 추출
       const extractedTreatmentDetails = safeGetValue(patientDetails.treatmentDetails);
-      console.log("처치내용 추출:", patientDetails.treatmentDetails, "→", extractedTreatmentDetails);
-      
-      // 가족력 추출 (복잡한 객체 처리)
       const extractedFamilyHistory = safeGetComplexObject(patientDetails.familyHistory, 'father');
-      console.log("가족력 추출:", patientDetails.familyHistory, "→", extractedFamilyHistory);
-      
-      // 과거력 추출 (복잡한 객체 처리)
       const extractedPastHistory = safeGetComplexObject(patientDetails.pastHistory, 'hypertension');
-      console.log("과거력 추출:", patientDetails.pastHistory, "→", extractedPastHistory);
-      
-      // 약물 추출 (배열 처리)
       const extractedMedications = safeGetMedications(patientDetails.medications);
-      console.log("약물 추출:", patientDetails.medications, "→", extractedMedications);
-      
-      // 생체징후 추출 (복잡한 객체 처리)
       const extractedVitalSigns = safeGetComplexObject(patientDetails.vitalSigns, 'bloodPressure');
-      console.log("생체징후 추출:", patientDetails.vitalSigns, "→", extractedVitalSigns);
       
-      // 🔥 추출된 데이터로 폼 초기화
       const newFormData = {
         ktasLevel: extractedKtas,
         department: extractedDepartment,
@@ -236,10 +227,6 @@ export default function AmbulancePatientInputPage() {
         vitalSigns: extractedVitalSigns,
       };
       
-      console.log("=== 최종 폼 데이터 ===");
-      console.log("newFormData:", newFormData);
-      
-      // 🔥 빈 값들만 있는지 검증
       const hasValidData = Object.values(newFormData).some(value => 
         value && value.trim && value.trim() !== ""
       );
@@ -250,9 +237,6 @@ export default function AmbulancePatientInputPage() {
         setIsDataLoaded(true);
       } else {
         console.warn("⚠️ 모든 데이터가 빈 값이어서 폼 초기화 생략");
-        console.warn("selectedAmbulance에 실제 저장된 데이터가 없는 것 같습니다.");
-        
-        // 🔥 빈 값으로 초기화 (기본값 제거)
         setFormData({
           ktasLevel: "",
           department: "",
@@ -269,12 +253,9 @@ export default function AmbulancePatientInputPage() {
         setIsDataLoaded(true);
       }
       
-      console.log("=== 편집 모드 폼 데이터 초기화 완료 ===");
-    } else if (isEditMode && !selectedAmbulance) {
-      console.warn("편집 모드인데 selectedAmbulance가 없음. fetchAmbulances 재호출 필요");
+      console.log("=== 편집 모드 폼 데이터 초기화 완료 (필기 인식 통합) ===");
     } else if (!isEditMode && !isDataLoaded) {
-      // 🔥 신규 입력 모드일 때는 빈 폼으로 초기화
-      console.log("신규 입력 모드: 빈 폼으로 초기화");
+      console.log("신규 입력 모드: 빈 폼으로 초기화 (필기 인식 지원)");
       setFormData({
         ktasLevel: "",
         department: "",
@@ -292,22 +273,75 @@ export default function AmbulancePatientInputPage() {
     }
   }, [isEditMode, selectedAmbulance, isDataLoaded]);
 
-  // 🔥 폼 초기화 실패 시 재시도 버튼
+  // 🔥 폼 데이터 변경 핸들러 (HandwritingTextInput과 연동)
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    console.log(`[폼 변경] ${name}: "${value}"`);
+    
+    setFormData((prev) => {
+      const newData = { ...prev, [name]: value };
+      console.log("업데이트된 폼 데이터:", newData);
+      return newData;
+    });
+  };
+
+  // 🔥 HandwritingTextInput용 개별 필드 변경 핸들러 (새로 추가)
+  const handleHandwritingInputChange = useCallback((fieldName) => (value) => {
+    console.log(`[필기-타이핑 통합] ${fieldName}: "${value}"`);
+    
+    setFormData((prev) => {
+      const newData = { ...prev, [fieldName]: value };
+      console.log(`업데이트된 ${fieldName}:`, value);
+      return newData;
+    });
+  }, []);
+
+  // 🔥 기존 필기/타이핑 모드 토글 (전역)
+  const toggleInputMode = () => {
+    setInputMode((prevMode) => (prevMode === "drawing" ? "typing" : "drawing"));
+    console.log("전역 입력 모드 변경:", inputMode === "drawing" ? "typing" : "drawing");
+  };
+
+  // 🔥 기존 유효성 검사 함수들 유지
+  const validateFormData = () => {
+    console.log("=== 폼 데이터 검증 (필기 인식 통합) ===");
+    const issues = [];
+    
+    Object.entries(formData).forEach(([key, value]) => {
+      if (value && (
+        value.includes('선택') || 
+        value === '선택해주세요' || 
+        value === 'unknown' ||
+        value === '1' ||
+        value === '외과'
+      )) {
+        issues.push(`${key}: ${value} (의심스러운 기본값)`);
+      }
+    });
+    
+    if (issues.length > 0) {
+      console.warn("⚠️ 의심스러운 기본값 감지:", issues);
+      return false;
+    }
+    
+    console.log("✅ 폼 데이터 검증 통과 (필기 인식 통합)");
+    return true;
+  };
+
+  // 🔥 기존 저장 로직들 유지
   const handleRetryDataLoad = async () => {
     console.log("데이터 재로딩 시도");
     setIsDataLoaded(false);
     try {
       await fetchAmbulances();
-      // fetchAmbulances 완료 후 위의 useEffect가 다시 실행됨
     } catch (error) {
       console.error("데이터 재로딩 실패:", error);
       alert("데이터를 불러오는데 실패했습니다. 페이지를 새로고침 해주세요.");
     }
   };
 
-  // 🔥 폼 데이터 강제 초기화 버튼 (디버깅용)
   const handleResetForm = () => {
-    console.log("폼 데이터 강제 초기화");
+    console.log("폼 데이터 강제 초기화 (필기 인식 통합)");
     setFormData({
       ktasLevel: "",
       department: "",
@@ -321,62 +355,27 @@ export default function AmbulancePatientInputPage() {
       medications: "",
       vitalSigns: "",
     });
+    
+    // 🔥 필기 데이터도 함께 초기화 (새로 추가)
+    setHandwritingData({
+      name: "",
+      chiefComplaint: "",
+      treatmentDetails: "",
+      familyHistory: "",
+      pastHistory: "",
+      medications: "",
+      vitalSigns: ""
+    });
+    
     setIsDataLoaded(false);
   };
 
-  // 🔥 폼 데이터 개별 검증 함수
-  const validateFormData = () => {
-    console.log("=== 폼 데이터 검증 ===");
-    const issues = [];
-    
-    Object.entries(formData).forEach(([key, value]) => {
-      if (value && (
-        value.includes('선택') || 
-        value === '선택해주세요' || 
-        value === 'unknown' ||
-        value === '1' || // 🔥 의심스러운 기본값 감지
-        value === '외과' // 🔥 의심스러운 기본값 감지
-      )) {
-        issues.push(`${key}: ${value} (의심스러운 기본값)`);
-      }
-    });
-    
-    if (issues.length > 0) {
-      console.warn("⚠️ 의심스러운 기본값 감지:", issues);
-      return false;
-    }
-    
-    console.log("✅ 폼 데이터 검증 통과");
-    return true;
-  };
-
-  // 🔥 폼 데이터 변경 핸들러 - 로깅 추가
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    console.log(`[폼 변경] ${name}: "${value}"`);
-    
-    setFormData((prev) => {
-      const newData = { ...prev, [name]: value };
-      console.log("업데이트된 폼 데이터:", newData);
-      return newData;
-    });
-  };
-
-  // 🔥 필기/타이핑 모드 토글
-  const toggleInputMode = () => {
-    setInputMode((prevMode) => (prevMode === "drawing" ? "typing" : "drawing"));
-    console.log("입력 모드 변경:", inputMode === "drawing" ? "typing" : "drawing");
-  };
-
-  // 🔥 저장(병원 매칭) 버튼 클릭 시 실행 (userId 기반) - 검증 로직 추가
+  // 🔥 기존 제출 로직 유지
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("[handleSubmit] 저장 버튼 클릭됨! (편집 모드 개선)");
-    console.log("[handleSubmit] 현재 selectedAmbulance:", selectedAmbulance);
-    console.log("[handleSubmit] 현재 로그인 유저:", user);
+    console.log("[handleSubmit] 저장 버튼 클릭됨! (필기 인식 통합 버전)");
     console.log("[handleSubmit] 현재 폼 데이터:", formData);
 
-    // 🔥 폼 데이터 검증
     if (!validateFormData()) {
       const confirmSubmit = confirm("기본값으로 보이는 데이터가 감지되었습니다. 정말 저장하시겠습니까?");
       if (!confirmSubmit) {
@@ -384,7 +383,6 @@ export default function AmbulancePatientInputPage() {
       }
     }
 
-    // 🔥 selectedAmbulance 상태 재확인 (userId 기반)
     if (!selectedAmbulance || !selectedAmbulance.id) {
       console.error("selectedAmbulance가 없음. 강제로 fetchAmbulances 재시도");
       
@@ -406,16 +404,12 @@ export default function AmbulancePatientInputPage() {
       return;
     }
 
-    // 🔥 userId 검증 추가
     if (selectedAmbulance.id !== user?.userId) {
       console.error("selectedAmbulance ID와 현재 userId가 일치하지 않음");
-      console.error("selectedAmbulance.id:", selectedAmbulance.id);
-      console.error("user.userId:", user?.userId);
       alert("사용자 정보와 구급차 정보가 일치하지 않습니다. 다시 로그인해주세요.");
       return;
     }
 
-    // 🔥 필수 입력값 체크
     if (
       formData.ktasLevel.includes("선택") ||
       formData.department.includes("선택") ||
@@ -427,10 +421,10 @@ export default function AmbulancePatientInputPage() {
       return;
     }
 
-    // 🔥 업데이트할 환자 정보 구성 (userId 기반)
+    // 🔥 업데이트할 환자 정보 구성 (기존 로직 유지, 필기 데이터 포함)
     let updatedInfo;
     if (isEditMode) {
-      console.log("편집 모드: 기존 정보 업데이트");
+      console.log("편집 모드: 기존 정보 업데이트 (필기 인식 포함)");
       const existingPatientInfo = selectedAmbulance.patientInfo || {};
       const existingPatientDetails = selectedAmbulance.patientDetails || {};
       
@@ -466,7 +460,7 @@ export default function AmbulancePatientInputPage() {
         },
       };
     } else {
-      console.log("신규 입력 모드: 새 정보 생성");
+      console.log("신규 입력 모드: 새 정보 생성 (필기 인식 포함)");
       updatedInfo = {
         patientInfo: {
           gender: formData.gender,
@@ -490,9 +484,8 @@ export default function AmbulancePatientInputPage() {
       };
     }
 
-    // 🔥 API 호출 및 저장 처리 (userId 기반)
     try {
-      console.log("[handleSubmit] updatePatientInfo 호출전");
+      console.log("[handleSubmit] updatePatientInfo 호출전 (필기 인식 통합)");
       console.log("ambulanceId (userId):", selectedAmbulance.id);
       console.log("updatedInfo:", updatedInfo);
       
@@ -513,7 +506,7 @@ export default function AmbulancePatientInputPage() {
     }
   };
 
-  // 🔥 다음 필기 영역으로 스크롤 이동
+  // 🔥 기존 스크롤 관련 함수들 유지
   const scrollToNextDrawingArea = () => {
     const nextIndex = currentDrawingIndex + 1;
     if (nextIndex < detailInputRefs.current.length) {
@@ -533,7 +526,6 @@ export default function AmbulancePatientInputPage() {
     }
   };
 
-  // 🔥 스크롤 이벤트 핸들러
   const handleScroll = useCallback(() => {
     const target = mainContentRef.current;
     if (!target) return;
@@ -544,7 +536,6 @@ export default function AmbulancePatientInputPage() {
     setShowScrollButton(!isAtBottom && scrollHeight > clientHeight);
   }, []);
 
-  // 🔥 스크롤 이벤트 리스너 등록
   useEffect(() => {
     const scrollContainer = mainContentRef.current;
     if (!scrollContainer) return;
@@ -564,11 +555,11 @@ export default function AmbulancePatientInputPage() {
   return (
     <AmbulanceLayout ref={mainContentRef}>
       <div className="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto relative">
-        {/* 🔥 디버깅 정보 표시 - 편집 모드 개선 버전 */}
+        {/* 🔥 디버깅 정보 표시 (CRNN 모델 상태 추가) */}
         <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 rounded-r-lg">
           <div className="text-xs font-mono space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-gray-700">🚑 구급차 정보 (편집 모드 개선)</span>
+              <span className="font-bold text-gray-700">🚑 구급차 정보 (필기 인식 통합 버전)</span>
               <div className="flex gap-2">
                 <button
                   onClick={handleRetryDataLoad}
@@ -601,6 +592,26 @@ export default function AmbulancePatientInputPage() {
               </div>
             </div>
             
+            {/* 🔥 CRNN 모델 상태 표시 (새로 추가) */}
+            <div className="mt-2 p-2 bg-gradient-to-r from-green-50 to-blue-50 rounded border">
+              <div className="text-gray-600 text-xs font-semibold mb-1">🤖 CRNN 필기 인식 모델</div>
+              <div className="flex gap-4 flex-wrap">
+                <div><span className="font-bold">모델 로드:</span> 
+                  <span className={isModelLoaded ? "text-green-600 font-bold ml-1" : "text-yellow-600 font-bold ml-1"}>
+                    {isModelLoaded ? "✅ 완료" : "⏳ 로딩중"}
+                  </span>
+                </div>
+                <div><span className="font-bold">처리 상태:</span> 
+                  <span className={isProcessing ? "text-blue-600 font-bold ml-1" : "text-gray-600 ml-1"}>
+                    {isProcessing ? "🔄 변환중" : "⏸️ 대기"}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500">
+                  필기 → 텍스트 자동 변환 지원
+                </div>
+              </div>
+            </div>
+            
             <div className="mt-2 p-2 bg-white rounded border">
               <div className="text-gray-600 text-xs font-semibold mb-1">편집 모드 상태</div>
               <div className="flex gap-4 flex-wrap">
@@ -627,6 +638,9 @@ export default function AmbulancePatientInputPage() {
         {/* 🔥 페이지 제목 */}
         <h1 className="text-2xl font-bold mb-6 text-gray-800">
           {isEditMode ? "환자 상세 정보 수정" : "환자 필수 정보 입력"}
+          <span className="ml-2 text-sm text-blue-600 font-normal">
+            🖋️ 필기 인식 지원
+          </span>
         </h1>
         
         {/* 🔥 상단 저장 버튼 (비편집 모드시에만) */}
@@ -644,89 +658,91 @@ export default function AmbulancePatientInputPage() {
         
         {/* 🔥 메인 폼 */}
         <form onSubmit={handleSubmit} className="space-y-6" id="patient-form">
-          {/* 필수 정보 섹션 */}
+          {/* 🔥 필수 정보 섹션 (기존 컴포넌트 유지) */}
           <PatientBasicInfoForm
             formData={formData}
             handleInputChange={handleInputChange}
           />
 
-          {/* 상세 정보 섹션 */}
+          {/* 🔥 상세 정보 섹션 (HandwritingTextInput으로 교체) */}
           <div className="space-y-6 pt-6 relative">
-            <InputModeToggle
-              inputMode={inputMode}
-              toggleInputMode={toggleInputMode}
-            />
+            <div className="border-t border-gray-200 pt-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <span className="mr-2">📝</span>
+                상세 정보 (필기 또는 타이핑 입력)
+                {!isModelLoaded && (
+                  <div className="ml-3 flex items-center text-xs text-orange-600">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b border-orange-600 mr-1"></div>
+                    <span>CRNN 모델 로딩중...</span>
+                  </div>
+                )}
+              </h3>
+            </div>
             
-            {/* 이름 + 바이탈 사인 */}
+            {/* 🔥 이름 + 바이탈 사인 (HandwritingTextInput 사용) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <PatientDetailInput
-                label="이름"
-                name="name"
+              <HandwritingTextInput
+                label="환자 이름"
                 value={formData.name}
-                onChange={handleInputChange}
-                inputMode={inputMode}
-                ref={(el) => (detailInputRefs.current[0] = el)}
+                onChange={handleHandwritingInputChange('name')}
+                placeholder="환자의 이름을 입력하거나 필기로 작성하세요"
+                disabled={!isModelLoaded}
               />
-              <PatientDetailInput
+              
+              <HandwritingTextInput
                 label="바이탈 사인 (혈압)"
-                name="vitalSigns"
                 value={formData.vitalSigns}
-                onChange={handleInputChange}
-                inputMode={inputMode}
-                ref={(el) => (detailInputRefs.current[1] = el)}
+                onChange={handleHandwritingInputChange('vitalSigns')}
+                placeholder="혈압 수치를 입력하거나 필기로 작성하세요"
+                disabled={!isModelLoaded}
               />
             </div>
             
-            {/* 주요 증상 (상세) */}
-            <PatientDetailInput
+            {/* 🔥 주요 증상 (HandwritingTextInput 사용) */}
+            <HandwritingTextInput
               label="주요 증상 (상세)"
-              name="chiefComplaint"
               value={formData.chiefComplaint}
-              onChange={handleInputChange}
-              inputMode={inputMode}
-              isTextArea={true}
-              ref={(el) => (detailInputRefs.current[2] = el)}
+              onChange={handleHandwritingInputChange('chiefComplaint')}
+              placeholder="환자의 주요 증상을 상세히 입력하거나 필기로 작성하세요"
+              disabled={!isModelLoaded}
+              required
             />
             
-            {/* 처치 내용 */}
-            <PatientDetailInput
+            {/* 🔥 처치 내용 (HandwritingTextInput 사용) */}
+            <HandwritingTextInput
               label="처치 내용"
-              name="treatmentDetails"
               value={formData.treatmentDetails}
-              onChange={handleInputChange}
-              inputMode={inputMode}
-              isTextArea={true}
-              ref={(el) => (detailInputRefs.current[3] = el)}
+              onChange={handleHandwritingInputChange('treatmentDetails')}
+              placeholder="현장에서 실시한 처치 내용을 입력하거나 필기로 작성하세요"
+              disabled={!isModelLoaded}
             />
             
-            {/* 과거력 + 가족력 */}
+            {/* 🔥 과거력 + 가족력 (HandwritingTextInput 사용) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <PatientDetailInput
-                label="과거력"
-                name="pastHistory"
+              <HandwritingTextInput
+                label="과거 병력"
                 value={formData.pastHistory}
-                onChange={handleInputChange}
-                inputMode={inputMode}
-                ref={(el) => (detailInputRefs.current[4] = el)}
+                onChange={handleHandwritingInputChange('pastHistory')}
+                placeholder="환자의 과거 병력을 입력하거나 필기로 작성하세요"
+                disabled={!isModelLoaded}
               />
-              <PatientDetailInput
+              
+              <HandwritingTextInput
                 label="가족력"
-                name="familyHistory"
                 value={formData.familyHistory}
-                onChange={handleInputChange}
-                inputMode={inputMode}
-                ref={(el) => (detailInputRefs.current[5] = el)}
+                onChange={handleHandwritingInputChange('familyHistory')}
+                placeholder="가족의 병력을 입력하거나 필기로 작성하세요"
+                disabled={!isModelLoaded}
               />
             </div>
             
-            {/* 복용중인 약 */}
-            <PatientDetailInput
-              label="복용중인 약"
-              name="medications"
+            {/* 🔥 복용중인 약 (HandwritingTextInput 사용) */}
+            <HandwritingTextInput
+              label="복용 중인 약물"
               value={formData.medications}
-              onChange={handleInputChange}
-              inputMode={inputMode}
-              ref={(el) => (detailInputRefs.current[6] = el)}
+              onChange={handleHandwritingInputChange('medications')}
+              placeholder="현재 복용 중인 약물을 입력하거나 필기로 작성하세요 (쉼표로 구분)"
+              disabled={!isModelLoaded}
             />
           </div>
           
@@ -742,15 +758,41 @@ export default function AmbulancePatientInputPage() {
         </form>
       </div>
       
-      {/* 🔥 고정된 "다음 필기 공간" 버튼 - 그리기 모드에서만 표시 */}
-      {inputMode === "drawing" && showScrollButton && (
+      {/* 🔥 필기 모드용 스크롤 도우미 버튼 (조건부 표시) */}
+      {showScrollButton && (
         <button
           onClick={scrollToNextDrawingArea}
           className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-full shadow-lg z-50 opacity-60 hover:opacity-100 transition-all duration-300 hover:scale-110"
           title="다음 필기 공간으로 이동"
         >
-          <i className="fas fa-chevron-down text-xl"></i>
+          <span className="flex items-center space-x-2">
+            <span>🖋️</span>
+            <span className="text-sm">다음 필기 영역</span>
+            <i className="fas fa-chevron-down text-sm"></i>
+          </span>
         </button>
+      )}
+
+      {/* 🔥 CRNN 모델 로딩 상태 오버레이 (로딩 중일 때만 표시) */}
+      {!isModelLoaded && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 shadow-xl max-w-md mx-4">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">필기 인식 모델 로딩 중...</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                CRNN 모델을 불러오고 있습니다. 잠시만 기다려주세요.
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                <p className="text-xs text-blue-700">
+                  📂 모델 파일: public/model/<br/>
+                  📂 알파벳: public/alphabet/<br/>
+                  🤖 필기 → 텍스트 자동 변환 준비 중
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </AmbulanceLayout>
   );

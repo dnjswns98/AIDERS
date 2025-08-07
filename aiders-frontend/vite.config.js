@@ -1,20 +1,57 @@
+// vite.config.js
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
-
 
 export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss(),
-  ],
-  server:{
-    host:'0.0.0.0',
+  plugins: [react()],
+
+  // 🔥 WASM 파일을 정적 자산으로 인식
+  assetsInclude: ['**/*.wasm', '**/*.onnx'],
+
+  server: {
+    host: '0.0.0.0',
     https: false,
     allowedHosts: [
-        'localhost',
-        '127.0.0.1',
-        'i13d107.p.ssafy.io'
-    ]
-  }
+      'localhost',
+      '127.0.0.1',
+      'i13d107.p.ssafy.io',
+    ],
+
+    // 🔥 더 직접적인 WASM 파일 처리
+    middlewareMode: false,
+    fs: {
+      strict: false // WASM 파일 접근 허용
+    },
+
+    // 🔥 미들웨어 방식 개선
+    configure(server) {
+      server.middlewares.use((req, res, next) => {
+        // WASM 파일 요청 감지
+        if (req.url && req.url.includes('.wasm')) {
+          console.log('🔧 [WASM] 요청 감지:', req.url);
+          res.setHeader('Content-Type', 'application/wasm');
+          res.setHeader('Cache-Control', 'no-cache');
+        }
+        
+        // ONNX 파일 요청 감지
+        if (req.url && req.url.includes('.onnx')) {
+          console.log('🔧 [ONNX] 요청 감지:', req.url);
+          res.setHeader('Content-Type', 'application/octet-stream');
+          res.setHeader('Cache-Control', 'no-cache');
+        }
+        
+        next();
+      });
+    },
+
+    // 🔥 CORS 및 헤더 설정
+    cors: true,
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    }
+  },
+
+  // 🔥 개발 시 정적 파일 처리 강화
+  publicDir: 'public'
 })

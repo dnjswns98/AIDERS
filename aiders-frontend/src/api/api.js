@@ -240,16 +240,140 @@ export const getPatientInfo = async () => {
   }
 };
 
-// 🔥 새로 추가: 병원 자동 매칭 API들 (백엔드 MatchController 기준)
+// 🔥 새로 추가: 병원 좌표 조회 API들 (HospitalController 기준)
 
 /**
- * 병원 자동 매칭 실행 (PATCH)
+ * 현재 로그인한 병원의 좌표 정보 조회 (GET)
+ * @returns {Promise<{latitude: number, longitude: number}>} HospitalLocationResponseDto
+ */
+export const getCurrentHospitalLocation = async () => {
+  try {
+    console.log('[API] 🏥 현재 병원 좌표 조회 요청');
+    
+    // 🔥 백엔드 HospitalController 스펙: GET /api/v1/hospital/location
+    const response = await apiClient.get('/api/v1/hospital/location');
+    
+    console.log('[API] 🏥 현재 병원 좌표 조회 성공! 🎉');
+    console.log('[API] 🏥 좌표 정보 (HospitalLocationResponseDto):', response.data);
+    
+    // 🔥 좌표 유효성 검사
+    const { latitude, longitude } = response.data;
+    if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
+      console.warn('⚠️ [API] 유효하지 않은 병원 좌표:', response.data);
+      throw new Error('병원 좌표 정보가 유효하지 않습니다.');
+    }
+    
+    // 🔥 대한민국 좌표 범위 확인
+    if (latitude < 33 || latitude > 39 || longitude < 124 || longitude > 132) {
+      console.warn('⚠️ [API] 좌표가 대한민국 범위를 벗어남:', latitude, longitude);
+    }
+    
+    console.log(`📍 [API] 병원 실제 위치: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+    
+    return response.data;
+  } catch (error) {
+    console.error('[API] 🏥 현재 병원 좌표 조회 실패:', error);
+    
+    if (error.response) {
+      console.error('[API] 🏥 서버 응답 에러:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        url: error.response.config?.url
+      });
+      
+      if (error.response.status === 401) {
+        console.error('[API] 🏥 401 Unauthorized - 로그인 상태 확인 필요');
+      } else if (error.response.status === 403) {
+        console.error('[API] 🏥 403 Forbidden - 병원 계정이 아니거나 권한 없음');
+      } else if (error.response.status === 404) {
+        console.error('[API] 🏥 404 Not Found - 병원 정보를 찾을 수 없음');
+      } else if (error.response.status === 500) {
+        console.error('[API] 🏥 500 Internal Server Error - 백엔드 hospitalService.getHospitalLocation() 확인 필요');
+      }
+    } else {
+      console.error('[API] 🏥 네트워크 또는 요청 설정 에러:', error.message);
+    }
+    
+    throw error;
+  }
+};
+
+/**
+ * 특정 병원(userId)의 좌표 정보 조회 (GET)
+ * @param {number|string} userId - 병원 사용자 ID
+ * @returns {Promise<{latitude: number, longitude: number}>} HospitalLocationResponseDto
+ */
+export const getHospitalLocationByUserId = async (userId) => {
+  try {
+    console.log('[API] 🏥 병원 좌표 조회 요청 - userId:', userId);
+    
+    if (!userId) {
+      throw new Error('userId는 필수값입니다.');
+    }
+    
+    // 🔥 백엔드 HospitalController 스펙: GET /api/v1/hospital/location/{userId}
+    const response = await apiClient.get(`/api/v1/hospital/location/${userId}`);
+    
+    console.log('[API] 🏥 병원 좌표 조회 성공! 🎉');
+    console.log('[API] 🏥 좌표 정보 (HospitalLocationResponseDto):', response.data);
+    
+    // 🔥 좌표 유효성 검사
+    const { latitude, longitude } = response.data;
+    if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
+      console.warn(`⚠️ [API] 유효하지 않은 병원 좌표 (userId: ${userId}):`, response.data);
+      throw new Error(`병원 ${userId}의 좌표 정보가 유효하지 않습니다.`);
+    }
+    
+    // 🔥 대한민국 좌표 범위 확인
+    if (latitude < 33 || latitude > 39 || longitude < 124 || longitude > 132) {
+      console.warn(`⚠️ [API] 좌표가 대한민국 범위를 벗어남 (userId: ${userId}):`, latitude, longitude);
+    }
+    
+    console.log(`📍 [API] 병원 ${userId} 실제 위치: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+    
+    return response.data;
+  } catch (error) {
+    console.error(`[API] 🏥 병원 좌표 조회 실패 (userId: ${userId}):`, error);
+    
+    if (error.response) {
+      console.error('[API] 🏥 서버 응답 에러:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        url: error.response.config?.url,
+        userId: userId
+      });
+      
+      if (error.response.status === 400) {
+        console.error('[API] 🏥 400 Bad Request - userId 형태 확인 필요');
+      } else if (error.response.status === 401) {
+        console.error('[API] 🏥 401 Unauthorized - 로그인 상태 확인 필요');
+      } else if (error.response.status === 403) {
+        console.error('[API] 🏥 403 Forbidden - 해당 병원 정보 접근 권한 없음');
+      } else if (error.response.status === 404) {
+        console.error(`[API] 🏥 404 Not Found - userId ${userId}에 해당하는 병원을 찾을 수 없음`);
+      } else if (error.response.status === 500) {
+        console.error('[API] 🏥 500 Internal Server Error - 백엔드 hospitalService.getHospitalLocationByUserId() 확인 필요');
+      }
+    } else {
+      console.error('[API] 🏥 네트워크 또는 요청 설정 에러:', error.message);
+    }
+    
+    throw error;
+  }
+};
+
+// 🔥 병원 자동 매칭 API들 (좌표 정보 자동 조회 기능 추가)
+
+/**
+ * 병원 자동 매칭 실행 (PATCH) - 🔥 좌표 정보 자동 조회 기능 추가
  * @param {Object} matchingData - { ambulanceId, latitude, longitude }
- * @returns {Promise<{hospitalId: number, name: string, address: string}>}
+ * @returns {Promise<{hospitalId: number, name: string, address: string, latitude?: number, longitude?: number}>}
  */
 export const requestHospitalMatching = async (matchingData) => {
   try {
-    console.log('[API] 🏥 병원 자동 매칭 요청 시작');
+    console.log('[API] 🏥 병원 자동 매칭 요청 시작 (좌표 자동 조회 포함)');
     console.log('[API] 매칭 요청 데이터:', matchingData);
     
     const { ambulanceId, latitude, longitude, ...otherData } = matchingData;
@@ -268,6 +392,40 @@ export const requestHospitalMatching = async (matchingData) => {
     
     console.log('[API] 🏥 병원 자동 매칭 성공! 🎉');
     console.log('[API] 🏥 매칭 결과 (MatchResponse):', response.data);
+    
+    // 🔥 매칭 결과에 좌표가 없으면 별도 조회
+    if (response.data && !response.data.latitude && response.data.hospitalId) {
+      console.log('[API] 🏥 좌표 정보 없음, HospitalLocationResponseDto로 별도 조회 시작...');
+      
+      try {
+        // 🔥 병원 ID를 userId로 가정하고 좌표 조회 (실제 구조에 따라 조정 필요)
+        const locationInfo = await getHospitalLocationByUserId(response.data.hospitalId);
+        
+        // 🔥 매칭 결과에 좌표 정보 추가
+        const enhancedResult = {
+          ...response.data,
+          latitude: locationInfo.latitude,
+          longitude: locationInfo.longitude
+        };
+        
+        console.log('[API] 🏥 병원 매칭 결과 (실제 좌표 포함):', enhancedResult);
+        console.log(`📍 [API] 매칭된 병원 실제 위치: ${locationInfo.latitude.toFixed(6)}, ${locationInfo.longitude.toFixed(6)}`);
+        
+        return enhancedResult;
+        
+      } catch (locationError) {
+        console.error('[API] 🏥 병원 좌표 별도 조회 실패:', locationError);
+        console.warn('[API] 🏥 좌표 조회 실패해도 기본 매칭 결과는 반환합니다.');
+        
+        // 좌표 조회 실패해도 기본 매칭 결과는 반환
+        return response.data;
+      }
+    }
+    
+    // 🔥 매칭 결과에 이미 좌표가 있으면 그대로 반환
+    if (response.data.latitude && response.data.longitude) {
+      console.log(`📍 [API] 매칭 결과에 좌표 이미 포함됨: ${response.data.latitude.toFixed(6)}, ${response.data.longitude.toFixed(6)}`);
+    }
     
     return response.data;
   } catch (error) {
@@ -303,13 +461,13 @@ export const requestHospitalMatching = async (matchingData) => {
 };
 
 /**
- * 매칭된 병원 정보 조회 (GET)
+ * 매칭된 병원 정보 조회 (GET) - 🔥 좌표 정보 자동 조회 기능 추가
  * @param {number|string} ambulanceId - 구급차 ID
- * @returns {Promise<{hospitalId: number, name: string, address: string}>}
+ * @returns {Promise<{hospitalId: number, name: string, address: string, latitude?: number, longitude?: number}>}
  */
 export const getMatchedHospital = async (ambulanceId) => {
   try {
-    console.log('[API] 🏥 매칭된 병원 정보 조회 시작');
+    console.log('[API] 🏥 매칭된 병원 정보 조회 시작 (좌표 자동 조회 포함)');
     console.log('[API] 🏥 ambulanceId:', ambulanceId);
     
     // 🔥 백엔드 스펙: GET /api/v1/match/{uid}
@@ -317,6 +475,37 @@ export const getMatchedHospital = async (ambulanceId) => {
     
     console.log('[API] 🏥 매칭된 병원 정보 조회 성공! 🎉');
     console.log('[API] 🏥 매칭된 병원 (MatchResponse):', response.data);
+    
+    // 🔥 매칭 결과에 좌표가 없으면 별도 조회
+    if (response.data && !response.data.latitude && response.data.hospitalId) {
+      console.log('[API] 🏥 기존 매칭 병원 좌표 별도 조회...');
+      
+      try {
+        const locationInfo = await getHospitalLocationByUserId(response.data.hospitalId);
+        
+        const enhancedResult = {
+          ...response.data,
+          latitude: locationInfo.latitude,
+          longitude: locationInfo.longitude
+        };
+        
+        console.log('[API] 🏥 매칭된 병원 조회 결과 (실제 좌표 포함):', enhancedResult);
+        console.log(`📍 [API] 기존 매칭된 병원 실제 위치: ${locationInfo.latitude.toFixed(6)}, ${locationInfo.longitude.toFixed(6)}`);
+        
+        return enhancedResult;
+        
+      } catch (locationError) {
+        console.error('[API] 🏥 기존 매칭 병원 좌표 조회 실패:', locationError);
+        console.warn('[API] 🏥 좌표 조회 실패해도 기본 매칭 결과는 반환합니다.');
+        
+        return response.data;
+      }
+    }
+    
+    // 🔥 매칭 결과에 이미 좌표가 있으면 그대로 반환
+    if (response.data?.latitude && response.data?.longitude) {
+      console.log(`📍 [API] 기존 매칭 결과에 좌표 이미 포함됨: ${response.data.latitude.toFixed(6)}, ${response.data.longitude.toFixed(6)}`);
+    }
     
     return response.data;
   } catch (error) {
@@ -534,7 +723,7 @@ export const removeFromWaitingList = async (hospitalId, sessionId) => {
 // 🔥 디버깅용 함수 - 현실적인 버전
 
 /**
- * API 클라이언트 상태 확인용 함수
+ * API 클라이언트 상태 확인용 함수 (병원 좌표 조회 기능 포함)
  */
 export const debugApiClient = () => {
   const directToken = localStorage.getItem('accessToken');
@@ -550,7 +739,7 @@ export const debugApiClient = () => {
     console.error('persist 저장소 파싱 실패:', error);
   }
   
-  console.log('=== API 클라이언트 디버깅 정보 (병원 매칭 포함) ===');
+  console.log('=== API 클라이언트 디버깅 정보 (병원 좌표 조회 포함) ===');
   console.log('API_BASE_URL:', API_BASE_URL);
   console.log('직접 저장된 토큰 존재:', !!directToken);
   console.log('persist 저장소 토큰 존재:', !!persistToken);
@@ -568,24 +757,31 @@ export const debugApiClient = () => {
   console.log(' ✅ updateHospitalDepartment');
   console.log(' ✅ 화상 통화 관련 API들...');
   
-  console.log('🏥 새로 추가된 병원 자동 매칭 API들:');
-  console.log(' ✅ requestHospitalMatching (PATCH /api/v1/match/{uid})');
-  console.log(' ✅ getMatchedHospital (GET /api/v1/match/{uid})');
+  console.log('🏥 병원 자동 매칭 API들 (좌표 자동 조회 포함):');
+  console.log(' ✅ requestHospitalMatching (PATCH /api/v1/match/{uid}) - 좌표 자동 조회');
+  console.log(' ✅ getMatchedHospital (GET /api/v1/match/{uid}) - 좌표 자동 조회');
+  
+  console.log('📍 새로 추가된 병원 좌표 조회 API들:');
+  console.log(' ✅ getCurrentHospitalLocation (GET /api/v1/hospital/location)');
+  console.log(' ✅ getHospitalLocationByUserId (GET /api/v1/hospital/location/{userId})');
+  console.log(' ✅ 응답: { latitude: number, longitude: number } (HospitalLocationResponseDto)');
   
   console.log('🚫 제거된 백엔드에 없는 가상 API들:');
   console.log(' ❌ sendLocationUpdate (백엔드에 없음)');
   console.log(' ❌ getAmbulanceStatus (백엔드에 없음)');
   console.log(' ❌ getNearbyHospitals (백엔드에 없음)');
   
-  console.log('💡 병원 자동 매칭 사용법:');
+  console.log('💡 병원 자동 매칭 + 좌표 조회 사용법:');
   console.log(' 🏥 requestHospitalMatching({ ambulanceId, latitude, longitude })');
-  console.log(' 🏥 getMatchedHospital(ambulanceId)');
-  console.log(' 🏥 응답: { hospitalId, name, address }');
+  console.log(' 🏥 → 매칭 결과에 좌표 없으면 자동으로 getHospitalLocationByUserId() 호출');
+  console.log(' 🏥 → 최종 응답: { hospitalId, name, address, latitude, longitude }');
+  console.log(' 🏥 getMatchedHospital(ambulanceId) → 동일한 방식으로 좌표 자동 조회');
   
   console.log('📍 위치 정보 전송 방법:');
   console.log(' 📍 구급차 대시보드 지도에서 getCurrentPosition() 사용');
   console.log(' 📍 환자 정보 저장시 위치 정보를 함께 포함해서 전송');
   console.log(' 📍 병원 매칭시 위치 정보를 requestHospitalMatching()에 전달');
+  console.log(' 📍 매칭된 병원의 실제 좌표 자동 조회 → 지도에 정확한 위치 표시');
   console.log('===============================================');
   
   return {
@@ -602,12 +798,12 @@ if (import.meta.env.DEV) {
   console.log('[API] 개발 모드: window.debugApiClient() 함수 사용 가능');
 }
 
-// 🔥 모듈 로드 시점 로그 - 병원 매칭 포함 버전
+// 🔥 모듈 로드 시점 로그 - 병원 좌표 조회 포함 버전
 (() => {
   const authStorage = localStorage.getItem('auth-storage');
   const directToken = localStorage.getItem('accessToken');
   
-  console.log('[API] 모듈 로드 시점 (병원 자동 매칭 포함 버전):');
+  console.log('[API] 모듈 로드 시점 (병원 좌표 조회 기능 포함 버전):');
   console.log('- persist 저장소 존재:', !!authStorage);
   console.log('- 직접 토큰 존재:', !!directToken);
   
@@ -621,6 +817,8 @@ if (import.meta.env.DEV) {
   }
   
   console.log('[API] 📍 위치 정보는 기존 환자 정보 API에 포함해서 전송됩니다');
-  console.log('[API] 🏥 병원 자동 매칭 API 2개 추가됨');
+  console.log('[API] 🏥 병원 자동 매칭 API 2개 + 좌표 자동 조회 기능 추가됨');
+  console.log('[API] 📍 병원 좌표 조회 API 2개 추가됨 (HospitalLocationResponseDto 활용)');
   console.log('[API] 🚫 백엔드에 없는 가상 API들 모두 제거됨');
+  console.log('[API] ✅ 이제 지도에서 병원 실제 위치가 정확히 표시될 예정!');
 })();
