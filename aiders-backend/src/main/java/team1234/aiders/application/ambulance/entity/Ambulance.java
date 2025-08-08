@@ -74,15 +74,9 @@ public class Ambulance extends User {
         this.firestation = firestation;
     }
 
-    public void setHospital(Hospital hospital) {
+    public void setMatchedHospital(Hospital hospital, String name, String address) {
         this.hospital = hospital;
-    }
-
-    public void setHospitalName(String name) {
         this.hospitalName = name;
-    }
-
-    public void setHospitalAddress(String address) {
         this.hospitalAddress = address;
     }
 
@@ -116,6 +110,10 @@ public class Ambulance extends User {
     public void changeStatus(AmbCurrentStatus status) {
         this.currentStatus = status;
     }
+
+    public void dispatchStart() { this.dispatchTime = LocalDateTime.now(); }
+
+    public void transferStart() { this.transferStartTime = LocalDateTime.now(); }
 
     public void transferComplete() {
         this.transferEndTime = LocalDateTime.now();
