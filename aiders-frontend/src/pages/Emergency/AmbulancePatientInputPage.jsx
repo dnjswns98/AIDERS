@@ -486,7 +486,7 @@ export default function AmbulancePatientInputPage() {
   return (
     <AmbulanceLayout ref={mainContentRef}>
       <div className="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto relative">
-        <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 rounded-r-lg">
+        {/* <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 rounded-r-lg">
           <div className="text-xs font-mono space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-bold text-gray-700">🚑 구급차 정보 (필기 인식 통합 버전)</span>
@@ -561,7 +561,7 @@ export default function AmbulancePatientInputPage() {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         <h1 className="text-2xl font-bold mb-6 text-gray-800">
           {isEditMode ? "환자 상세 정보 수정" : "환자 필수 정보 입력"}

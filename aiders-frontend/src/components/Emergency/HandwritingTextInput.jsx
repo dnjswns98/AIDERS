@@ -508,7 +508,7 @@ const HandwritingTextInput = ({
                 </div>
             )}
 
-            {process.env.NODE_ENV === 'development' && (
+            {/* {process.env.NODE_ENV === 'development' && (
                 <details className="text-xs bg-gray-100 rounded p-2">
                     <summary className="cursor-pointer font-medium">
                         **🔧 디버깅 정보 (globalModelManager 수정 버전):**
@@ -537,7 +537,7 @@ const HandwritingTextInput = ({
                         )}
                     </div>
                 </details>
-            )}
+            )} */}
         </div>
     );
 };
