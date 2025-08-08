@@ -5,7 +5,7 @@ import { createAmbulanceToken, getHospitalToken } from "../api/api";
 
 export const useOpenVidu = ({
   sessionId,
-  ambulanceId,
+  ambulanceNumber,
   hospitalId,
   ktas,
   patientName,
@@ -29,14 +29,13 @@ export const useOpenVidu = ({
     console.log("[getToken] 토큰 발급 시작");
     try {
       const isValidAmbulanceId =
-        (typeof ambulanceId === "string" && ambulanceId.trim() !== "") ||
-        (typeof ambulanceId === "number" && ambulanceId >= 0);
+        (typeof ambulanceNumber === "string" && ambulanceNumber.trim() !== "");
 
       if (isValidAmbulanceId) {
         console.log("[getToken] 앰뷸런스 토큰 요청");
         const response = await createAmbulanceToken({
           sessionId,
-          ambulanceId,
+          ambulanceNumber,
           hospitalId,
           ktas,
           patientName,
@@ -62,7 +61,7 @@ export const useOpenVidu = ({
       console.error("[getToken] 토큰 발급 에러:", error);
       throw error;
     }
-  }, [sessionId, ambulanceId, hospitalId, ktas, patientName]);
+  }, [sessionId, ambulanceNumber, hospitalId, ktas, patientName]);
 
   // 세션 컨텍스트 생성
   const createSessionContext = useCallback(() => {
@@ -298,7 +297,7 @@ export const useOpenVidu = ({
 
       console.log("[joinSession] 세션 연결 시도");
       await sessionContext.session.connect(token, { 
-        clientData: `${ambulanceId || hospitalId || ""}` 
+        clientData: `${ambulanceNumber || hospitalId || ""}` 
       });
 
       if (!sessionContext.isActive) {
@@ -361,7 +360,7 @@ export const useOpenVidu = ({
     startCall,
     endCall,
     handleError,
-    ambulanceId,
+    ambulanceNumber,
     hospitalId,
   ]);
 

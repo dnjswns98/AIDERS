@@ -7,13 +7,13 @@ import { useFullScreen } from "../../hooks/useFullScreen";
 import VideoDisplay from "./VideoDisplay";
 import CallControls from "./CallControls";
 
-export default function WebRtcCall({ sessionId, ambulanceId, hospitalId, patientName, ktas, onLeave }) {
+export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, patientName, ktas, onLeave }) {
   const { togglePipMode } = useWebRtc();
   const location = useLocation();
   
   console.log('[WebRtcCall] 전달받은 props:', {
     sessionId,
-    ambulanceId,
+    ambulanceNumber,
     hospitalId,
     patientName,
     ktas
@@ -22,7 +22,7 @@ export default function WebRtcCall({ sessionId, ambulanceId, hospitalId, patient
   // 커스텀 훅들로 로직 완전 분리
   const { joinSession, leaveSession } = useOpenVidu({ 
     sessionId, 
-    ambulanceId,
+    ambulanceNumber,
     hospitalId, // hospitalId 전달 추가
     ktas, // KTAS 정보 전달
     patientName, // 환자명 전달
@@ -43,7 +43,7 @@ export default function WebRtcCall({ sessionId, ambulanceId, hospitalId, patient
   useEffect(() => {
     console.log('[WebRtcCall] 세션 참가 시작:', {
       sessionId,
-      ambulanceId,
+      ambulanceNumber,
       hospitalId,
       patientName,
       ktas

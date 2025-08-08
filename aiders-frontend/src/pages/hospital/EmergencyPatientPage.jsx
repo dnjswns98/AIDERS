@@ -129,7 +129,7 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
                     fontSize: "14px",
                   }}
                 >
-                  구급차 ID: {ambulance.ambulanceId}
+                  구급차 : {ambulance.ambulanceNumber}
                 </span>
                 <div
                   style={{

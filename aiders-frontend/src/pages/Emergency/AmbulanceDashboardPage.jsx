@@ -701,7 +701,7 @@ export default function AmbulanceDashboardPage() {
               {isCalling ? (
                 <WebRtcCall
                   sessionId={currentAmbulanceId}
-                  ambulanceId={currentAmbulanceId}
+                  ambulanceNumber={currentUserKey}
                   onLeave={handleCallEnd}
                   patientName={patient.name || ""}
                   ktas={details.ktasLevel || ""}

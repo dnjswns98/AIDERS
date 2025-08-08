@@ -604,14 +604,14 @@ export const getWaitingAmbulances = async (hospitalId) => {
 
 /**
  * 구급차용 화상 세션 생성 및 토큰 발급
- * @param {Object} request - sessionId, ambulanceId, hospitalId, ktas, patientName 포함
+ * @param {Object} request - sessionId, ambulanceNumber, hospitalId, ktas, patientName 포함
  * @returns {Promise<{ token: string, sessionId: string }>}
  */
 export const createAmbulanceToken = async (request) => {
   try {
     const body = {
       sessionId: request.sessionId || '',
-      ambulanceId: Number(request.ambulanceId) || 0,
+      ambulanceNumber: request.ambulanceNumber || '',
       hospitalId: Number(request.hospitalId) || 0,
       ktas: Number(request.ktas) || 0,
       patientName: request.patientName || '',

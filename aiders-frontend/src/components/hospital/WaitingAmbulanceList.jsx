@@ -11,7 +11,7 @@ const WaitingAmbulanceList = ({ onStartCall }) => {
     if (onStartCall) {
       onStartCall({
         sessionId: ambulance.sessionId,
-        ambulanceId: ambulance.ambulanceId,
+        ambulanceNumber: ambulance.ambulanceNumber,
         hospitalId: user?.userId,
         patientName: ambulance.patientName,
         ktas: ambulance.ktas
@@ -50,7 +50,7 @@ const WaitingAmbulanceList = ({ onStartCall }) => {
             <div key={ambulance.sessionId} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1">
-                  <div className="font-semibold text-gray-800">구급차 ID: {ambulance.ambulanceId}</div>
+                  <div className="font-semibold text-gray-800">구급차 : {ambulance.ambulanceNumber}</div>
                   <div className="text-sm text-gray-600">
                     환자: {ambulance.patientName || <span className="text-gray-400">DB에서 조회 필요</span>}
                   </div>
