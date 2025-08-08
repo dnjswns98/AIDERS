@@ -12,7 +12,6 @@ export const useCRNNModel = () => {
       try {
         await initModel();
         setIsModelLoaded(true);
-        console.log('✅ [CRNN] 모델 로드 완료');
       } catch (error) {
         console.error('❌ [CRNN] 모델 로드 실패:', error);
       }

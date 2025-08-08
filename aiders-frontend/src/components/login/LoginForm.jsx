@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 import { usePasswordStore } from "../../store/usePasswordStore";
-import globalModelManager from "../../services/globalModelManager"; // 🔥 추가: 글로벌 모델 매니저
+import globalModelManager from "../../services/globalModelManager";
 import axios from "axios";
 import "./login.css";
 
@@ -24,10 +24,10 @@ export default function LoginForm() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // 🔥 AI 모델 로딩 관련 상태 추가
+  // AI 모델 로딩 관련 상태
   const [isAILoading, setIsAILoading] = useState(false);
   const [aiLoadProgress, setAILoadProgress] = useState(0);
-  const [aiLoadStep, setAILoadStep] = useState(''); // 현재 로딩 단계 표시
+  const [aiLoadStep, setAILoadStep] = useState('');
   const [aiLoadError, setAILoadError] = useState(null);
 
   const handleSubmit = async (e) => {
@@ -54,11 +54,9 @@ export default function LoginForm() {
 
       const { accessToken, refreshToken } = response.data;
 
-      // JWT 토큰에서 사용자 정보 추출
       const tokenPayload = JSON.parse(atob(accessToken.split(".")[1]));
       console.log('✅ [로그인] 인증 성공:', { role: tokenPayload.role, userKey: tokenPayload.userKey });
 
-      // 사용자 정보 구성
       const userInfo = {
         userKey: tokenPayload.userKey || username.trim(),
         userId: tokenPayload.sub,
@@ -67,47 +65,39 @@ export default function LoginForm() {
 
       const userType = tokenPayload.role.toLowerCase();
 
-      // 🔥 구급차 로그인 시 AI 모델 사전 로드
+      // 구급차 로그인 시 AI 모델 사전 로드
       if (userType === 'ambulance') {
         console.log('🤖 [로그인] 구급차 로그인 감지 - AI 모델 사전 로드 시작');
         setIsAILoading(true);
         setAILoadProgress(0);
-        setAILoadStep('모델 파일 확인 중...');
+        setAILoadStep('AI 모델 초기화 중...');
 
         try {
-          // 🔥 진행률 시뮬레이션 시작
           let currentProgress = 0;
           const progressInterval = setInterval(() => {
-            if (currentProgress < 85) {
-              currentProgress += Math.random() * 12;
-              setAILoadProgress(Math.round(currentProgress));
+            if (currentProgress < 95) {
+              currentProgress += Math.random() * 10;
+              setAILoadProgress(Math.min(95, Math.round(currentProgress)));
             }
-          }, 200);
+          }, 300);
 
-          // 🔥 실제 AI 모델 로드 단계별 진행
-          setAILoadStep('네트워크에서 모델 다운로드 중...');
-          console.log('📥 [로그인] AI 모델 다운로드 및 로컬스토리지 저장 시작');
+          await globalModelManager.initialize();
           
-          await globalModelManager.preloadModelToLocalStorage();
-          
-          // 진행률 완료
           clearInterval(progressInterval);
           setAILoadProgress(100);
           setAILoadStep('AI 모델 로드 완료!');
           
           console.log('🎉 [로그인] AI 모델 사전 로드 성공');
           
-          // 잠시 완료 메시지 표시
           await new Promise(resolve => setTimeout(resolve, 800));
           
         } catch (aiError) {
           console.error('❌ [로그인] AI 모델 로드 실패:', aiError);
-          setAILoadError(aiError.message);
+          setAILoadError(aiError.toString());
           setAILoadStep('AI 모델 로드 실패');
           
-          // 에러가 발생해도 로그인은 계속 진행 (AI 모델은 선택사항)
           const shouldContinue = confirm(
-            `AI 모델 로드에 실패했습니다: ${aiError.message}\n\n계속해서 로그인하시겠습니까? (필기 인식 기능은 나중에 자동으로 다운로드됩니다)`
+            `AI 모델 로드에 실패했습니다: ${aiError}\n\n계속해서 로그인하시겠습니까? (필기 인식 기능은 나중에 자동으로 다운로드됩니다)`
           );
           
           if (!shouldContinue) {
@@ -120,7 +110,6 @@ export default function LoginForm() {
         }
       }
 
-      // 🔥 인증 정보 저장
       login({
         user: userInfo,
         accessToken: accessToken,
@@ -128,7 +117,6 @@ export default function LoginForm() {
         userType: userType,
       });
 
-      // 역할에 따른 자동 라우팅
       const routeMap = {
         admin: "/admin",
         hospital: "/hospital", 
@@ -138,7 +126,6 @@ export default function LoginForm() {
 
       console.log(`🚀 [로그인] ${userType} 사용자 → ${routeMap[userType]} 라우팅`);
       
-      // 🔥 구급차의 경우 AI 모델 로드 완료 후 이동
       if (userType === 'ambulance') {
         setAILoadStep('응급환자 입력 페이지로 이동 중...');
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -148,17 +135,13 @@ export default function LoginForm() {
       
     } catch (error) {
       console.error("❌ [로그인] 인증 실패:", error);
-      console.error("에러 상세:", error.response?.data);
       
-      // 구체적인 에러 메시지 제공
       let errorMessage = "아이디 또는 비밀번호가 올바르지 않습니다.";
-      
-      if (error.response?.status === 401) {
-        errorMessage = "아이디 또는 비밀번호가 올바르지 않습니다.";
-      } else if (error.response?.status === 403) {
-        errorMessage = "접근 권한이 없습니다.";
-      } else if (error.response?.status >= 500) {
-        errorMessage = "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+      if (error.response) {
+        console.error("에러 상세:", error.response.data);
+        if (error.response.status === 401) errorMessage = "아이디 또는 비밀번호가 올바르지 않습니다.";
+        else if (error.response.status === 403) errorMessage = "접근 권한이 없습니다.";
+        else if (error.response.status >= 500) errorMessage = "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
       } else if (error.code === 'NETWORK_ERROR') {
         errorMessage = "네트워크 연결을 확인해주세요.";
       }
@@ -172,17 +155,13 @@ export default function LoginForm() {
     }
   };
 
-  // 비밀번호 재설정 인증
   const handlePasswordResetAuth = async (e) => {
     e.preventDefault();
-    
     if (!resetUserKey || !resetKey) {
       alert("사용자 키와 패스키를 모두 입력해주세요.");
       return;
     }
-
     const result = await authenticateForPasswordReset(resetUserKey, resetKey);
-    
     if (result.success) {
       setResetToken(result.resetToken);
       setResetStep(2);
@@ -192,27 +171,21 @@ export default function LoginForm() {
     }
   };
 
-  // 비밀번호 변경
   const handlePasswordChange = async (e) => {
     e.preventDefault();
-    
     if (!newPassword || !confirmPassword) {
       alert("새 비밀번호를 모두 입력해주세요.");
       return;
     }
-
     if (newPassword !== confirmPassword) {
       alert("새 비밀번호가 일치하지 않습니다.");
       return;
     }
-
     if (newPassword.length < 4) {
       alert("비밀번호는 4자리 이상이어야 합니다.");
       return;
     }
-
     const result = await changePassword(resetToken, newPassword);
-    
     if (result.success) {
       alert("비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 로그인해주세요.");
       handleResetCancel();
@@ -221,7 +194,6 @@ export default function LoginForm() {
     }
   };
 
-  // 비밀번호 재설정 취소
   const handleResetCancel = () => {
     setShowPasswordReset(false);
     setResetStep(1);
@@ -235,15 +207,12 @@ export default function LoginForm() {
   return (
     <div className="login-container">
       <div className="login-card">
-        {/* 로고 영역 */}
         <div className="login-logo-area">
           <div className="login-logo-icon">🚑</div>
           <h1 className="login-title">AIDERS 로그인</h1>
           <p className="login-subtitle">응급의료 통합 관리 시스템</p>
         </div>
-
         <form onSubmit={handleSubmit}>
-          {/* 아이디 입력 */}
           <div className="login-input-group">
             <input
               type="text"
@@ -255,8 +224,6 @@ export default function LoginForm() {
               disabled={loading || isAILoading}
             />
           </div>
-
-          {/* 비밀번호 입력 */}
           <div className="login-input-group">
             <input
               type="password"
@@ -268,8 +235,6 @@ export default function LoginForm() {
               disabled={loading || isAILoading}
             />
           </div>
-
-          {/* 로그인 버튼 */}
           <div className="login-button-group">
             <button 
               type="submit" 
@@ -280,8 +245,6 @@ export default function LoginForm() {
             </button>
           </div>
         </form>
-
-        {/* 🔥 AI 모델 로딩 진행률 표시 */}
         {isAILoading && (
           <div className="ai-loading-container">
             <div className="ai-loading-content">
@@ -289,11 +252,9 @@ export default function LoginForm() {
                 <div className="ai-loading-icon">🤖</div>
                 <h3 className="ai-loading-title">AI 모델 준비 중</h3>
               </div>
-              
               <p className="ai-loading-description">
                 필기 인식 AI 모델을 다운로드하고 있습니다...
               </p>
-              
               <div className="ai-progress-container">
                 <div className="ai-progress-bar">
                   <div 
@@ -308,26 +269,21 @@ export default function LoginForm() {
                   <span className="ai-progress-percentage">{aiLoadProgress}%</span>
                 </div>
               </div>
-              
               <p className="ai-loading-step">
                 {aiLoadStep}
               </p>
-              
               {aiLoadError && (
                 <div className="ai-loading-error">
                   <span className="ai-error-icon">⚠️</span>
                   <span className="ai-error-text">{aiLoadError}</span>
                 </div>
               )}
-              
               <p className="ai-loading-notice">
                 ✨ 이 작업은 최초 1회만 수행되며, 다음부터는 즉시 사용할 수 있습니다
               </p>
             </div>
           </div>
         )}
-
-        {/* 테스트 계정 정보 */}
         <div className="login-test-account-info">
           <div className="login-test-account-title">테스트 계정</div>
           <div className="login-test-account-details">
@@ -340,8 +296,6 @@ export default function LoginForm() {
             </div>
           </div>
         </div>
-
-        {/* 비밀번호 재설정 링크 */}
         <div className="login-signup-link-container">
           <button 
             type="button"
@@ -352,50 +306,25 @@ export default function LoginForm() {
             비밀번호를 잊으셨나요?
           </button>
         </div>
-
-        {/* 비밀번호 재설정 모달 */}
         {showPasswordReset && !isAILoading && (
           <div className="password-reset-modal">
             <div className="password-reset-content">
               <h2 className="password-reset-title">
                 {resetStep === 1 ? "비밀번호 재설정 인증" : "새 비밀번호 설정"}
               </h2>
-              
               {resetStep === 1 ? (
                 <form onSubmit={handlePasswordResetAuth}>
                   <div className="login-input-group">
-                    <input
-                      type="text"
-                      value={resetUserKey}
-                      onChange={(e) => setResetUserKey(e.target.value)}
-                      placeholder="사용자 키 (User Key)"
-                      required
-                      className="login-input"
-                    />
+                    <input type="text" value={resetUserKey} onChange={(e) => setResetUserKey(e.target.value)} placeholder="사용자 키 (User Key)" required className="login-input" />
                   </div>
                   <div className="login-input-group">
-                    <input
-                      type="text"
-                      value={resetKey}
-                      onChange={(e) => setResetKey(e.target.value)}
-                      placeholder="패스키 (Password Reset Key)"
-                      required
-                      className="login-input"
-                    />
+                    <input type="text" value={resetKey} onChange={(e) => setResetKey(e.target.value)} placeholder="패스키 (Password Reset Key)" required className="login-input" />
                   </div>
                   <div className="password-reset-buttons">
-                    <button 
-                      type="submit" 
-                      className="login-button"
-                      disabled={passwordLoading}
-                    >
+                    <button type="submit" className="login-button" disabled={passwordLoading}>
                       {passwordLoading ? "인증 중..." : "인증하기"}
                     </button>
-                    <button 
-                      type="button" 
-                      className="cancel-button"
-                      onClick={handleResetCancel}
-                    >
+                    <button type="button" className="cancel-button" onClick={handleResetCancel}>
                       취소
                     </button>
                   </div>
@@ -403,38 +332,16 @@ export default function LoginForm() {
               ) : (
                 <form onSubmit={handlePasswordChange}>
                   <div className="login-input-group">
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="새 비밀번호"
-                      required
-                      className="login-input"
-                    />
+                    <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="새 비밀번호" required className="login-input" />
                   </div>
                   <div className="login-input-group">
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="새 비밀번호 확인"
-                      required
-                      className="login-input"
-                    />
+                    <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="새 비밀번호 확인" required className="login-input" />
                   </div>
                   <div className="password-reset-buttons">
-                    <button 
-                      type="submit" 
-                      className="login-button"
-                      disabled={passwordLoading}
-                    >
+                    <button type="submit" className="login-button" disabled={passwordLoading}>
                       {passwordLoading ? "변경 중..." : "비밀번호 변경"}
                     </button>
-                    <button 
-                      type="button" 
-                      className="cancel-button"
-                      onClick={handleResetCancel}
-                    >
+                    <button type="button" className="cancel-button" onClick={handleResetCancel}>
                       취소
                     </button>
                   </div>
