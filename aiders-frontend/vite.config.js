@@ -17,20 +17,21 @@ export default defineConfig({
       'i13d107.p.ssafy.io',
     ],
 
-    // 🔥 더 직접적인 WASM 파일 처리
     middlewareMode: false,
     fs: {
-      strict: false // WASM 파일 접근 허용
+      strict: false
     },
 
-    // 🔥 미들웨어 방식 개선
-    configure(server) {
+    configureServer(server) {
+      console.log('🔧 [Vite] WASM/ONNX 파일 서빙 미들웨어 활성화');
+      
       server.middlewares.use((req, res, next) => {
         // WASM 파일 요청 감지
         if (req.url && req.url.includes('.wasm')) {
           console.log('🔧 [WASM] 요청 감지:', req.url);
           res.setHeader('Content-Type', 'application/wasm');
           res.setHeader('Cache-Control', 'no-cache');
+          res.setHeader('Access-Control-Allow-Origin', '*');
         }
         
         // ONNX 파일 요청 감지
@@ -38,20 +39,24 @@ export default defineConfig({
           console.log('🔧 [ONNX] 요청 감지:', req.url);
           res.setHeader('Content-Type', 'application/octet-stream');
           res.setHeader('Cache-Control', 'no-cache');
+          res.setHeader('Access-Control-Allow-Origin', '*');
         }
         
         next();
       });
     },
 
-    // 🔥 CORS 및 헤더 설정
     cors: true,
+    
+    // 🔥 COEP 정책 완화 (Kakao Map과 호환)
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
+      // 🔥 COEP를 credentialless로 변경 (더 관대한 정책)
+      'Cross-Origin-Embedder-Policy': 'credentialless',
+      // 또는 아예 제거하고 필요할 때만 적용:
+      // 'Cross-Origin-Embedder-Policy': 'unsafe-none'
     }
   },
 
-  // 🔥 개발 시 정적 파일 처리 강화
   publicDir: 'public'
 })
