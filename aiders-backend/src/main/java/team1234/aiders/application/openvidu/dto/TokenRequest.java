@@ -8,7 +8,7 @@ import lombok.Data;
 @Data
 public class TokenRequest {
     private String sessionId;
-    private Long ambulanceId;
+    private String ambulanceNumber;
     private Long hospitalId;
     private Integer ktas;
     private String patientName;

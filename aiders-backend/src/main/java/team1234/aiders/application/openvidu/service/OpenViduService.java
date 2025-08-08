@@ -52,7 +52,7 @@ public class OpenViduService {
             // Redis 등록
             VideoSessionInfo sessionInfo = VideoSessionInfo.builder()
                     .sessionId(request.getSessionId())
-                    .ambulanceId(request.getAmbulanceId())
+                    .ambulanceNumber(request.getAmbulanceNumber())
                     .hospitalId(request.getHospitalId())
                     .ktas(request.getKtas())
                     .patientName(request.getPatientName())
