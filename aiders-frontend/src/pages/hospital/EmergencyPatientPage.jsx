@@ -11,15 +11,12 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
   const { ambulances, isLoading, error, fetchWaitingAmbulances } =
     useWaitingAmbulanceStore();
 
-  // 컴포넌트 마운트 시 대기 중인 구급차 데이터 로드
   const { user } = useAuthStore();
 
   useEffect(() => {
     if (user?.userId) {
-      console.log("[AmbulanceList] Fetching for hospital:", user.userId);
       fetchWaitingAmbulances(user.userId);
 
-      // 30초마다 목록을 새로고침
       const intervalId = setInterval(
         () => fetchWaitingAmbulances(user.userId),
         30000
@@ -310,7 +307,6 @@ const VideoCallTab = ({
         padding: "20px",
       }}
     >
-      {/* 메인 화상통화 영역 */}
       <div
         style={{
           flex: 2,
@@ -344,7 +340,6 @@ const VideoCallTab = ({
           </h3>
         </div>
 
-        {/* VideoCallManager - 실제 WebRTC 연결 */}
         <div style={{ flex: 1 }}>
           <VideoCallManager
             selectedAmbulance={selectedAmbulance}
@@ -355,7 +350,6 @@ const VideoCallTab = ({
         </div>
       </div>
 
-      {/* 사이드 정보 패널 */}
       <div
         style={{
           flex: 1,
@@ -364,7 +358,6 @@ const VideoCallTab = ({
           gap: "16px",
         }}
       >
-        {/* 환자 기본 정보 */}
         <div
           style={{
             backgroundColor: "white",
@@ -432,7 +425,6 @@ const VideoCallTab = ({
           </div>
         </div>
 
-        {/* 구급차 정보 */}
         <div
           style={{
             backgroundColor: "white",
@@ -480,7 +472,6 @@ const VideoCallTab = ({
           </div>
         </div>
 
-        {/* 실시간 메모 */}
         <div
           style={{
             backgroundColor: "white",
@@ -538,7 +529,6 @@ const DetailInfoTab = ({
         padding: "20px",
       }}
     >
-      {/* 좌측 - 환자 상세 정보 */}
       <div
         style={{
           flex: 2,
@@ -562,7 +552,6 @@ const DetailInfoTab = ({
           환자 상세 정보
         </h3>
 
-        {/* 기본 정보 */}
         <div style={{ marginBottom: "32px" }}>
           <h4
             style={{
@@ -656,7 +645,6 @@ const DetailInfoTab = ({
           </div>
         </div>
 
-        {/* 활력징후 */}
         <div style={{ marginBottom: "32px" }}>
           <h4
             style={{
@@ -763,7 +751,6 @@ const DetailInfoTab = ({
           </div>
         </div>
 
-        {/* 현병력 */}
         <div style={{ marginBottom: "32px" }}>
           <h4
             style={{
@@ -835,7 +822,6 @@ const DetailInfoTab = ({
           </div>
         </div>
 
-        {/* 과거력 */}
         <div style={{ marginBottom: "32px" }}>
           <h4
             style={{
@@ -914,7 +900,6 @@ const DetailInfoTab = ({
           </div>
         </div>
 
-        {/* 복용약물 */}
         <div style={{ marginBottom: "32px" }}>
           <h4
             style={{
@@ -944,7 +929,6 @@ const DetailInfoTab = ({
           </div>
         </div>
 
-        {/* 가족력 */}
         <div style={{ marginBottom: "32px" }}>
           <h4
             style={{
@@ -972,7 +956,6 @@ const DetailInfoTab = ({
           </div>
         </div>
 
-        {/* 이송 정보 */}
         <div>
           <h4
             style={{
@@ -1035,7 +1018,6 @@ const DetailInfoTab = ({
         </div>
       </div>
 
-      {/* 우측 - 처치 기록 및 화상통화 */}
       <div
         style={{
           flex: 1,
@@ -1044,7 +1026,6 @@ const DetailInfoTab = ({
           gap: "16px",
         }}
       >
-        {/* 축소된 화상통화 화면 */}
         <div
           style={{
             backgroundColor: "white",
@@ -1071,13 +1052,12 @@ const DetailInfoTab = ({
                 isCallActive ? currentCallAmbulance : selectedAmbulance
               }
               hospitalId={hospitalId}
-              onCallStatusChange={() => {}} // DetailInfoTab는 읽기 전용
+              onCallStatusChange={() => {}}
               renderMode="compact"
             />
           </div>
         </div>
 
-        {/* 처치 기록 */}
         <div
           style={{
             backgroundColor: "white",
@@ -1101,7 +1081,6 @@ const DetailInfoTab = ({
             응급처치 기록
           </h3>
 
-          {/* 타임라인 */}
           <div
             style={{
               display: "flex",
@@ -1180,7 +1159,6 @@ const DetailInfoTab = ({
             )}
           </div>
 
-          {/* 새 기록 추가 */}
           <div
             style={{
               marginTop: "24px",
@@ -1265,23 +1243,18 @@ export default function EmergencyPatientPage() {
   };
 
   const handleStartCall = async (ambulance) => {
-    console.log('[EmergencyPatient] WebRTC 통화 시작:', ambulance);
     
     try {
-      // 1. PUT /api/v1/video-call/start-call 호출로 상태를 통화중으로 변경
       await startVideoCall({
         sessionId: ambulance.sessionId || ambulance.ambulanceId,
-        hospitalId: parseInt(user?.userId) // Long 타입으로 전달
+        hospitalId: parseInt(user?.userId)
       });
-      console.log('[EmergencyPatient] 통화 상태 변경 성공');
       
-      // 2. 로컬 상태 업데이트
       setWebRtcSessionId(ambulance.sessionId || ambulance.ambulanceId);
       setIsCallActive(true);
       setCurrentCallAmbulance(ambulance);
       selectAmbulance(ambulance);
       
-      // 3. 구급차 목록 새로고침
       const { fetchWaitingAmbulances } = useWaitingAmbulanceStore.getState();
       if (user?.userId) {
         fetchWaitingAmbulances(user.userId);
@@ -1293,29 +1266,22 @@ export default function EmergencyPatientPage() {
   };
 
   const handleEndCall = async () => {
-    console.log('[EmergencyPatient] WebRTC 통화 종료');
     
     try {
-      // 통화 중인 구급차가 있을 때만 삭제 처리
       if (currentCallAmbulance && user?.userId) {
         const sessionId = webRtcSessionId || currentCallAmbulance.sessionId || currentCallAmbulance.ambulanceId;
         
-        // 1. DELETE /api/v1/redis/waiting/{hospitalId}/{sessionId} 호출로 대기목록에서 삭제
         await removeFromWaitingList(user.userId, sessionId);
-        console.log('[EmergencyPatient] 대기목록에서 구급차 삭제 성공');
         
-        // 2. 구급차 목록 새로고침
         const { fetchWaitingAmbulances } = useWaitingAmbulanceStore.getState();
         fetchWaitingAmbulances(user.userId);
       }
       
-      // 3. 로컬 상태 초기화
       setWebRtcSessionId(null);
       setIsCallActive(false);
       setCurrentCallAmbulance(null);
     } catch (error) {
       console.error('[EmergencyPatient] 통화 종료 처리 실패:', error);
-      // 에러가 발생해도 로컬 상태는 초기화
       setWebRtcSessionId(null);
       setIsCallActive(false);
       setCurrentCallAmbulance(null);
@@ -1323,7 +1289,6 @@ export default function EmergencyPatientPage() {
     }
   };
 
-  // 페이지 마운트 시 병원 구급차 데이터 로드
   useEffect(() => {
     const { fetchAmbulances } = useEmergencyStore.getState();
     fetchAmbulances();
@@ -1341,14 +1306,12 @@ export default function EmergencyPatientPage() {
           display: "flex",
         }}
       >
-        {/* 왼쪽 구급차 목록 */}
         <AmbulanceList
           selectedAmbulance={selectedAmbulance}
           onSelectAmbulance={selectAmbulance}
           onStartCall={handleStartCall}
         />
 
-        {/* 오른쪽 메인 콘텐츠 */}
         <div
           style={{
             flex: 1,
@@ -1356,7 +1319,6 @@ export default function EmergencyPatientPage() {
             flexDirection: "column",
           }}
         >
-          {/* 페이지 제목 */}
           <div
             style={{
               padding: "24px 24px 0 24px",
@@ -1383,7 +1345,6 @@ export default function EmergencyPatientPage() {
             </p>
           </div>
 
-          {/* 탭 네비게이션 */}
           <div
             style={{
               borderBottom: "2px solid #e5e7eb",
@@ -1439,7 +1400,6 @@ export default function EmergencyPatientPage() {
             </div>
           </div>
 
-          {/* 탭 콘텐츠 */}
           {activeTab === "video" && (
             <div
               style={{
@@ -1449,7 +1409,6 @@ export default function EmergencyPatientPage() {
                 padding: "20px",
               }}
             >
-              {/* 메인 화상통화 영역 */}
               <div
                 style={{
                   flex: 2,
@@ -1505,7 +1464,6 @@ export default function EmergencyPatientPage() {
                   )}
                 </div>
 
-                {/* WebRTC 화상통화 */}
                 <div style={{ flex: 1 }}>
                   {isCallActive && webRtcSessionId ? (
                     <WebRtcCall
@@ -1546,7 +1504,6 @@ export default function EmergencyPatientPage() {
                 </div>
               </div>
 
-              {/* 사이드 정보 패널 */}
               <div
                 style={{
                   flex: 1,
@@ -1555,7 +1512,6 @@ export default function EmergencyPatientPage() {
                   gap: "16px",
                 }}
               >
-                {/* 환자 기본 정보 */}
                 <div
                   style={{
                     backgroundColor: "white",
@@ -1628,7 +1584,6 @@ export default function EmergencyPatientPage() {
                   </div>
                 </div>
 
-                {/* 구급차 정보 */}
                 <div
                   style={{
                     backgroundColor: "white",
@@ -1677,7 +1632,6 @@ export default function EmergencyPatientPage() {
                   </div>
                 </div>
 
-                {/* 실시간 메모 */}
                 <div
                   style={{
                     backgroundColor: "white",

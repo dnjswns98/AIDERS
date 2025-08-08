@@ -15,7 +15,6 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   
-  // 비밀번호 재설정 관련 상태
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [resetStep, setResetStep] = useState(1);
   const [resetUserKey, setResetUserKey] = useState("");
@@ -24,7 +23,6 @@ export default function LoginForm() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // AI 모델 로딩 관련 상태
   const [isAILoading, setIsAILoading] = useState(false);
   const [aiLoadProgress, setAILoadProgress] = useState(0);
   const [aiLoadStep, setAILoadStep] = useState('');
@@ -42,8 +40,6 @@ export default function LoginForm() {
     setAILoadError(null);
 
     try {
-      console.log('🚑 [로그인] 인증 시작:', { userKey: username.trim() });
-      
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/login`,
         {
@@ -55,7 +51,6 @@ export default function LoginForm() {
       const { accessToken, refreshToken } = response.data;
 
       const tokenPayload = JSON.parse(atob(accessToken.split(".")[1]));
-      console.log('✅ [로그인] 인증 성공:', { role: tokenPayload.role, userKey: tokenPayload.userKey });
 
       const userInfo = {
         userKey: tokenPayload.userKey || username.trim(),
@@ -65,9 +60,7 @@ export default function LoginForm() {
 
       const userType = tokenPayload.role.toLowerCase();
 
-      // 구급차 로그인 시 AI 모델 사전 로드
       if (userType === 'ambulance') {
-        console.log('🤖 [로그인] 구급차 로그인 감지 - AI 모델 사전 로드 시작');
         setIsAILoading(true);
         setAILoadProgress(0);
         setAILoadStep('AI 모델 초기화 중...');
@@ -87,8 +80,6 @@ export default function LoginForm() {
           setAILoadProgress(100);
           setAILoadStep('AI 모델 로드 완료!');
           
-          console.log('🎉 [로그인] AI 모델 사전 로드 성공');
-          
           await new Promise(resolve => setTimeout(resolve, 800));
           
         } catch (aiError) {
@@ -105,8 +96,6 @@ export default function LoginForm() {
             setIsAILoading(false);
             return;
           }
-          
-          console.log('⚠️ [로그인] AI 모델 로드 실패했지만 로그인 계속 진행');
         }
       }
 
@@ -124,8 +113,6 @@ export default function LoginForm() {
         firestation: "/firestation",
       };
 
-      console.log(`🚀 [로그인] ${userType} 사용자 → ${routeMap[userType]} 라우팅`);
-      
       if (userType === 'ambulance') {
         setAILoadStep('응급환자 입력 페이지로 이동 중...');
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -138,7 +125,6 @@ export default function LoginForm() {
       
       let errorMessage = "아이디 또는 비밀번호가 올바르지 않습니다.";
       if (error.response) {
-        console.error("에러 상세:", error.response.data);
         if (error.response.status === 401) errorMessage = "아이디 또는 비밀번호가 올바르지 않습니다.";
         else if (error.response.status === 403) errorMessage = "접근 권한이 없습니다.";
         else if (error.response.status >= 500) errorMessage = "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
@@ -259,7 +245,7 @@ export default function LoginForm() {
                 <div className="ai-progress-bar">
                   <div 
                     className="ai-progress-fill"
-                    style={{ 
+                    style={{
                       width: `${aiLoadProgress}%`,
                       transition: 'width 0.3s ease-in-out'
                     }}

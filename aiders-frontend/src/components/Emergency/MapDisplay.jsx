@@ -30,7 +30,6 @@ const MapDisplay = ({
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
-      console.log("[MapDisplay] 구급차 지도 언마운트");
       isMountedRef.current = false;
     };
   }, []);
@@ -120,7 +119,6 @@ const MapDisplay = ({
   const stableAmbulanceCoords = useMemo(() => {
     if (!ambulanceLocation) return null;
     const coords = getCoordinates(ambulanceLocation);
-    console.log("[MapDisplay] 🚑 구급차 좌표 memoized:", coords);
     return coords;
   }, [
     ambulanceLocation?.latitude,
@@ -131,19 +129,12 @@ const MapDisplay = ({
   const stableHospitalCoords = useMemo(() => {
     if (!hospital) return null;
     const coords = getCoordinates(hospital);
-    console.log(
-      "[MapDisplay] 🏥 병원 좌표 memoized:",
-      coords,
-      "from hospital:",
-      hospital.name
-    );
     return coords;
   }, [hospital?.latitude, hospital?.longitude, hospital?.id, getCoordinates]);
 
   // 🔥 좌표 품질 분석 (memoization)
   const ambulanceQuality = useMemo(() => {
     const quality = analyzeCoordinateQuality(ambulanceLocation, "구급차");
-    console.log("[MapDisplay] 🚑 구급차 품질 memoized:", quality);
     return quality;
   }, [
     ambulanceLocation?.latitude,
@@ -153,7 +144,6 @@ const MapDisplay = ({
 
   const hospitalQuality = useMemo(() => {
     const quality = analyzeCoordinateQuality(hospital, "병원");
-    console.log("[MapDisplay] 🏥 병원 품질 memoized:", quality);
     return quality;
   }, [
     hospital?.latitude,
@@ -224,10 +214,6 @@ const MapDisplay = ({
         }
       });
     };
-    console.log(
-      "🔧 [API키 확인] VITE_KAKAO_MAP_API_KEY:",
-      import.meta.env.VITE_KAKAO_MAP_API_KEY
-    );
     script.onerror = () => {
       if (isMountedRef.current) {
         setMapError("카카오 맵 스크립트 로딩 실패");
@@ -237,7 +223,6 @@ const MapDisplay = ({
     document.head.appendChild(script);
 
     return () => {
-      console.log("[MapDisplay] 스크립트 로딩 정리");
     };
   }, []);
 
@@ -246,12 +231,6 @@ const MapDisplay = ({
     if (!isMapReady || !mapRef.current) {
       return;
     }
-
-    console.log("[MapDisplay] 🗺️ 지도 초기화 시작 (안정화된 버전)");
-    console.log("[MapDisplay] 🚑 구급차 좌표:", stableAmbulanceCoords);
-    console.log("[MapDisplay] 🏥 병원 좌표:", stableHospitalCoords);
-    console.log("[MapDisplay] 🚑 구급차 품질:", ambulanceQuality);
-    console.log("[MapDisplay] 🏥 병원 품질:", hospitalQuality);
 
     const initializeMap = () => {
       try {
@@ -270,25 +249,16 @@ const MapDisplay = ({
             stableAmbulanceCoords.lat,
             stableAmbulanceCoords.lng
           );
-          console.log(
-            `[MapDisplay] 🚑 구급차 위치로 초기화 (${ambulanceQuality.quality}):`,
-            stableAmbulanceCoords
-          );
         } else if (stableHospitalCoords) {
           initialPosition = new window.kakao.maps.LatLng(
             stableHospitalCoords.lat,
             stableHospitalCoords.lng
-          );
-          console.log(
-            `[MapDisplay] 🏥 병원 위치로 초기화 (${hospitalQuality.quality}):`,
-            stableHospitalCoords
           );
         } else {
           initialPosition = new window.kakao.maps.LatLng(
             37.566826,
             126.9786567
           );
-          console.log("[MapDisplay] 🏢 기본 위치로 초기화 (서울시청)");
         }
 
         // 지도 생성
@@ -300,7 +270,6 @@ const MapDisplay = ({
 
         const map = new window.kakao.maps.Map(mapRef.current, mapOptions);
         mapInstance.current = map;
-        console.log("[MapDisplay] ✅ 지도 생성 완료");
 
         // 🔥 컨트롤 추가
         if (showControls) {
@@ -374,9 +343,6 @@ const MapDisplay = ({
             }
           );
 
-          console.log(
-            `[MapDisplay] ✅ 구급차 마커 생성 완료 (${ambulanceQuality.quality})`
-          );
         }
 
         // 🔥 병원 마커 생성 (안정화된 좌표 사용)
@@ -469,10 +435,6 @@ const MapDisplay = ({
             }
           );
 
-          console.log(
-            `[MapDisplay] ✅ 병원 마커 생성 완료 (${hospitalQuality.quality}):`,
-            hospital.name
-          );
         }
 
         // 🔥 지도 범위 설정 (안정화)
@@ -481,17 +443,13 @@ const MapDisplay = ({
           bounds.extend(ambulanceMarker.current.getPosition());
           bounds.extend(hospitalMarker.current.getPosition());
           map.setBounds(bounds);
-          console.log("[MapDisplay] 📏 지도 범위 조정: 구급차 + 병원");
         } else if (ambulanceMarker.current) {
           map.setCenter(ambulanceMarker.current.getPosition());
-          console.log("[MapDisplay] 🎯 지도 중심: 구급차");
         } else if (hospitalMarker.current) {
           map.setCenter(hospitalMarker.current.getPosition());
-          console.log("[MapDisplay] 🎯 지도 중심: 병원");
         }
 
         initialMapSetupDone.current = true;
-        console.log("[MapDisplay] 🎉 지도 초기화 완료 (안정화 버전)");
       } catch (error) {
         console.error("[MapDisplay] ❌ 지도 초기화 실패:", error);
         setMapError(`지도 초기화 실패: ${error.message}`);
@@ -505,17 +463,14 @@ const MapDisplay = ({
       initialMapSetupDone.current = false;
     };
   }, [
-    // 🔥 안정화된 의존성 배열 (무한 렌더링 방지)
     isMapReady,
-    hospital?.id, // 병원 ID 변경시만
-    stableHospitalCoords?.lat, // 병원 위도 변경시만
-    stableHospitalCoords?.lng, // 병원 경도 변경시만
-    stableAmbulanceCoords?.lat, // 구급차 위도 변경시만
-    stableAmbulanceCoords?.lng, // 구급차 경도 변경시만
+    hospital?.id,
+    stableHospitalCoords?.lat,
+    stableHospitalCoords?.lng,
+    stableAmbulanceCoords?.lat,
+    stableAmbulanceCoords?.lng,
     showControls,
     zoom,
-    // 🔥 제거된 의존성들: hospital, ambulanceLocation, cleanupMarkers, getCoordinates, analyzeCoordinateQuality
-    // 이들은 memoized 값들로 대체되어 불필요한 재렌더링 방지
   ]);
 
   // 🔥 구급차 위치 실시간 업데이트 (안정화)
@@ -542,10 +497,6 @@ const MapDisplay = ({
         mapInstance.current.panTo(newAmbulancePos);
       }
 
-      console.log(
-        `[MapDisplay] 🚑 구급차 위치 실시간 업데이트 (${ambulanceQuality.quality}):`,
-        stableAmbulanceCoords
-      );
     } catch (error) {
       console.error("[MapDisplay] ❌ 구급차 위치 업데이트 실패:", error);
     }
@@ -558,7 +509,6 @@ const MapDisplay = ({
   // 🔥 전체 정리 (변경 없음)
   useEffect(() => {
     return () => {
-      console.log("[MapDisplay] 🧹 컴포넌트 완전 정리");
       cleanupMarkers();
       if (mapInstance.current) {
         mapInstance.current = null;
@@ -823,7 +773,6 @@ const MapDisplay = ({
           {/* 지도 새로고침 */}
           <button
             onClick={() => {
-              console.log("[MapDisplay] 🔄 수동 지도 새로고침");
               setIsMapReady(false);
               setTimeout(() => setIsMapReady(true), 100);
             }}
@@ -836,123 +785,7 @@ const MapDisplay = ({
       )}
 
       {/* 🔥 개발 모드 디버깅 정보 (안정화 버전) */}
-      {import.meta.env.DEV && (
-        <div className="absolute top-2 left-2 text-xs text-white bg-black bg-opacity-80 p-2 rounded max-w-xs">
-          <div className="font-bold text-yellow-300 mb-1">
-            🔧 지도 디버깅 (안정화)
-          </div>
-
-          <div className="space-y-1">
-            <div>지도: {isMapReady ? "✅" : "❌"}</div>
-            <div>초기화: {initialMapSetupDone.current ? "✅" : "❌"}</div>
-
-            <div>
-              구급차: {ambulanceLocation ? "✅" : "❌"}
-              {ambulanceLocation && (
-                <span
-                  className={`ml-1 px-1 rounded text-xs ${
-                    ambulanceQuality.color === "green"
-                      ? "bg-green-600"
-                      : ambulanceQuality.color === "orange"
-                      ? "bg-orange-600"
-                      : "bg-red-600"
-                  }`}
-                >
-                  {ambulanceQuality.quality}
-                </span>
-              )}
-            </div>
-
-            <div>
-              병원: {hospital ? "✅" : "❌"}
-              {hospital && (
-                <span
-                  className={`ml-1 px-1 rounded text-xs ${
-                    hospitalQuality.color === "green"
-                      ? "bg-green-600"
-                      : hospitalQuality.color === "orange"
-                      ? "bg-orange-600"
-                      : "bg-red-600"
-                  }`}
-                >
-                  {hospitalQuality.quality}
-                </span>
-              )}
-              {hasLocationMismatch && (
-                <span className="ml-1 px-1 rounded text-xs bg-red-600">
-                  mismatch
-                </span>
-              )}
-            </div>
-
-            <div>
-              거리:{" "}
-              {distanceInfo
-                ? `${(distanceInfo.distance / 1000).toFixed(2)}km`
-                : "❌"}
-            </div>
-            <div>
-              마커: 🚑{ambulanceMarker.current ? "✅" : "❌"} 🏥
-              {hospitalMarker.current ? "✅" : "❌"}
-            </div>
-
-            {/* 🔥 구급차 좌표 상세 정보 */}
-            {stableAmbulanceCoords && (
-              <div className="text-xs border-t border-gray-600 pt-1 mt-1">
-                <div className="text-blue-300">🚑 구급차 (memoized):</div>
-                <div>
-                  {stableAmbulanceCoords.lat.toFixed(6)},{" "}
-                  {stableAmbulanceCoords.lng.toFixed(6)}
-                </div>
-                <div
-                  className={
-                    ambulanceQuality.color === "green"
-                      ? "text-green-300"
-                      : ambulanceQuality.color === "orange"
-                      ? "text-orange-300"
-                      : "text-red-300"
-                  }
-                >
-                  {ambulanceQuality.message}
-                </div>
-              </div>
-            )}
-
-            {/* 🔥 병원 좌표 상세 정보 */}
-            {stableHospitalCoords && hospital && (
-              <div className="text-xs border-t border-gray-600 pt-1 mt-1">
-                <div className="text-red-300">🏥 병원 (memoized):</div>
-                <div className="text-yellow-300">{hospital.name}</div>
-                <div>
-                  {stableHospitalCoords.lat.toFixed(6)},{" "}
-                  {stableHospitalCoords.lng.toFixed(6)}
-                </div>
-                <div
-                  className={
-                    hospitalQuality.color === "green"
-                      ? "text-green-300"
-                      : hospitalQuality.color === "orange"
-                      ? "text-orange-300"
-                      : "text-red-300"
-                  }
-                >
-                  {hospitalQuality.message}
-                </div>
-                {hasLocationMismatch && (
-                  <div className="text-red-300 font-bold">
-                    ⚠️ {hasLocationMismatch.type}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* 🔥 렌더링 카운터 (무한 렌더링 감지용) */}
-            <div className="text-xs border-t border-gray-600 pt-1 mt-1">
-              <div className="text-gray-300">렌더링: {Date.now() % 100000}</div>
-            </div>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 };

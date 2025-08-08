@@ -14,18 +14,10 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// fetch wrapper with automatic token refresh
 export const fetchWithAuth = async (url, options = {}) => {
   const { useAuthStore } = await import('../store/useAuthStore');
   const { accessToken, refreshAccessToken, logout } = useAuthStore.getState();
   
-  // console.log('🔍 fetchWithAuth 호출:', {
-  //   url,
-  //   hasAccessToken: !!accessToken,
-  //   tokenPreview: accessToken ? `${accessToken.substring(0, 20)}...` : 'null'
-  // });
-  
-  // 기본 헤더 설정
   const defaultOptions = {
     headers: {
       'Content-Type': 'application/json',
@@ -38,12 +30,10 @@ export const fetchWithAuth = async (url, options = {}) => {
   try {
     let response = await fetch(url, defaultOptions);
     
-    // 401 에러 (토큰 만료)인 경우 토큰 갱신 시도
     if (response.status === 401 && !isRefreshingToken) {
       const originalRequest = { url, options: defaultOptions };
       
       if (isRefreshingToken) {
-        // 이미 토큰 갱신 중이면 큐에 추가
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         }).then(token => {
@@ -60,13 +50,12 @@ export const fetchWithAuth = async (url, options = {}) => {
         const newToken = await refreshAccessToken();
         processQueue(null, newToken);
         
-        // 새 토큰으로 원래 요청 재시도
         defaultOptions.headers['Authorization'] = `Bearer ${newToken}`;
         response = await fetch(url, defaultOptions);
         
       } catch (refreshError) {
         processQueue(refreshError, null);
-        logout(); // 토큰 갱신 실패 시 로그아웃
+        logout();
         throw refreshError;
       } finally {
         isRefreshingToken = false;
@@ -78,6 +67,3 @@ export const fetchWithAuth = async (url, options = {}) => {
     throw error;
   }
 };
-
-// 사용 예시:
-// const response = await fetchWithAuth('/api/v1/user/', { method: 'GET' });

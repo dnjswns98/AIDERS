@@ -7,11 +7,8 @@ class ModelCacheManager {
     this.db = null;
     this.isSupported = this._checkIndexedDBSupport();
     
-    console.log('💾 [ModelCacheManager] 인스턴스 생성');
-    console.log('💾 [ModelCacheManager] IndexedDB 지원:', this.isSupported);
   }
 
-  // 🔥 IndexedDB 지원 여부 확인
   _checkIndexedDBSupport() {
     if (typeof window === 'undefined') {
       return false;
@@ -24,7 +21,6 @@ class ModelCacheManager {
               window.IDBKeyRange);
   }
 
-  // 🔥 static 메서드로 지원 여부 확인 (외부에서 사용)
   static isSupported() {
     if (typeof window === 'undefined') {
       return false;
@@ -37,10 +33,8 @@ class ModelCacheManager {
               window.IDBKeyRange);
   }
 
-  // 🔥 IndexedDB 초기화
   async _initializeDB() {
     if (this.db) {
-      console.log('💾 [ModelCacheManager] 이미 초기화된 DB 재사용');
       return this.db;
     }
 
@@ -48,7 +42,6 @@ class ModelCacheManager {
       throw new Error('IndexedDB가 지원되지 않는 브라우저입니다');
     }
 
-    console.log('💾 [ModelCacheManager] IndexedDB 초기화 시작');
 
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.dbName, this.dbVersion);
@@ -60,17 +53,12 @@ class ModelCacheManager {
 
       request.onsuccess = () => {
         this.db = request.result;
-        console.log('✅ [ModelCacheManager] IndexedDB 열기 성공');
         
-        // 🔥 예상치 못한 close 이벤트 처리
         this.db.onclose = () => {
-          console.warn('⚠️ [ModelCacheManager] IndexedDB 연결이 예상치 못하게 닫힘');
           this.db = null;
         };
 
-        // 🔥 버전 변경 감지
         this.db.onversionchange = () => {
-          console.warn('⚠️ [ModelCacheManager] 다른 탭에서 DB 버전 변경 감지');
           this.db.close();
           this.db = null;
         };
@@ -79,32 +67,24 @@ class ModelCacheManager {
       };
 
       request.onupgradeneeded = (event) => {
-        console.log('🔧 [ModelCacheManager] IndexedDB 스키마 업그레이드');
         const db = event.target.result;
 
-        // 🔥 기존 스토어가 있으면 삭제 후 재생성
         if (db.objectStoreNames.contains(this.storeName)) {
-          console.log('🗑️ [ModelCacheManager] 기존 스토어 삭제');
           db.deleteObjectStore(this.storeName);
         }
 
-        // 🔥 새로운 모델 스토어 생성
         const store = db.createObjectStore(this.storeName, { keyPath: 'id' });
         
-        // 🔥 인덱스 생성 (검색 성능 향상)
         store.createIndex('timestamp', 'metadata.timestamp', { unique: false });
         store.createIndex('version', 'metadata.version', { unique: false });
         store.createIndex('type', 'metadata.type', { unique: false });
         store.createIndex('url', 'url', { unique: false });
 
-        console.log('✅ [ModelCacheManager] 스토어 및 인덱스 생성 완료');
       };
     });
   }
 
-  // 🔥 모델 저장 (ArrayBuffer 데이터를 IndexedDB에 저장)
   async saveModel(id, url, data, metadata = {}) {
-    console.log(`💾 [ModelCacheManager] 모델 저장 시작: ${id}`);
 
     try {
       await this._initializeDB();
@@ -113,7 +93,6 @@ class ModelCacheManager {
         throw new Error('data는 ArrayBuffer 타입이어야 합니다');
       }
 
-      // 🔥 메타데이터 생성
       const modelData = {
         id: id,
         url: url,
@@ -135,7 +114,6 @@ class ModelCacheManager {
         const store = transaction.objectStore(this.storeName);
 
         transaction.oncomplete = () => {
-          console.log(`✅ [ModelCacheManager] 모델 저장 성공: ${id} (${modelData.metadata.sizeFormatted})`);
           resolve(true);
         };
 
@@ -144,7 +122,6 @@ class ModelCacheManager {
           reject(new Error(`모델 저장 실패: ${transaction.error?.message || 'Unknown error'}`));
         };
 
-        // 🔥 실제 데이터 저장
         const request = store.put(modelData);
         
         request.onerror = () => {
@@ -159,9 +136,7 @@ class ModelCacheManager {
     }
   }
 
-  // 🔥 모델 로드 (IndexedDB에서 ArrayBuffer 반환)
   async loadModel(id) {
-    console.log(`📂 [ModelCacheManager] 모델 로드 시도: ${id}`);
 
     try {
       await this._initializeDB();
@@ -175,11 +150,8 @@ class ModelCacheManager {
           const result = request.result;
           
           if (result) {
-            console.log(`✅ [ModelCacheManager] 모델 로드 성공: ${id} (${result.metadata.sizeFormatted})`);
-            console.log(`📊 [ModelCacheManager] 저장일: ${new Date(result.metadata.timestamp).toLocaleString()}`);
             resolve(result);
           } else {
-            console.log(`❌ [ModelCacheManager] 모델 로드 실패: ${id} (캐시에 없음)`);
             resolve(null);
           }
         };
@@ -196,7 +168,6 @@ class ModelCacheManager {
     }
   }
 
-  // 🔥 모델 존재 여부 확인
   async hasModel(id) {
     try {
       const model = await this.loadModel(id);
@@ -207,9 +178,7 @@ class ModelCacheManager {
     }
   }
 
-  // 🔥 모델 삭제
   async deleteModel(id) {
-    console.log(`🗑️ [ModelCacheManager] 모델 삭제: ${id}`);
 
     try {
       await this._initializeDB();
@@ -219,7 +188,6 @@ class ModelCacheManager {
         const store = transaction.objectStore(this.storeName);
 
         transaction.oncomplete = () => {
-          console.log(`✅ [ModelCacheManager] 모델 삭제 성공: ${id}`);
           resolve(true);
         };
 
@@ -242,9 +210,7 @@ class ModelCacheManager {
     }
   }
 
-  // 🔥 모든 모델 목록 조회
   async getAllModels() {
-    console.log('📋 [ModelCacheManager] 모든 모델 목록 조회');
 
     try {
       await this._initializeDB();
@@ -256,8 +222,6 @@ class ModelCacheManager {
 
         request.onsuccess = () => {
           const models = request.result || [];
-          console.log(`📋 [ModelCacheManager] 캐시된 모델 목록 (${models.length}개):`, 
-                     models.map(m => ({ id: m.id, size: m.metadata.sizeFormatted, date: new Date(m.metadata.timestamp).toLocaleDateString() })));
           resolve(models);
         };
 
@@ -273,9 +237,7 @@ class ModelCacheManager {
     }
   }
 
-  // 🔥 캐시 통계 정보
   async getCacheStats() {
-    console.log('📊 [ModelCacheManager] 캐시 통계 조회');
 
     try {
       const models = await this.getAllModels();
@@ -297,7 +259,6 @@ class ModelCacheManager {
         }))
       };
 
-      console.log(`📊 [ModelCacheManager] 캐시 통계: ${stats.totalSizeFormatted}, ${stats.totalCount}개 모델`);
       
       return stats;
 
@@ -312,9 +273,7 @@ class ModelCacheManager {
     }
   }
 
-  // 🔥 전체 캐시 정리
   async clearAllCache() {
-    console.log('🧹 [ModelCacheManager] 전체 캐시 정리 시작');
 
     try {
       await this._initializeDB();
@@ -324,7 +283,6 @@ class ModelCacheManager {
         const store = transaction.objectStore(this.storeName);
 
         transaction.oncomplete = () => {
-          console.log('✅ [ModelCacheManager] 전체 캐시 정리 완료');
           resolve(true);
         };
 
@@ -347,9 +305,7 @@ class ModelCacheManager {
     }
   }
 
-  // 🔥 오래된 캐시 정리 (일정 기간 지난 모델들 삭제)
-  async cleanupOldCache(maxAge = 30 * 24 * 60 * 60 * 1000) { // 기본 30일
-    console.log('🧹 [ModelCacheManager] 오래된 캐시 정리 시작');
+  async cleanupOldCache(maxAge = 30 * 24 * 60 * 60 * 1000) {
 
     try {
       const models = await this.getAllModels();
@@ -359,16 +315,13 @@ class ModelCacheManager {
       );
 
       if (expiredModels.length === 0) {
-        console.log('✅ [ModelCacheManager] 정리할 오래된 캐시 없음');
         return 0;
       }
 
-      console.log(`🗑️ [ModelCacheManager] ${expiredModels.length}개 오래된 모델 삭제 중...`);
 
       const deletePromises = expiredModels.map(model => this.deleteModel(model.id));
       await Promise.all(deletePromises);
 
-      console.log(`✅ [ModelCacheManager] 오래된 캐시 정리 완료: ${expiredModels.length}개 삭제`);
       return expiredModels.length;
 
     } catch (error) {
@@ -377,9 +330,7 @@ class ModelCacheManager {
     }
   }
 
-  // 🔥 특정 버전의 모델들 삭제
   async deleteModelsByVersion(version) {
-    console.log(`🗑️ [ModelCacheManager] 버전 ${version} 모델들 삭제`);
 
     try {
       await this._initializeDB();
@@ -392,7 +343,6 @@ class ModelCacheManager {
         let deletedCount = 0;
 
         transaction.oncomplete = () => {
-          console.log(`✅ [ModelCacheManager] 버전 ${version} 모델 삭제 완료: ${deletedCount}개`);
           resolve(deletedCount);
         };
 
@@ -424,7 +374,6 @@ class ModelCacheManager {
     }
   }
 
-  // 🔥 파일 크기 포맷팅 유틸리티
   _formatBytes(bytes) {
     if (bytes === 0) return '0.00MB';
     
@@ -435,18 +384,14 @@ class ModelCacheManager {
     return `${size}${sizes[i]}`;
   }
 
-  // 🔥 DB 연결 종료
   async close() {
     if (this.db) {
-      console.log('🔌 [ModelCacheManager] IndexedDB 연결 종료');
       this.db.close();
       this.db = null;
     }
   }
 
-  // 🔥 전체 데이터베이스 삭제
   async deleteDatabase() {
-    console.log('💣 [ModelCacheManager] 데이터베이스 완전 삭제');
 
     if (this.db) {
       this.db.close();
@@ -461,7 +406,6 @@ class ModelCacheManager {
       const request = indexedDB.deleteDatabase(this.dbName);
 
       request.onsuccess = () => {
-        console.log('✅ [ModelCacheManager] 데이터베이스 삭제 완료');
         resolve(true);
       };
 
@@ -477,12 +421,9 @@ class ModelCacheManager {
     });
   }
 
-  // 🔥 IndexedDB 용량 추정 (브라우저별로 다를 수 있음)
   async getStorageQuota() {
-    console.log('📊 [ModelCacheManager] 스토리지 용량 조회');
 
     if (!navigator.storage || !navigator.storage.estimate) {
-      console.warn('⚠️ [ModelCacheManager] Storage API 미지원');
       return null;
     }
 
@@ -497,7 +438,6 @@ class ModelCacheManager {
         usagePercentage: estimate.quota ? ((estimate.usage / estimate.quota) * 100).toFixed(2) : 0
       };
 
-      console.log(`📊 [ModelCacheManager] 스토리지 사용량: ${result.usageFormatted} / ${result.quotaFormatted} (${result.usagePercentage}%)`);
       
       return result;
 
@@ -507,42 +447,29 @@ class ModelCacheManager {
     }
   }
 
-  // 🔥 디버깅 정보 출력
   async debugInfo() {
-    console.group('🔧 [ModelCacheManager] 디버깅 정보');
     
     try {
-      console.log('지원 여부:', this.isSupported);
-      console.log('DB 이름:', this.dbName);
-      console.log('DB 버전:', this.dbVersion);
-      console.log('스토어 이름:', this.storeName);
-      console.log('DB 연결 상태:', !!this.db);
 
       if (this.isSupported) {
         const stats = await this.getCacheStats();
-        console.log('캐시 통계:', stats);
 
         const quota = await this.getStorageQuota();
         if (quota) {
-          console.log('스토리지 정보:', quota);
         }
 
         const models = await this.getAllModels();
-        console.log('저장된 모델들:', models);
       }
 
     } catch (error) {
       console.error('디버깅 정보 조회 실패:', error);
     } finally {
-      console.groupEnd();
     }
   }
 }
 
-// 🔥 싱글톤 인스턴스 생성
 const modelCacheManager = new ModelCacheManager();
 
-// 🔥 전역 접근 가능 (디버깅용)
 if (typeof window !== 'undefined') {
   window.modelCacheManager = modelCacheManager;
 }

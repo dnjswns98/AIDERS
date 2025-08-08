@@ -16,11 +16,9 @@ export default function AmbulanceMapPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 🔥 인증 정보
   const { user } = useAuthStore();
   const ambulanceId = user?.userId;
 
-  // 🔥 실시간 구급차 추적 훅
   const {
     isConnected: wsConnected,
     connectionStatus: wsStatus,
@@ -30,7 +28,6 @@ export default function AmbulanceMapPage() {
     forceReconnect: wsReconnect
   } = useLiveAmbulanceLocation(ambulanceId);
 
-  // 🔥 응급 상황 스토어
   const {
     selectedAmbulance,
     matchedHospitals,
@@ -39,18 +36,14 @@ export default function AmbulanceMapPage() {
     checkHospitalMatchingStatus,
   } = useEmergencyStore();
 
-  // 🔥 UI 상태
   const [isCalling, setIsCalling] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // 🔥 병원 정보 상태 (단순화 - 대시보드와 동일)
   const [directHospitalInfo, setDirectHospitalInfo] = useState(null);
   const [isLoadingDirectHospital, setIsLoadingDirectHospital] = useState(false);
 
-  // 🔥 URL state fallback
   const { matchedHospital: urlMatchedHospital, patientInfo: urlPatientInfo } = location.state || {};
 
-  // 🔥 데이터 통합 처리 (memoized)
   const finalMatchedHospital = useMemo(() => {
     return matchedHospitals[0] || urlMatchedHospital || null;
   }, [matchedHospitals, urlMatchedHospital]);
@@ -63,20 +56,15 @@ export default function AmbulanceMapPage() {
     return selectedAmbulance?.patientDetails || {};
   }, [selectedAmbulance?.patientDetails]);
 
-  // 🔥 구급차 대시보드와 똑같은 방식으로 병원 정보 직접 조회
   const fetchDirectHospitalInfo = useCallback(async () => {
     if (!ambulanceId) {
-      console.warn("⚠️ [직접조회] ambulanceId 없음");
       return;
     }
 
-    console.log(`🔍 [직접조회] ${ambulanceId} 병원 정보 직접 조회 시작 (대시보드 방식)`);
     setIsLoadingDirectHospital(true);
 
     try {
-      // 🔥 구급차 대시보드와 완전 동일한 방식
       const matchedInfo = await getMatchedHospital(ambulanceId);
-      console.log(`📞 [직접조회] API 응답 (대시보드 방식):`, matchedInfo);
 
       if (matchedInfo && matchedInfo.latitude && matchedInfo.longitude) {
         const hospitalData = {
@@ -84,17 +72,13 @@ export default function AmbulanceMapPage() {
           hospitalId: matchedInfo.hospitalId || matchedInfo.id,
           name: matchedInfo.name || '매칭된 병원',
           address: matchedInfo.address || '',
-          latitude: matchedInfo.latitude,   // 🔥 API에서 직접 받은 실제 좌표!
-          longitude: matchedInfo.longitude, // 🔥 API에서 직접 받은 실제 좌표!
+          latitude: matchedInfo.latitude,
+          longitude: matchedInfo.longitude,
           department: matchedInfo.department || ''
         };
 
-        console.log(`✅ [직접조회] 병원 정보 직접 조회 성공 (대시보드 방식)!`);
-        console.log(`📍 [직접조회] 실제 좌표: ${hospitalData.latitude.toFixed(6)}, ${hospitalData.longitude.toFixed(6)}`);
-        
         setDirectHospitalInfo(hospitalData);
       } else {
-        console.warn(`⚠️ [직접조회] 좌표 정보 없음:`, matchedInfo);
         setDirectHospitalInfo(null);
       }
 
@@ -106,26 +90,18 @@ export default function AmbulanceMapPage() {
     }
   }, [ambulanceId]);
 
-  // 🔥 컴포넌트 로드 시 병원 정보 직접 조회 (구급차 대시보드 방식)
   useEffect(() => {
     if (ambulanceId) {
-      console.log(`🎯 [직접조회] 컴포넌트 로드, 병원 정보 직접 조회 실행`);
       fetchDirectHospitalInfo();
     }
   }, [ambulanceId, fetchDirectHospitalInfo]);
 
-  // 🔥 최종 병원 객체 (직접 조회한 정보 우선 사용)
   const safeHospital = useMemo(() => {
-    // 🔥 직접 조회한 병원 정보가 있으면 최우선 사용 (대시보드 방식)
     if (directHospitalInfo) {
-      console.log(`🏥 [최종병원] 직접 조회 데이터 사용 (대시보드 방식):`, directHospitalInfo.name);
-      console.log(`🏥 [최종병원] 실제 좌표: ${directHospitalInfo.latitude.toFixed(6)}, ${directHospitalInfo.longitude.toFixed(6)}`);
       return directHospitalInfo;
     }
 
-    // 🔥 fallback: 스토어 데이터 사용
     if (finalMatchedHospital) {
-      console.log(`🏥 [최종병원] 스토어 데이터 fallback:`, finalMatchedHospital.name);
       return {
         ...finalMatchedHospital,
         latitude: finalMatchedHospital.latitude || 37.566826,
@@ -133,7 +109,6 @@ export default function AmbulanceMapPage() {
       };
     }
     
-    console.log(`🏥 [최종병원] 기본 데이터 사용`);
     return { 
       latitude: 37.566826, 
       longitude: 126.9786567, 
@@ -142,21 +117,18 @@ export default function AmbulanceMapPage() {
     };
   }, [directHospitalInfo, finalMatchedHospital]);
 
-  // 🔥 실제 좌표 사용 여부 확인 (단순화)
   const hasRealCoordinates = useMemo(() => {
     if (!safeHospital) return false;
     
     const lat = safeHospital.latitude;
     const lng = safeHospital.longitude;
     
-    // 서울시청 좌표가 아니면 실제 좌표로 판단
     return !(
       (lat === 37.566826 && lng === 126.9786567) ||
       (Math.abs(lat - 37.566826) < 0.001 && Math.abs(lng - 126.9786567) < 0.001)
     );
   }, [safeHospital]);
 
-  // 🔥 이벤트 핸들러들 (memoized)
   const handleModifyPatientInfo = useCallback(() => {
     if (!selectedAmbulance) return;
     navigate('/emergency/patient-input', { 
@@ -172,18 +144,15 @@ export default function AmbulanceMapPage() {
   const handleBackToDashboard = useCallback(() => navigate('/emergency/ambulance-dashboard'), [navigate]);
   const toggleSidebar = useCallback(() => setSidebarCollapsed(prev => !prev), []);
 
-  // 🔥 병원 정보 새로고침 (구급차 대시보드 방식)
   const handleRefreshHospitalInfo = useCallback(async () => {
     if (!ambulanceId) {
       alert('ambulanceId가 없습니다.');
       return;
     }
 
-    console.log('🔄 [새로고침] 병원 정보 새로고침 시작 (대시보드 방식)');
     await fetchDirectHospitalInfo();
   }, [ambulanceId, fetchDirectHospitalInfo]);
 
-  // 🔥 병원 재매칭 함수 (대시보드 방식)
   const handleRetryHospitalMatching = useCallback(async () => {
     if (!ambulanceId) return;
     
@@ -205,50 +174,39 @@ export default function AmbulanceMapPage() {
         longitude: ambulanceLocation.longitude,
       };
 
-      console.log("🔄 [재매칭] 요청 (대시보드 방식):", matchingRequestData);
-
-      // 🔥 구급차 대시보드와 완전 동일한 방식
       const matchingResult = await requestHospitalMatching(matchingRequestData);
       
       if (matchingResult) {
-        console.log("🔄 [재매칭] 결과 (대시보드 방식):", matchingResult);
         
-        // 🔥 매칭 결과에서 바로 병원 정보 설정 (대시보드 방식)
         if (matchingResult.latitude && matchingResult.longitude) {
           const hospitalData = {
             id: matchingResult.hospitalId,
             hospitalId: matchingResult.hospitalId,
             name: matchingResult.name,
             address: matchingResult.address || '',
-            latitude: matchingResult.latitude,   // 🔥 실제 좌표!
-            longitude: matchingResult.longitude, // 🔥 실제 좌표!
+            latitude: matchingResult.latitude,
+            longitude: matchingResult.longitude,
             department: matchingResult.department || ''
           };
           
-          console.log(`✅ [재매칭] 실제 좌표 포함 병원 정보 설정:`, hospitalData);
           setDirectHospitalInfo(hospitalData);
         }
 
-        // 🔥 스토어도 업데이트
         await checkHospitalMatchingStatus(ambulanceId);
       }
       
-      console.log("✅ 병원 재매칭 완료 (대시보드 방식)");
     } catch (error) {
       console.error("❌ 병원 재매칭 실패:", error);
       alert("병원 재매칭에 실패했습니다: " + error.message);
     }
   }, [ambulanceId, selectedAmbulance?.patientDetails, ambulanceLocation, navigate, checkHospitalMatchingStatus]);
 
-  // 🔥 초기 매칭 상태 확인
   useEffect(() => {
     if (ambulanceId && matchedHospitals.length === 0) {
-      console.log("🔍 [초기화] 매칭 상태 확인");
       checkHospitalMatchingStatus(ambulanceId).catch(console.warn);
     }
   }, [ambulanceId, matchedHospitals.length, checkHospitalMatchingStatus]);
 
-  // 🔥 매칭된 병원이 없는 경우 안내 화면
   if (!finalMatchedHospital && !directHospitalInfo) {
     return (
       <AmbulanceLayout>
@@ -297,7 +255,6 @@ export default function AmbulanceMapPage() {
     );
   }
 
-  // 🔥 병원 정보 직접 조회 로딩 중 화면
   if (isLoadingDirectHospital) {
     return (
       <AmbulanceLayout>
@@ -319,17 +276,14 @@ export default function AmbulanceMapPage() {
     );
   }
 
-  // 🔥 메인 지도 화면
   return (
     <AmbulanceLayout>
       <div className="relative h-screen flex bg-gray-100 overflow-hidden">
         
-        {/* 🔥 지도 영역 */}
         <div className={`flex-1 relative transition-all duration-300 ${
           sidebarCollapsed ? 'mr-16' : 'mr-96'
         }`}>
           
-          {/* 🔥 지도 상단 헤더 */}
           <div className="absolute top-0 left-0 right-0 z-10 bg-white bg-opacity-95 backdrop-blur-sm border-b border-gray-200 p-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
@@ -343,7 +297,6 @@ export default function AmbulanceMapPage() {
                   <h1 className="text-xl font-bold text-gray-800">{safeHospital.name}</h1>
                   <p className="text-sm text-gray-600">📍 {safeHospital.address}</p>
                   
-                  {/* 🔥 좌표 정보 표시 (대시보드 방식) */}
                   {directHospitalInfo && hasRealCoordinates ? (
                     <p className="text-xs text-green-600">
                       ✅ 실제 병원 좌표 ({safeHospital.latitude.toFixed(4)}, {safeHospital.longitude.toFixed(4)})
@@ -369,7 +322,6 @@ export default function AmbulanceMapPage() {
               </div>
               
               <div className="flex items-center gap-3">
-                {/* 🔥 실시간 정보 표시 */}
                 <div className="flex gap-2">
                   {hospitalDistanceInfo && (
                     <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
@@ -383,7 +335,6 @@ export default function AmbulanceMapPage() {
                     WebSocket: {wsConnected ? '연결됨' : '끊어짐'}
                   </span>
                   
-                  {/* 🔥 데이터 소스 배지 */}
                   <span className={`text-xs px-2 py-1 rounded-full ${
                     directHospitalInfo ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                   }`}>
@@ -408,10 +359,9 @@ export default function AmbulanceMapPage() {
             </div>
           </div>
 
-          {/* 🔥 실시간 구급차 추적 지도 */}
           <div className="h-full w-full">
             <MapDisplay 
-              hospital={safeHospital}               // 🔥 대시보드 방식으로 조회한 병원 정보!
+              hospital={safeHospital}
               ambulanceLocation={ambulanceLocation}
               distanceInfo={hospitalDistanceInfo}
               isFullScreen={true}
@@ -420,7 +370,6 @@ export default function AmbulanceMapPage() {
             />
           </div>
 
-          {/* 🔥 실시간 상태 표시 */}
           <div className="absolute top-20 left-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-3 shadow-lg z-20">
             <div className="flex items-center gap-2 text-green-700 mb-2">
               <span className="text-green-600">✅</span>
@@ -438,7 +387,6 @@ export default function AmbulanceMapPage() {
                 </p>
               )}
               
-              {/* 🔥 병원 좌표 정보 (대시보드 방식) */}
               {directHospitalInfo && hasRealCoordinates ? (
                 <p className="text-green-600">
                   병원 실제위치: {safeHospital.latitude.toFixed(4)}, {safeHospital.longitude.toFixed(4)}
@@ -462,7 +410,6 @@ export default function AmbulanceMapPage() {
             </div>
           </div>
 
-          {/* 🔥 WebSocket 연결 상태 표시 */}
           {wsError && (
             <div className="absolute top-36 left-4 bg-red-50 border border-red-200 rounded-lg p-3 shadow-lg z-20">
               <div className="flex items-center gap-2 text-red-700 mb-2">
@@ -480,13 +427,11 @@ export default function AmbulanceMapPage() {
           )}
         </div>
 
-        {/* 🔥 사이드바 (대시보드 방식 병원 정보 표시) */}
         <div className={`fixed top-0 right-0 h-full bg-white shadow-xl border-l border-gray-200 transition-all duration-300 z-20 ${
           sidebarCollapsed ? 'w-16' : 'w-96'
         }`}>
           
           {sidebarCollapsed ? (
-            // 접힌 상태
             <div className="flex flex-col items-center p-4 space-y-4">
               <button
                 onClick={toggleSidebar}
@@ -507,10 +452,8 @@ export default function AmbulanceMapPage() {
               </div>
             </div>
           ) : (
-            // 펼쳐진 상태
             <div className="h-full flex flex-col">
               
-              {/* 사이드바 헤더 */}
               <div className="border-b border-gray-200 p-4">
                 <div className="flex justify-between items-center">
                   <h2 className="text-lg font-bold text-gray-800">실시간 추적 정보</h2>
@@ -524,10 +467,8 @@ export default function AmbulanceMapPage() {
                 </div>
               </div>
 
-              {/* 스크롤 가능한 컨텐츠 */}
               <div className="flex-1 overflow-y-auto">
                 
-                {/* 🔥 실시간 구급차 추적 상태 */}
                 <div className="p-4 border-b border-gray-100">
                   <h3 className="text-md font-semibold text-gray-800 mb-3">🚑 실시간 추적</h3>
                   
@@ -570,7 +511,6 @@ export default function AmbulanceMapPage() {
                     )}
                   </div>
                   
-                  {/* WebSocket 재연결 버튼 */}
                   {!wsConnected && (
                     <button
                       onClick={wsReconnect}
@@ -581,7 +521,6 @@ export default function AmbulanceMapPage() {
                   )}
                 </div>
 
-                {/* 🔥 환자 정보 */}
                 <div className="p-4 border-b border-gray-100">
                   <div className="flex justify-between items-center mb-3">
                     <h3 className="text-md font-semibold text-gray-800">👤 환자 정보</h3>
@@ -616,7 +555,6 @@ export default function AmbulanceMapPage() {
                   </div>
                 </div>
 
-                {/* 🔥 병원 정보 (대시보드 방식) */}
                 <div className="p-4 border-b border-gray-100">
                   <h3 className="text-md font-semibold text-gray-800 mb-3">🏥 매칭 병원</h3>
                   
@@ -630,7 +568,6 @@ export default function AmbulanceMapPage() {
                       <p className="text-gray-700 text-xs">{safeHospital.address}</p>
                     </div>
                     
-                    {/* 🔥 대시보드 방식 조회 상태 */}
                     <div className="mt-3">
                       {directHospitalInfo && hasRealCoordinates ? (
                         <div className="text-xs text-green-600 bg-green-50 p-3 rounded">
@@ -660,7 +597,6 @@ export default function AmbulanceMapPage() {
                     )}
                   </div>
                   
-                  {/* 🔥 대시보드 방식 버튼들 */}
                   <div className="mt-3 space-y-2">
                     <button
                       onClick={handleRetryHospitalMatching}
@@ -682,7 +618,6 @@ export default function AmbulanceMapPage() {
                   </div>
                 </div>
 
-                {/* 🔥 화상 통화 */}
                 <div className="p-4">
                   <h3 className="text-md font-semibold text-gray-800 mb-3">📞 화상 통화</h3>
                   
@@ -736,8 +671,7 @@ export default function AmbulanceMapPage() {
           )}
         </div>
 
-        {/* 🔥 개발 모드 디버깅 패널 (대시보드 방식) */}
-        {import.meta.env.DEV && (
+        {/* {import.meta.env.DEV && (
           <div className="fixed bottom-4 left-4 bg-black bg-opacity-90 text-white p-3 rounded-lg text-xs max-w-sm z-30">
             <div className="font-bold text-yellow-300 mb-2">🔧 지도 페이지 디버깅 (대시보드 방식)</div>
             <div className="space-y-1">
@@ -754,20 +688,9 @@ export default function AmbulanceMapPage() {
               <p>  병원 거리: {hospitalDistanceInfo ? `${(hospitalDistanceInfo.distance / 1000).toFixed(2)}km` : '❌'}</p>
             </div>
             
-            {/* 디버깅 버튼들 */}
             <div className="mt-3 space-y-1">
               <button
-                onClick={() => {
-                  console.log('🔧 대시보드 방식 상태 분석:', { 
-                    finalMatchedHospital,
-                    directHospitalInfo,
-                    safeHospital,
-                    isLoadingDirectHospital,
-                    hasRealCoordinates,
-                    ambulanceLocation, 
-                    hospitalDistanceInfo
-                  });
-                }}
+                onClick={() => {}}
                 className="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs w-full"
               >
                 🔍 대시보드 방식 상태 분석
@@ -784,7 +707,6 @@ export default function AmbulanceMapPage() {
               {isLoadingDirectHospital && (
                 <button
                   onClick={() => {
-                    console.log('🚨 [디버깅] 직접 조회 로딩 해제');
                     setIsLoadingDirectHospital(false);
                   }}
                   className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs w-full"
@@ -794,7 +716,7 @@ export default function AmbulanceMapPage() {
               )}
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </AmbulanceLayout>
   );
