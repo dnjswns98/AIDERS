@@ -23,14 +23,17 @@ export default defineConfig({
       strict: false // WASM 파일 접근 허용
     },
 
-    // 🔥 미들웨어 방식 개선
-    configure(server) {
+    // 🔥 미들웨어 방식 개선 (API 이름만 수정!)
+    configureServer(server) {
+      console.log('🔧 [Vite] WASM/ONNX 파일 서빙 미들웨어 활성화');
+      
       server.middlewares.use((req, res, next) => {
         // WASM 파일 요청 감지
         if (req.url && req.url.includes('.wasm')) {
           console.log('🔧 [WASM] 요청 감지:', req.url);
           res.setHeader('Content-Type', 'application/wasm');
           res.setHeader('Cache-Control', 'no-cache');
+          res.setHeader('Access-Control-Allow-Origin', '*');
         }
         
         // ONNX 파일 요청 감지
@@ -38,6 +41,7 @@ export default defineConfig({
           console.log('🔧 [ONNX] 요청 감지:', req.url);
           res.setHeader('Content-Type', 'application/octet-stream');
           res.setHeader('Cache-Control', 'no-cache');
+          res.setHeader('Access-Control-Allow-Origin', '*');
         }
         
         next();
