@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class VideoSessionInfo {
-    private String sessionId;        // 예: 구급차 번호
-    private Long ambulanceId;        // 구급차 ID
+    private String sessionId;        // 예: 구급차 id
+    private String ambulanceNumber;  // 구급차 번호
     private Long hospitalId;         // 병원 ID
     private Integer ktas;            // 환자 KTAS 등급
     private String patientName;      // 환자 이름
