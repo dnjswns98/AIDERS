@@ -111,6 +111,10 @@ public class Ambulance extends User {
         this.currentStatus = status;
     }
 
+    public void dispatchStart() { this.dispatchTime = LocalDateTime.now(); }
+
+    public void transferStart() { this.transferStartTime = LocalDateTime.now(); }
+
     public void transferComplete() {
         this.transferEndTime = LocalDateTime.now();
     }

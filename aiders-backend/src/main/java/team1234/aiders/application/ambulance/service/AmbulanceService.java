@@ -33,11 +33,13 @@ public class AmbulanceService {
         ambulance.changeStatus(AmbCurrentStatus.WAIT);
         ambulance.clearPatientInfo();
         ambulance.clearHospitalInfo();
+        ambulance.clearTransferInfo();
     }
 
     public void dispatchToTransfer(CustomUserDetails user) {
         Ambulance ambulance = findAmbulanceUser(user);
 
+        ambulance.transferStart();
         ambulance.changeStatus(AmbCurrentStatus.TRANSFER);
     }
 
