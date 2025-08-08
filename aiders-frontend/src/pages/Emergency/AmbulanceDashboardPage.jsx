@@ -57,7 +57,8 @@ export default function AmbulanceDashboardPage() {
   
   const currentAmbulanceId = user.userId;
   const currentUserKey = user.userKey;
-  
+  console.log("___________________________________________________________user.key", user.userKey)
+  console.log("__user.id ", user.userId)
   // 🔥 실시간 구급차 추적 훅 사용 (이전 대화에서 수정한 버전)
   const {
     isConnected: wsConnected,
