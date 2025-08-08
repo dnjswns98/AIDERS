@@ -123,7 +123,7 @@ const HandwritingTextInput = ({
         context.lineCap = 'round';
         context.lineJoin = 'round';
         context.strokeStyle = '#000000';
-        context.lineWidth = 2;
+        context.lineWidth = 5;
         context.imageSmoothingEnabled = true;
         contextRef.current = context;
 
