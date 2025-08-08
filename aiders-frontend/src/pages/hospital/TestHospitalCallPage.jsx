@@ -11,7 +11,7 @@ export default function TestHospitalCallPage() {
   }
 
   // 구급차와 미리 약속한 sessionId, 예를 들어 '테스트' 또는 특정 번호와 동기화
-  const sessionId = 900; // 예: '998모7127' 등 구급차 세션ID와 맞추면 됨
+  const sessionId = 241; // 예: '998모7127' 등 구급차 세션ID와 맞추면 됨
   const hospitalId = user.userId; // JWT sub 값 (병원 DB id)
   const userName = `hospital-${hospitalId}`;
   console.log("sessionId :", sessionId);

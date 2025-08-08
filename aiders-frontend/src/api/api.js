@@ -586,6 +586,23 @@ export const updateHospitalDepartment = async (departmentUpdate) => {
 };
 
 /**
+ * 병원별 대기 중인 구급차 목록 조회 (GET)
+ * @param {string|number} hospitalId - 병원 ID
+ * @returns {Promise<Array>} 대기 중인 VideoSessionInfo 목록
+ */
+export const getWaitingAmbulances = async (hospitalId) => {
+  try {
+    console.log('[API] getWaitingAmbulances 호출:', hospitalId);
+    const response = await apiClient.get(`/api/v1/redis/waiting/${hospitalId}`);
+    console.log('[API] getWaitingAmbulances 성공:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('[API] getWaitingAmbulances 실패:', error.message);
+    throw error;
+  }
+};
+
+/**
  * 구급차용 화상 세션 생성 및 토큰 발급
  * @param {Object} request - sessionId, ambulanceId, hospitalId, ktas, patientName 포함
  * @returns {Promise<{ token: string, sessionId: string }>}
@@ -617,11 +634,11 @@ export const createAmbulanceToken = async (request) => {
  * @param {string} sessionId
  * @returns {Promise<{ token: string, sessionId: string }>}
  */
-export const getHospitalToken = async (sessionId) => {
+export const getHospitalToken = async (params) => {
   try {
-    console.log('[API] getHospitalToken 호출:', sessionId);
+    console.log('[API] getHospitalToken 호출:', params);
     const response = await apiClient.get('/api/v1/video-call/hospital/token', {
-      params: { sessionId }
+      params: params
     });
     console.log('[API] getHospitalToken 성공:', response.data);
     return response.data;
@@ -685,7 +702,25 @@ export const completeTransport = async (sessionId, hospitalId) => {
   }
 };
 
-// 🔥 디버깅용 함수 - 병원 좌표 조회 기능 포함 버전
+/**
+ * 대기목록에서 구급차 삭제 (DELETE)
+ * @param {string|number} hospitalId - 병원 ID
+ * @param {string} sessionId - 세션 ID (구급차 번호)
+ * @returns {Promise}
+ */
+export const removeFromWaitingList = async (hospitalId, sessionId) => {
+  try {
+    console.log('[API] removeFromWaitingList 호출:', { hospitalId, sessionId });
+    const response = await apiClient.delete(`/api/v1/redis/waiting/${hospitalId}/${sessionId}`);
+    console.log('[API] removeFromWaitingList 성공:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('[API] removeFromWaitingList 실패:', error.message);
+    throw error;
+  }
+};
+
+// 🔥 디버깅용 함수 - 현실적인 버전
 
 /**
  * API 클라이언트 상태 확인용 함수 (병원 좌표 조회 기능 포함)
