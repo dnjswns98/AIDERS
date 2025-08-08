@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useAppContext } from '../../../hooks/useAppContext';
 import useEmergencyStore from '../../../store/useEmergencyStore';
@@ -33,14 +32,13 @@ const PatientModal = ({ report, onClose, onSave }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Handle patient data submission
         const updatedReport = {
             ...report,
             patientInfo: {
                 name: formData.patientName,
                 gender: formData.gender,
                 ageGroup: formData.ageGroup,
-                basicInfo: `${formData.gender}, ${formData.ageGroup}` // 예시로 basicInfo 추가
+                basicInfo: `${formData.gender}, ${formData.ageGroup}`
             },
             condition: formData.symptoms,
             callTime: formData.transportStartTime,
@@ -48,7 +46,6 @@ const PatientModal = ({ report, onClose, onSave }) => {
         };
         updateReport(updatedReport);
 
-        // 구급차의 환자 정보도 업데이트
         if (report.ambulanceId) {
             updatePatientInfo(report.ambulanceId, {
                 patientInfo: {
@@ -57,14 +54,13 @@ const PatientModal = ({ report, onClose, onSave }) => {
                     ageGroup: formData.ageGroup,
                     basicInfo: `${formData.gender}, ${formData.ageGroup}`
                 },
-                patientDetails: { // 필요하다면 여기에 상세 정보 추가
+                patientDetails: {
                     chiefComplaint: formData.symptoms,
                     callTime: formData.transportStartTime
                 }
             }, setAmbulances);
         }
 
-        console.log("Patient Info Submitted:", updatedReport);
         onSave(updatedReport);
         onClose();
     };

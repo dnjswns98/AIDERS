@@ -11,15 +11,6 @@ export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, pat
   const { togglePipMode } = useWebRtc();
   const location = useLocation();
   
-  console.log('[WebRtcCall] 전달받은 props:', {
-    sessionId,
-    ambulanceNumber,
-    hospitalId,
-    patientName,
-    ktas
-  });
-  
-  // 커스텀 훅들로 로직 완전 분리
   const { joinSession, leaveSession } = useOpenVidu({ 
     sessionId, 
     ambulanceNumber,
@@ -39,18 +30,9 @@ export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, pat
   
   const { isFullScreen, toggleFullScreen } = useFullScreen();
 
-  // 컴포넌트 생명주기 관리
   useEffect(() => {
-    console.log('[WebRtcCall] 세션 참가 시작:', {
-      sessionId,
-      ambulanceNumber,
-      hospitalId,
-      patientName,
-      ktas
-    });
     joinSession();
 
-  // beforeunload 이벤트는 페이지를 완전히 벗어날 때만 호출되도록:
   const handleBeforeUnload = (event) => {
     leaveSession();
   };
@@ -62,7 +44,6 @@ export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, pat
   };
 }, []);
 
-  // PiP 모드 관리
   useEffect(() => {
     if (togglePipMode) {
       togglePipMode(location.pathname !== "/emergency/map");

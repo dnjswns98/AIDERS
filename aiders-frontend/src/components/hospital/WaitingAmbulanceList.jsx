@@ -7,7 +7,6 @@ const WaitingAmbulanceList = ({ onStartCall }) => {
   const { user } = useAuthStore();
   
   const handleCallStart = (ambulance) => {
-    console.log('[WaitingAmbulanceList] 통화 시작:', ambulance);
     if (onStartCall) {
       onStartCall({
         sessionId: ambulance.sessionId,
@@ -21,10 +20,8 @@ const WaitingAmbulanceList = ({ onStartCall }) => {
 
   useEffect(() => {
     if (user?.userId) {
-      console.log('[WaitingAmbulanceList] Fetching for hospital:', user.userId);
       fetchWaitingAmbulances(user.userId);
 
-      // 30초마다 목록을 새로고침합니다.
       const intervalId = setInterval(() => fetchWaitingAmbulances(user.userId), 30000);
 
       return () => clearInterval(intervalId);
