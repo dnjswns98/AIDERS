@@ -209,10 +209,10 @@ export const useAuthStore = create(
         });
         
         // 🔥 페이지를 로그인 페이지로 이동 (필요시)
-        if (window.location.pathname !== '/login') {
+        if (window.location.pathname !== '/') {
           console.log('[Auth] 🔄 로그인 페이지로 리다이렉트');
           setTimeout(() => {
-            window.location.href = '/login';
+            window.location.href = '/';
           }, 100);
         }
       },
