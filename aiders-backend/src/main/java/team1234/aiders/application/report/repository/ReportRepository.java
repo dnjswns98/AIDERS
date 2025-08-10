@@ -10,6 +10,10 @@ import java.util.List;
 
 public interface ReportRepository extends JpaRepository<Report, Long> {
 
+    Report findByDispatchId(Long dispatchId);
+
+    boolean existsByDispatchId(Long dispatchId);
+
     @Query("""
         SELECT r.hospitalName, COUNT(r)
         FROM Report r
