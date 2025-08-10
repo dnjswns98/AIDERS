@@ -54,7 +54,11 @@ public class Report {
     @Column(nullable = false)
     private String hospitalName;
 
+    @Lob
+    @Column(name = "content", columnDefinition = "LONGTEXT", nullable = false)
     private String content;
+
+    @Column(name = "summary", length = 255, nullable = false)
     private String summary;
 
     @Builder
