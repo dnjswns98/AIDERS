@@ -2,6 +2,7 @@ package team1234.aiders.application.report.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
@@ -55,4 +56,28 @@ public class Report {
 
     private String content;
     private String summary;
+
+    @Builder
+    private Report(Integer ktas,
+                   Ambulance ambulance,
+                   DispatchHistory dispatchHistory,
+                   Dispatch dispatch,
+                   Firestation firestation,
+                   String hospitalName,
+                   String content,
+                   String summary) {
+        this.ktas = ktas;
+        this.ambulance = ambulance;
+        this.dispatchHistory = dispatchHistory;
+        this.dispatch = dispatch;
+        this.firestation = firestation;
+        this.hospitalName = hospitalName;
+        this.content = content;
+        this.summary = summary;
+    }
+
+    public void updateContent(String content, String summary) {
+        this.content = content;
+        this.summary = summary;
+    }
 }
