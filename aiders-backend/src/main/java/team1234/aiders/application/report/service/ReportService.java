@@ -14,6 +14,7 @@ import team1234.aiders.application.report.ai.AiReportGenerator;
 import team1234.aiders.application.report.dto.AiReportResponse;
 import team1234.aiders.application.report.dto.ReportResponse;
 import team1234.aiders.application.report.dto.ReportSearchRequest;
+import team1234.aiders.application.report.dto.ReportUpdateRequest;
 import team1234.aiders.application.report.entity.Report;
 import team1234.aiders.application.report.repository.ReportQueryRepository;
 import team1234.aiders.application.report.repository.ReportRepository;
@@ -52,6 +53,19 @@ public class ReportService {
     public ReportResponse get(CustomUserDetails user, Long reportId) {
         Report r = reportRepository.findByIdAndFirestationId(reportId, user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Report not found or no permission"));
+        return ReportResponse.from(r);
+    }
+
+    public ReportResponse update(CustomUserDetails user, Long reportId, ReportUpdateRequest req) {
+        Report r = reportRepository.findByIdAndFirestationId(reportId, user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Report not found or no permission"));
+
+        if (req.content() != null || req.summary() != null) {
+            r.updateContent(
+                    req.content() != null ? req.content() : r.getContent(),
+                    req.summary() != null ? req.summary() : r.getSummary()
+            );
+        }
         return ReportResponse.from(r);
     }
 

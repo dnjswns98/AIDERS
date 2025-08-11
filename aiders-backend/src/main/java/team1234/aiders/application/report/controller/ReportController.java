@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import team1234.aiders.application.report.dto.ReportResponse;
 import team1234.aiders.application.report.dto.ReportSearchEnvelope;
 import team1234.aiders.application.report.dto.ReportSearchRequest;
+import team1234.aiders.application.report.dto.ReportUpdateRequest;
 import team1234.aiders.application.report.entity.Report;
 import team1234.aiders.application.report.service.ReportService;
 import team1234.aiders.config.security.CustomUserDetails;
@@ -51,5 +52,14 @@ public class ReportController {
             @PathVariable Long reportId
     ) {
         return ResponseEntity.ok(reportService.get(user, reportId));
+    }
+
+    @PutMapping("/{reportId}")
+    public ResponseEntity<ReportResponse> update(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable Long reportId,
+            @RequestBody ReportUpdateRequest request
+    ) {
+        return ResponseEntity.ok(reportService.update(user, reportId, request));
     }
 }
