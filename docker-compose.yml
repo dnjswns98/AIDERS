@@ -1,65 +1,62 @@
 services:
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    container_name: aiders-redis
-    ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-  
-  # MySQL Database
-  mysql:
-    image: mysql:8.0
-    container_name: aiders-mysql
-    ports:
-      - "3306:3306"
-    environment:
-      - MYSQL_ROOT_PASSWORD=1234
-      - MYSQL_DATABASE=mydb
-    volumes:
-      - mysql_data:/var/lib/mysql
-    restart: unless-stopped
-  
-  # Backend Application
-  aiders-app:
-    build: ./aiders-backend
-    container_name: aiders-backend
-    network_mode: host  # 추가!
-    # ports: 제거 (host 네트워크에서는 불필요)
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/mydb  # localhost 사용
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=1234
-      - OPENVIDU_SECRET=MY_SECRET
-      - OPENVIDU_URL=http://localhost:5443  # localhost로 변경!
-    depends_on:
-      - mysql
-      - redis
-    restart: unless-stopped
-  
-  # Frontend Application
-  aiders-frontend:
-    build: ./aiders-frontend
-    container_name: aiders-frontend
-    ports:
-      - "3000:5173"
-    environment:
-      - VITE_API_BASE_URL=${VITE_API_BASE_URL}
-    command: sh -c "cd /app && npm run dev -- --host 0.0.0.0 --port 5173"
-    depends_on:
-      - aiders-app
-    restart: unless-stopped
-
+ # Redis Cache
+ redis:
+   image: redis:7-alpine
+   container_name: aiders-redis
+   ports:
+     - "6379:6379"
+   command: redis-server --appendonly yes
+   volumes:
+     - redis_data:/data
+   restart: unless-stopped
+ # MySQL Database
+ mysql:
+   image: mysql:8.0
+   container_name: aiders-mysql
+   ports:
+     - "3306:3306"
+   environment:
+     - MYSQL_ROOT_PASSWORD=1234
+     - MYSQL_DATABASE=mydb
+   volumes:
+     - mysql_data:/var/lib/mysql
+   restart: unless-stopped
+ # Backend Application
+ aiders-app:
+   build: ./aiders-backend
+   container_name: aiders-backend
+   network_mode: host  # 추가!
+   # ports: 제거 (host 네트워크에서는 불필요)
+   environment:
+     - SPRING_PROFILES_ACTIVE=docker
+     - SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/mydb  # localhost 사용
+     - SPRING_DATASOURCE_USERNAME=root
+     - SPRING_DATASOURCE_PASSWORD=1234
+     - OPENVIDU_SECRET=MY_SECRET
+     - OPENVIDU_URL=http://localhost:5443  # localhost로 변경!
+   depends_on:
+     - mysql
+     - redis
+   restart: unless-stopped
+ # Frontend Application
+ aiders-frontend:
+   build: ./aiders-frontend
+   container_name: aiders-frontend
+   ports:
+     - "3000:5173"
+   environment:
+     - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+     - VITE_KAKAO_MAP_API_KEY=d9e2776635cfc4df321e42a6106442e1
+     - VITE_WS_BASE_URL=wss://i13d107.p.ssafy.io/ws
+   command: sh -c "cd /app && npm run dev -- --host 0.0.0.0 --port 5173"
+   depends_on:
+     - aiders-app
+   restart: unless-stopped
 volumes:
-  mysql_data:
-  redis_data:
-
+ mysql_data:
+ redis_data:
 # 공통 네트워크 추가!
 networks:
-  default:
-    external: true
-    name: common-network
+ default:
+   external: true
+   name: common-network
