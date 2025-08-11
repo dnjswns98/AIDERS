@@ -25,6 +25,121 @@ import java.util.Map;
 @Transactional
 public class ReportService {
 
+    private final ReportRepository reportRepository;
+    private final DispatchRepository dispatchRepository;
+    private final AmbulanceRepository ambulanceRepository;
+
+    // M5에서는 Builder 주입만 자동으로 가능
+    private final ChatClient.Builder chatClientBuilder;
+
+    private static final int SUMMARY_LIMIT = 255;
+
+    private ChatClient chatClient() {
+        return chatClientBuilder.build();
+    }
+
+    public Report create(CustomUserDetails user) {
+        Ambulance amb = ambulanceRepository.findById(user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Ambulance not found"));
+
+        Dispatch dispatch = dispatchRepository.findFirstByAmbulanceIdOrderByIdDesc(amb.getId());
+        if (dispatch == null) throw new IllegalStateException("배차 내역이 없습니다.");
+
+        DispatchHistory h = dispatch.getDispatchHistory();
+
+        Map<String, Object> vars = buildVars(amb);
+
+        // 템플릿 직접 치환
+        String filled = fillTemplate(USER_TEMPLATE, vars);
+
+        AiReportResponse ai = chatClient().prompt()
+                .system(SYSTEM_PROMPT)
+                .user(filled) // 변수 이미 치환된 문자열만 전달
+                .call()
+                .entity(AiReportResponse.class);
+
+        String content = ai.content();
+        String summary = limit(ai.summary(), SUMMARY_LIMIT);
+
+        Report report = reportRepository.findByDispatchId(dispatch.getId());
+        if (report == null) {
+            report = Report.builder()
+                    .ktas(amb.getPKtas())
+                    .ambulance(amb)
+                    .dispatch(dispatch)
+                    .dispatchHistory(h)
+                    .firestation(h != null ? h.getFirestation() : null)
+                    .hospitalName(amb.getHospitalName())
+                    .content(content)
+                    .summary(summary)
+                    .build();
+        } else {
+            report.updateContent(content, summary);
+        }
+        return reportRepository.save(report);
+    }
+
+    private Map<String, Object> buildVars(Ambulance amb) {
+        LocalDateTime start = amb.getTransferStartTime();
+        LocalDateTime end   = amb.getTransferEndTime();
+        Long minutes = (start != null && end != null) ? Duration.between(start, end).toMinutes() : null;
+
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("dispatchTime", fmt(amb.getDispatchTime()));
+        vars.put("transferStart", fmt(start));
+        vars.put("transferEnd", fmt(end));
+        vars.put("transferMinutes", minutes);
+
+        vars.put("pName", nz(amb.getPName()));
+        vars.put("pSex", mapSex(amb.getPSex()));
+        vars.put("pAgeRange", amb.getPAgeRange() != null ? amb.getPAgeRange().name() : "UNDECIDED");
+        vars.put("ktas", amb.getPKtas());
+        vars.put("department", nz(amb.getPDepartment()));
+        vars.put("condition", nz(amb.getPCondition()));
+        vars.put("vitalSigns", nz(amb.getPVitalSigns()));
+
+        vars.put("hospitalName", nz(amb.getHospitalName()));
+        vars.put("hospitalAddress", nz(amb.getHospitalAddress()));
+
+        vars.put("pastHistory", nz(amb.getPPastHistory()));
+        vars.put("medicine", nz(amb.getPMedicine()));
+        vars.put("familyHistory", nz(amb.getPFamilyHistory()));
+        return vars;
+    }
+
+    private static String fillTemplate(String template, Map<String, Object> vars) {
+        String s = template;
+        for (Map.Entry<String, Object> e : vars.entrySet()) {
+            String key = "{" + e.getKey() + "}";
+            String val = String.valueOf(e.getValue());
+            s = s.replace(key, val);
+        }
+        return s;
+    }
+
+    private static String fmt(LocalDateTime t) {
+        if (t == null) return "미기재";
+        return t.toLocalTime().toString().substring(0, 5); // HH:mm
+    }
+
+    private static String nz(String s) {
+        return (s == null || s.isBlank()) ? "미기재" : s;
+    }
+
+    private static String mapSex(Integer sex) {
+        if (sex == null) return "UNKNOWN";
+        return switch (sex) {
+            case 0 -> "여성";
+            case 1 -> "남성";
+            default -> "미정";
+        };
+    }
+
+    private static String limit(String s, int max) {
+        if (s == null) return null;
+        return s.length() > max ? s.substring(0, max) : s;
+    }
+
     // === Prompts ===
     private static final String SYSTEM_PROMPT = """
 너는 한국어 의료 문서 작성 보조자다. 다음 규칙을 반드시 지켜라.
