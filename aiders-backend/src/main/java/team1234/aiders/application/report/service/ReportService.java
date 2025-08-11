@@ -48,6 +48,13 @@ public class ReportService {
         return reportQueryRepository.search(user.getId(), req, pageable).map(ReportResponse::from);
     }
 
+    @Transactional(readOnly = true)
+    public ReportResponse get(CustomUserDetails user, Long reportId) {
+        Report r = reportRepository.findByIdAndFirestationId(reportId, user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Report not found or no permission"));
+        return ReportResponse.from(r);
+    }
+
     public Report create(CustomUserDetails user) {
         Ambulance amb = ambulanceRepository.findById(user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Ambulance not found"));

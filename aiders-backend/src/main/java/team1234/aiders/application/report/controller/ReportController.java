@@ -44,4 +44,12 @@ public class ReportController {
         ReportSearchRequest req = body.request();
         return ResponseEntity.ok(reportService.search(user, req, pageable));
     }
+
+    @GetMapping("/{reportId}")
+    public ResponseEntity<ReportResponse> get(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable Long reportId
+    ) {
+        return ResponseEntity.ok(reportService.get(user, reportId));
+    }
 }
