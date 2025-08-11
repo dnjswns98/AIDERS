@@ -69,6 +69,13 @@ public class ReportService {
         return ReportResponse.from(r);
     }
 
+    public void delete(CustomUserDetails user, Long reportId) {
+        if (!reportRepository.existsByIdAndFirestationId(reportId, user.getId())) {
+            throw new IllegalArgumentException("Report not found or no permission");
+        }
+        reportRepository.deleteByIdAndFirestationId(reportId, user.getId());
+    }
+
     public Report create(CustomUserDetails user) {
         Ambulance amb = ambulanceRepository.findById(user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Ambulance not found"));
