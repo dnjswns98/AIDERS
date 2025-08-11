@@ -36,10 +36,22 @@ public interface UserRepository extends JpaRepository<User, Long>, CustomUserRep
             "where user_key = :userKey and is_deleted = 0", nativeQuery = true)
     int clearRefreshTokenByUserKey(@Param("userKey") String userKey);
 
+    @Query("select u.id as id, u.userKey as userKey, u.role as role, u.refreshToken as refreshToken" +
+            " from User u" +
+            " where u.userKey = :userKey and u.isDeleted = false")
+    Optional<ReissueProjection> findReissueByUserKey(@Param("userKey") String userKey);
+
     interface LoginProjection {
         Long getId();
         String getUserKey();
         String getPassword();
         String getRole();
+    }
+
+    interface ReissueProjection {
+        Long getId();
+        String getUserKey();
+        String getRole();
+        String getRefreshToken();
     }
 }

@@ -45,7 +45,7 @@ public class AuthService {
         validateRefreshToken(refreshToken);
 
         String userKey = jwtProvider.getUserKeyFromToken(refreshToken);
-        User user = findUserByUserKey(userKey);
+        UserRepository.ReissueProjection user = getFindReiisueUser(userKey);
         checkStoredRefreshToken(refreshToken, user.getRefreshToken());
 
         String newAccessToken = jwtProvider.generateToken(
@@ -89,9 +89,10 @@ public class AuthService {
         }
     }
 
-    private User findUserByUserKey(String userKey) {
-        return userRepository.findByUserKey(userKey)
-                .orElseThrow(() -> new UsernameNotFoundException("사용자 없음"));
+    private UserRepository.ReissueProjection getFindReiisueUser(String userKey) {
+        UserRepository.ReissueProjection user = userRepository.findReissueByUserKey(userKey)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+        return user;
     }
 
     private JwtUserDto createJwtUser(Long id, String userKey, String role) {
