@@ -53,6 +53,9 @@ public class Report {
     @Column(nullable = false)
     private String hospitalName;
 
+    @Lob
+    @Column(columnDefinition = "text")
     private String content;
+
     private String summary;
 }
