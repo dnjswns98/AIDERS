@@ -1,11 +1,22 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAppContext } from '../../hooks/useAppContext';
+import useFireStationStore from '../../store/useFireStationStore';
 
-const Header = () => {
+const FireStationHeader = () => {
     const { currentTime, notifications, setNotifications } = useAppContext();
     const [showNotifications, setShowNotifications] = useState(false);
+
+    const { firestationInfo, fetchFirestationInfo, isLoading, error } = useFireStationStore();
+
+    useEffect(() => {
+        if (!firestationInfo) {
+            fetchFirestationInfo();
+        }
+    }, [fetchFirestationInfo, firestationInfo]);
+
+    const displayName = firestationInfo?.name || '소방서';
 
     const unreadCount = notifications.filter(n => n.status === 'unread').length;
 
@@ -19,14 +30,13 @@ const Header = () => {
                 <div className="flex items-center justify-between h-16">
                     <NavLink to="/firestation" className="flex items-center space-x-4">
                         <i className="fas fa-fire text-red-400 text-2xl"></i>
-                        <h1 className="text-base sm:text-lg md:text-xl font-bold">구미소방센터 구급차 관리 시스템</h1>
+                        <h1 className="text-base sm:text-lg md:text-xl font-bold">
+                            {isLoading ? '로딩 중...' : `${displayName} 구급차 관리 시스템`}
+                        </h1>
                     </NavLink>
                     <nav className="flex items-center space-x-2 sm:space-x-4 md:space-x-8">
                         <NavLink to="/firestation/situation-board" className={({ isActive }) => `px-4 py-2 rounded-md transition-colors duration-200 !rounded-button whitespace-nowrap ${isActive ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
                             상황판
-                        </NavLink>
-                        <NavLink to="/firestation/reports" className={({ isActive }) => `px-4 py-2 rounded-md transition-colors duration-200 !rounded-button whitespace-nowrap ${isActive ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
-                            신고 관리
                         </NavLink>
                         <NavLink to="/firestation/dispatch" className={({ isActive }) => `px-4 py-2 rounded-md transition-colors duration-200 !rounded-button whitespace-nowrap ${isActive ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
                             <i className="fas fa-ambulance mr-2"></i>
@@ -86,4 +96,5 @@ const Header = () => {
     );
 };
 
-export default Header;
+export default FireStationHeader;
+
