@@ -5,13 +5,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import team1234.aiders.application.user.entity.User;
+import team1234.aiders.application.user.repository.UserRepository;
+import team1234.aiders.application.user.repository.UserRepository.LoginProjection;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
 @Getter
-@RequiredArgsConstructor
 public class CustomUserDetails implements UserDetails {
 
     private final Long id;
@@ -19,18 +20,15 @@ public class CustomUserDetails implements UserDetails {
     private final String password;
     private final String role;
 
-    public CustomUserDetails(User user) {
-        this.id = user.getId();
-        this.userKey = user.getUserKey();
-        this.password = user.getPassword();
-        this.role = getDiscriminatorRole(user);
+    public CustomUserDetails(Long id, String userKey, String password, String role) {
+        this.id = id;
+        this.userKey = userKey;
+        this.password = password;
+        this.role = role;
     }
 
-    private String getDiscriminatorRole(User user) {
-        if (user.getClass().getSimpleName().equals("Hospital")) return "hospital";
-        if (user.getClass().getSimpleName().equals("Firestation")) return "firestation";
-        if (user.getClass().getSimpleName().equals("Ambulance")) return "ambulance";
-        return "admin"; // 기본값 또는 실제 Admin 엔티티가 있다면 그에 맞춰 조정
+    public static CustomUserDetails fromLoginProjection(LoginProjection p) {
+        return new CustomUserDetails(p.getId(), p.getUserKey(), p.getPassword(), p.getRole());
     }
 
     @Override

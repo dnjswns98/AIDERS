@@ -25,14 +25,14 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
 
     public LoginResponseDto login(LoginRequestDto request) {
-        CustomUserDetails userDetails = loadUserDetails(request.getUserKey());
-        checkPassword(request.getPassword(), userDetails.getPassword());
+        var user = loadUserDetails(request.getUserKey());
+        checkPassword(request.getPassword(), user.getPassword());
 
-        JwtUserDto jwtUser = createJwtUser(userDetails.getId(), userDetails.getUserKey(),  userDetails.getRole());
+        JwtUserDto jwtUser = createJwtUser(user.getId(), user.getUserKey(),  user.getRole());
         String accessToken = jwtProvider.generateToken(jwtUser);
         String refreshToken = jwtProvider.generateRefreshToken(jwtUser);
 
-        updateRefreshToken(userDetails.getUserKey(), refreshToken);
+        userRepository.updateRefreshToken(user.getId(), refreshToken);
 
         return new LoginResponseDto(accessToken, refreshToken);
     }

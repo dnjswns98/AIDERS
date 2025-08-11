@@ -1,9 +1,9 @@
 package team1234.aiders.application.user.repository;
 
-import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import team1234.aiders.application.user.entity.User;
 
 import java.util.Optional;
@@ -16,4 +16,20 @@ public interface UserRepository extends JpaRepository<User, Long>, CustomUserRep
     void softDeleteById(@Param("id") Long id);
 
     Optional<User> findByUserKeyAndPasswordResetKey(String userKey, String passwordResetKey);
+
+    @Query("select u.id as id, u.userKey as userKey, u.password as password, u.role as role" +
+            " from User u" +
+            " where u.userKey = :userKey and u.isDeleted = false")
+    Optional<LoginProjection> findUserByUserKey(@Param("userKey") String userKey);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "update user set refresh_token = :refreshToken where user_id = :userId", nativeQuery = true)
+    int updateRefreshToken(@Param("userId") Long userId, @Param("refreshToken") String refreshToken);
+
+    interface LoginProjection {
+        Long getId();
+        String getUserKey();
+        String getPassword();
+        String getRole();
+    }
 }
