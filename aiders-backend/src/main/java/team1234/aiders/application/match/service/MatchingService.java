@@ -109,9 +109,7 @@ public class MatchingService {
 
         // 구급차에 병원 정보 저장
         Hospital hospital = selected.hospitalData().data().getHospital();
-        ambulance.setHospital(hospital);
-        ambulance.setHospitalName(hospital.getName());
-        ambulance.setHospitalAddress(hospital.getAddress());
+        ambulance.setMatchedHospital(hospital, hospital.getName(), hospital.getAddress());
 
         log.info("🎯 [Matching Completed] Selected Hospital: {})",
                 hospital.getId());

@@ -19,19 +19,11 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
     e.stopPropagation();
     if (isUpdating) return;
     
-    // 경계값 체크
     if (delta > 0 && bed.currentPatients >= bed.totalBeds) return;
     if (delta < 0 && bed.currentPatients <= 0) return;
     
-    // console.log('🔍 BedCard - 환자 수 변경:', {
-    //   bedType: bed.type,
-    //   currentPatients: bed.currentPatients,
-    //   delta,
-    //   totalBeds: bed.totalBeds
-    // });
-    
     setIsUpdating(true);
-    await onUpdate(bed.type, 'current', delta); // delta만 전달
+    await onUpdate(bed.type, 'current', delta);
     setIsUpdating(false);
   };
 
@@ -81,7 +73,6 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
     >
       
 
-      {/* 병상명과 상태 */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -116,7 +107,6 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
           </div>
         )}
         
-        {/* 토글 스위치 - 오른쪽 상단 */}
         {!compact && !readonly && (
           <div
             onClick={handleStatusToggle}
@@ -149,7 +139,6 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
         )}
       </div>
 
-      {/* 사용 현황 정보 */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -220,7 +209,6 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
         )}
       </div>
 
-      {/* 진행률 바 */}
       <div style={{
         height: '4px',
         backgroundColor: '#e5e7eb',
@@ -238,7 +226,6 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
 
       {!compact && (
         <>
-          {/* 총 병상 수 조절 */}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -328,7 +315,6 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
             </div>
           </div>
 
-          {/* 실제 환자 수 조절 */}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',

@@ -22,10 +22,10 @@ export default function HospitalHeader() {
     { label: "상황판", icon: "📊", path: "/hospital/dashboard" },
     { label: "구급환자", icon: "🚑", path: "/hospital/emergency" },
     { label: "병상관리", icon: "🏥", path: "/hospital/beds" },
+    { label: "화상통화 테스트", icon: "📹", path: "/hospital/webrtc-test" },
     { label: "알림", icon: "🔔", path: "/hospital/notifications" }
   ];
 
-  // 현재 경로에 따라 activeMenu 설정
   const getCurrentMenu = () => {
     const currentItem = menuItems.find(item => item.path === location.pathname);
     return currentItem ? currentItem.label : "구급환자";
@@ -33,12 +33,9 @@ export default function HospitalHeader() {
 
   const activeMenu = getCurrentMenu();
 
-  // 병원 정보 상태 변화 추적
   useEffect(() => {
-    // console.log('🏥 HospitalHeader - hospitalInfo 상태 변화:', hospitalInfo);
   }, [hospitalInfo]);
 
-  // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -76,7 +73,6 @@ export default function HospitalHeader() {
         </div>
 
         <div className={styles.userSection}>
-          {/* 메뉴 드롭다운 */}
           <div ref={dropdownRef} className={styles.dropdownContainer}>
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -98,7 +94,6 @@ export default function HospitalHeader() {
                       if (item.label === "알림") {
                         setNotificationModalOpen(true);
                       } else if (item.label === "상황판") {
-                        // 상황판은 새 창으로 열기
                         window.open(item.path, '_blank', 'width=1200,height=800');
                       } else {
                         navigate(item.path);
@@ -132,7 +127,6 @@ export default function HospitalHeader() {
           </div>
       </div>
       
-      {/* 알림 모달 */}
       <NotificationModal 
         isOpen={notificationModalOpen}
         onClose={() => setNotificationModalOpen(false)}

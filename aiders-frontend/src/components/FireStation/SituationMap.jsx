@@ -27,7 +27,6 @@ const getAmbulanceMarkerImage = (status, isSelected) => {
 
 const getHospitalMarkerImage = () => {
   if (!window.kakao || !window.kakao.maps) return null;
-  // 구글 지도 기본 병원 아이콘으로 변경하여 명확성 증대
   const imgSrc = 'https://maps.google.com/mapfiles/kml/shapes/hospitals.png'; 
   const imgSize = new window.kakao.maps.Size(32, 32);
   return new window.kakao.maps.MarkerImage(imgSrc, imgSize);
@@ -40,56 +39,39 @@ export default function SituationMap({ ambulances, hospitals, selectedAmbulance,
   const hospitalMarkers = useRef([]);
   const infoWindow = useRef(null);
 
-  // 지도 초기화 및 업데이트 로직
   useEffect(() => {
-    console.log("SituationMap useEffect triggered");
     if (!mapContainer.current) {
-      console.log("mapContainer.current is null");
       return;
     }
 
-    console.log("mapContainer.current exists:", mapContainer.current);
-    console.log("mapContainer offsetWidth:", mapContainer.current.offsetWidth);
-    console.log("mapContainer offsetHeight:", mapContainer.current.offsetHeight);
-
     const checkKakaoMap = () => {
       if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
-        console.log("Kakao Map API loaded");
-        // 지도 생성
         if (!map.current) {
-          console.log("Creating new map instance");
           const options = {
             center: new window.kakao.maps.LatLng(center.lat, center.lng),
             level: 5,
           };
           map.current = new window.kakao.maps.Map(mapContainer.current, options);
           infoWindow.current = new window.kakao.maps.InfoWindow({ zIndex: 1 });
-          // 지도가 로드된 후 relayout 호출
           window.kakao.maps.event.addListener(map.current, 'idle', () => {
-            console.log("Map idle event fired, calling relayout");
             if (map.current) {
               map.current.relayout();
             }
           });
         }
 
-        // 지도의 크기가 0이 아닌지 확인 후 relayout 호출 (초기 렌더링 시)
         if (mapContainer.current.offsetWidth > 0 && mapContainer.current.offsetHeight > 0 && !map.current.relayoutCalled) {
-          console.log("Calling initial relayout");
           map.current.relayout();
           map.current.relayoutCalled = true; // 중복 호출 방지 플래그
         }
 
-        // 지도 중심 이동
         const moveLatLon = new window.kakao.maps.LatLng(center.lat, center.lng);
         map.current.panTo(moveLatLon);
 
-        // 구급차 마커 업데이트
         ambulanceMarkers.current.forEach(marker => marker.setMap(null));
         ambulanceMarkers.current = [];
 
         ambulances.forEach(ambulance => {
-          // 대기 중이거나 정비 중이거나 이송 완료된 구급차는 마커를 표시하지 않음
           if (ambulance.status === 'standby' || ambulance.status === 'maintenance' || ambulance.status === 'completed') {
             return;
           }
@@ -126,7 +108,6 @@ export default function SituationMap({ ambulances, hospitals, selectedAmbulance,
           ambulanceMarkers.current.push(marker);
         });
 
-        // 병원 마커 업데이트 (최초 1회만)
         if (hospitals && hospitalMarkers.current.length === 0) {
           hospitals.forEach(hospital => {
             const position = new window.kakao.maps.LatLng(hospital.latitude, hospital.longitude);
@@ -158,7 +139,6 @@ export default function SituationMap({ ambulances, hospitals, selectedAmbulance,
         }
 
       } else {
-        console.log("Kakao Map API not yet loaded, retrying...");
         setTimeout(checkKakaoMap, 100);
       }
     };

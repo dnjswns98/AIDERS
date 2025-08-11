@@ -74,6 +74,7 @@ public class DispatchService {
 
             ambulance.changeStatus(AmbCurrentStatus.DISPATCH);
             ambulance.dispatchPatientInfo(history.getPLatitude(), history.getPLongitude(), history.getPAddress(), history.getPCondition());
+            ambulance.dispatchStart();
 
             Dispatch dispatch = new Dispatch(ambulance, history);
             dispatchRepository.save(dispatch);

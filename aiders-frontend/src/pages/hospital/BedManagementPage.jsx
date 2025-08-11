@@ -32,9 +32,7 @@ export default function BedManagementPage() {
   }, [user]);
 
   useEffect(() => {
-    console.log('🔍 BedManagementPage - bedInfo:', bedInfo);
     
-    // 실제 API 응답 구조에 맞게 데이터 변환
     const transformedBeds = [
       {
         id: 1,
@@ -82,8 +80,6 @@ export default function BedManagementPage() {
       }
     ];
     
-    console.log('🔍 BedManagementPage - 변환된 beds:', transformedBeds);
-    // isExist가 false인 병상은 제외하고 표시
     const visibleBeds = transformedBeds.filter(bed => bed.isExist !== false);
     setBeds(visibleBeds);
   }, [bedInfo]);
@@ -91,21 +87,12 @@ export default function BedManagementPage() {
   const handleBedUpdate = async (bedType, updateType, value) => {
     try {
       if (updateType === 'current') {
-        // 현재 환자 수 변경 (수동 증감) - value는 이제 delta값 (+1 또는 -1)
-        console.log('🔍 BedManagementPage - 환자 수 변경 요청:', {
-          bedType,
-          delta: value
-        });
 
         let result = { success: true };
         
         if (value > 0) {
-          // 환자 수 증가 (+1) → 가용 병상 감소
-          console.log('📈 환자 수 증가 (가용 병상 감소) API 호출:', bedType);
           result = await decreaseBedManually(bedType);
         } else if (value < 0) {
-          // 환자 수 감소 (-1) → 가용 병상 증가
-          console.log('📉 환자 수 감소 (가용 병상 증가) API 호출:', bedType);
           result = await increaseBedManually(bedType);
         }
 
@@ -114,7 +101,6 @@ export default function BedManagementPage() {
         }
       } else if (updateType === 'total') {
         
-        // 총 베드 수 변경 (베드 정보 업데이트)
         if (value < 0) {
           alert('베드 수는 0보다 작을 수 없습니다.');
           return;
@@ -137,18 +123,12 @@ export default function BedManagementPage() {
           updateData.neonatalAvailableBed = Math.max(0, value - (currentBed?.currentPatients || 0));
         }
         
-        console.log('🔍 BedManagementPage - 베드 업데이트 데이터:', updateData);
 
         const result = await updateBedInfo(updateData);
         if (!result?.success) {
           alert('베드 정보 업데이트에 실패했습니다: ' + (result?.error || '알 수 없는 오류'));
         }
       } else if (updateType === 'status') {
-        // 상태 변경 (병상 운영 상태 업데이트)
-        console.log('🔍 BedManagementPage - 병상 운영 상태 변경:', {
-          bedType,
-          newIsAvailable: value
-        });
         
         const updateData = {};
         
@@ -162,7 +142,6 @@ export default function BedManagementPage() {
           updateData.neonatalIsAvailable = value;
         }
         
-        console.log('🔍 BedManagementPage - 병상 상태 업데이트 데이터:', updateData);
 
         const result = await updateBedInfo(updateData);
         if (!result?.success) {
@@ -177,15 +156,10 @@ export default function BedManagementPage() {
 
   const handleExistToggle = async (bedKey, newIsExist) => {
     try {
-      console.log('🔍 BedManagementPage - 병상 존재 여부 변경:', {
-        bedKey,
-        newIsExist
-      });
       
       const updateData = {};
       updateData[`${bedKey}IsExist`] = newIsExist;
       
-      console.log('🔍 BedManagementPage - 병상 존재 여부 업데이트 데이터:', updateData);
 
       const result = await updateBedInfo(updateData);
       if (!result?.success) {
@@ -197,7 +171,6 @@ export default function BedManagementPage() {
     }
   };
 
-  // 통계 계산
   const getStatistics = () => {
     const totalBeds = beds.reduce((sum, bed) => sum + bed.totalBeds, 0);
     const totalPatients = beds.reduce((sum, bed) => sum + bed.currentPatients, 0);
@@ -241,7 +214,6 @@ export default function BedManagementPage() {
               병상 현황 및 관리 페이지입니다. 총 병상과 실제 환자 수를 조절할 수 있습니다.
             </p>
             
-            {/* 통계 정보 */}
             <div style={{
               display: 'flex',
               gap: '16px',
@@ -279,7 +251,6 @@ export default function BedManagementPage() {
                 <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#16a34a' }}>{stats.availableBeds}</div>
               </div>
               
-              {/* 편집 아이콘 */}
               <button
                 onClick={() => setShowEditModal(true)}
                 style={{
@@ -384,7 +355,6 @@ export default function BedManagementPage() {
         </div>
       </main>
       
-      {/* 병상 존재 여부 편집 모달 */}
       {showEditModal && (
         <div 
           style={{
@@ -400,7 +370,6 @@ export default function BedManagementPage() {
             zIndex: 1000
           }}
           onClick={(e) => {
-            // 모달 배경 클릭 시에는 아무 동작하지 않음 (모달 닫지 않음)
             e.stopPropagation();
           }}
         >
@@ -415,7 +384,6 @@ export default function BedManagementPage() {
               overflow: 'auto'
             }}
             onClick={(e) => {
-              // 모달 콘텐츠 클릭 시 이벤트 전파 중단 (모달 닫지 않음)
               e.stopPropagation();
             }}
           >

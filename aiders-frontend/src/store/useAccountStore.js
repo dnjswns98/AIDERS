@@ -9,9 +9,7 @@ export const useAccountStore = create((set, get) => ({
   totalPages: 0,
   totalElements: 0,
 
-  // 사용자 목록 조회
   fetchAccounts: async (page = 0, size = 15, search = '', role = '') => {
-    // console.log('🔍 fetchAccounts 호출:', { page, size, search, role });
     set({ loading: true, error: null });
     
     try {
@@ -26,7 +24,6 @@ export const useAccountStore = create((set, get) => ({
 
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
       const url = `${baseUrl}/api/v1/user/?${params}`;
-      // console.log('🌐 API 요청 URL:', url);
 
       const response = await fetchWithAuth(url, {
         method: 'GET'
@@ -38,14 +35,7 @@ export const useAccountStore = create((set, get) => ({
       }
 
       const data = await response.json();
-      // console.log('📊 API 응답 데이터:', {
-      //   currentPage: data.number,
-      //   totalPages: data.totalPages,
-      //   totalElements: data.totalElements,
-      //   contentLength: data.content?.length
-      // });
       
-      // 백엔드 응답을 프론트엔드 형식으로 변환 (admin 제외)
       const transformedAccounts = data.content
         .filter(user => user.role !== 'admin' && user.role !== 'ROLE_ADMIN')
         .map(user => ({
@@ -58,7 +48,6 @@ export const useAccountStore = create((set, get) => ({
           updatedAt: user.updatedAt
         }));
 
-      // admin 계정을 제외한 실제 계정 수 계산
       const adminCount = data.content.filter(user => 
         user.role === 'admin' || user.role === 'ROLE_ADMIN'
       ).length;
@@ -67,16 +56,9 @@ export const useAccountStore = create((set, get) => ({
         accounts: transformedAccounts,
         currentPage: data.number,
         totalPages: data.totalPages,
-        totalElements: data.totalElements - adminCount, // 전체에서 admin 수 제외
+        totalElements: data.totalElements - adminCount,
         loading: false
       };
-
-      // console.log('✅ Store 업데이트:', {
-      //   accountsCount: transformedAccounts.length,
-      //   currentPage: newState.currentPage,
-      //   totalPages: newState.totalPages,
-      //   totalElements: newState.totalElements
-      // });
 
       set(newState);
 
@@ -90,7 +72,6 @@ export const useAccountStore = create((set, get) => ({
     }
   },
 
-  // 사용자 삭제
   deleteAccount: async (id) => {
     try {
       const { useAuthStore } = await import('./useAuthStore');
@@ -108,13 +89,11 @@ export const useAccountStore = create((set, get) => ({
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // 삭제 성공 시 목록에서 제거
       set((state) => ({
         accounts: state.accounts.filter((account) => account.id !== id),
         totalElements: state.totalElements - 1
       }));
 
-      // console.log('사용자 삭제 완료');
     } catch (error) {
       console.error('사용자 삭제 실패:', error);
       set({ error: error.message });
@@ -122,7 +101,6 @@ export const useAccountStore = create((set, get) => ({
     }
   },
 
-  // 구급차 계정 등록
   registerAmbulance: async (userData) => {
     try {
       const { useAuthStore } = await import('./useAuthStore');
@@ -148,11 +126,8 @@ export const useAccountStore = create((set, get) => ({
       }
 
       const responseText = await response.text();
-      // console.log('Ambulance registration response:', responseText);
       
-      // 빈 응답 처리 (백엔드에서 ResponseEntity.ok().build()를 반환하는 경우)
       if (!responseText || responseText.trim() === '') {
-        // console.log('빈 응답을 받았습니다. 계정 생성은 성공했지만 패스워드 정보가 없습니다.');
         return {
           success: true,
           password: '임시패스워드가 생성되었습니다',
@@ -169,7 +144,6 @@ export const useAccountStore = create((set, get) => ({
         throw new Error(`Invalid JSON response: ${responseText}`);
       }
 
-      // console.log('구급차 계정 생성 완료:', data);
       return {
         success: true,
         password: data.password,
@@ -184,7 +158,6 @@ export const useAccountStore = create((set, get) => ({
     }
   },
 
-  // 기관 계정 등록 (병원/소방서)
   registerOrganization: async (userData) => {
     try {
       const { useAuthStore } = await import('./useAuthStore');
@@ -192,14 +165,13 @@ export const useAccountStore = create((set, get) => ({
 
       const requestBody = {
         userKey: userData.userKey,
-        role: userData.role, // 'hospital' or 'firestation'
+        role: userData.role,
         address: userData.address,
         name: userData.name,
         latitude: userData.latitude || 0,
         longitude: userData.longitude || 0
       };
 
-      // console.log('Organization registration request:', requestBody);
 
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/user/regist/organization`, {
         method: 'POST',
@@ -217,11 +189,8 @@ export const useAccountStore = create((set, get) => ({
       }
 
       const responseText = await response.text();
-      // console.log('Organization registration response:', responseText);
       
-      // 빈 응답 처리 (백엔드에서 ResponseEntity.ok().build()를 반환하는 경우)
       if (!responseText || responseText.trim() === '') {
-        // console.log('빈 응답을 받았습니다. 계정 생성은 성공했지만 패스워드 정보가 없습니다.');
         return {
           success: true,
           password: '임시패스워드가 생성되었습니다',
@@ -238,7 +207,6 @@ export const useAccountStore = create((set, get) => ({
         throw new Error(`Invalid JSON response: ${responseText}`);
       }
 
-      // console.log('기관 계정 생성 완료:', data);
       return {
         success: true,
         password: data.password,
@@ -267,7 +235,6 @@ export const useAccountStore = create((set, get) => ({
     })),
 }))
 
-// 역할을 표시용 이름으로 변환하는 함수
 function getRoleDisplayName(role) {
   switch (role) {
     case 'ROLE_ADMIN':

@@ -10,12 +10,9 @@ export default function TestHospitalCallPage() {
     return <div>로그인된 병원 정보가 필요합니다.</div>;
   }
 
-  // 구급차와 미리 약속한 sessionId, 예를 들어 '테스트' 또는 특정 번호와 동기화
-  const sessionId = 900; // 예: '998모7127' 등 구급차 세션ID와 맞추면 됨
-  const hospitalId = user.userId; // JWT sub 값 (병원 DB id)
+  const sessionId = 241;
+  const hospitalId = user.userId;
   const userName = `hospital-${hospitalId}`;
-  console.log("sessionId :", sessionId);
-  console.log("hospitalId :", hospitalId);
 
   return (
     <div style={{ padding: 20 }}>
@@ -30,7 +27,6 @@ export default function TestHospitalCallPage() {
             ambulanceId={sessionId}
             hospitalId={hospitalId}
             userName={userName}
-            // 병원은 patientName, ambulanceId 등 필요 없으면 생략
             onLeave={() => setIsCalling(false)}
           />
           <button

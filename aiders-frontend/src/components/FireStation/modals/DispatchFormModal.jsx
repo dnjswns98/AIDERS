@@ -44,8 +44,6 @@ const DispatchFormModal = ({ report, onClose }) => {
       hospitalId: parseInt(formData.hospitalId, 10),
     };
 
-    console.log("Dispatching data:", dispatchData);
-
     try {
       await dispatchAmbulance(dispatchData);
 
@@ -58,14 +56,6 @@ const DispatchFormModal = ({ report, onClose }) => {
         isDispatched: true,
         ambulanceId: parseInt(formData.ambulanceId, 10),
       });
-      console.log(
-        "Dispatching ambulance:",
-        formData.ambulanceId,
-        "for report:",
-        report.id,
-        "to hospital:",
-        formData.hospitalId
-      );
       onClose();
     } catch (error) {
       console.error("Dispatch failed:", error);
