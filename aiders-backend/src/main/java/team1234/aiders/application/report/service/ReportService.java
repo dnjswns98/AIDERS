@@ -1,6 +1,8 @@
 package team1234.aiders.application.report.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team1234.aiders.application.ambulance.entity.Ambulance;
@@ -10,7 +12,10 @@ import team1234.aiders.application.dispatch.entity.DispatchHistory;
 import team1234.aiders.application.dispatch.repository.DispatchRepository;
 import team1234.aiders.application.report.ai.AiReportGenerator;
 import team1234.aiders.application.report.dto.AiReportResponse;
+import team1234.aiders.application.report.dto.ReportResponse;
+import team1234.aiders.application.report.dto.ReportSearchRequest;
 import team1234.aiders.application.report.entity.Report;
+import team1234.aiders.application.report.repository.ReportQueryRepository;
 import team1234.aiders.application.report.repository.ReportRepository;
 import team1234.aiders.config.security.CustomUserDetails;
 
@@ -28,8 +33,15 @@ public class ReportService {
     private final DispatchRepository dispatchRepository;
     private final AmbulanceRepository ambulanceRepository;
     private final AiReportGenerator aiReportGenerator;
+    private final ReportQueryRepository reportQueryRepository;
 
     private static final int SUMMARY_LIMIT = 255;
+
+    @Transactional(readOnly = true)
+    public Page<ReportResponse> listAll(CustomUserDetails user, Pageable pageable) {
+        return reportQueryRepository.search(user.getId(), new ReportSearchRequest(null, null, null, null, null), pageable)
+                .map(ReportResponse::from);
+    }
 
     public Report create(CustomUserDetails user) {
         Ambulance amb = ambulanceRepository.findById(user.getId())

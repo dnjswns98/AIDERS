@@ -1,6 +1,9 @@
 package team1234.aiders.application.report.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -20,5 +23,13 @@ public class ReportController {
     public ResponseEntity<ReportResponse> generate(@AuthenticationPrincipal CustomUserDetails user) {
         Report report = reportService.create(user);
         return ResponseEntity.ok(ReportResponse.from(report));
+    }
+
+    @GetMapping("/")
+    public ResponseEntity<Page<ReportResponse>> listAll(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PageableDefault(size = 10) Pageable pageable
+    ) {
+        return ResponseEntity.ok(reportService.listAll(user, pageable));
     }
 }
