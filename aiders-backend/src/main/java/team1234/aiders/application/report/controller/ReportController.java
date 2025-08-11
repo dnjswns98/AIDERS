@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import team1234.aiders.application.report.dto.ReportResponse;
+import team1234.aiders.application.report.dto.ReportSearchEnvelope;
+import team1234.aiders.application.report.dto.ReportSearchRequest;
 import team1234.aiders.application.report.entity.Report;
 import team1234.aiders.application.report.service.ReportService;
 import team1234.aiders.config.security.CustomUserDetails;
@@ -31,5 +33,15 @@ public class ReportController {
             @PageableDefault(size = 10) Pageable pageable
     ) {
         return ResponseEntity.ok(reportService.listAll(user, pageable));
+    }
+
+    @PostMapping("/search")
+    public ResponseEntity<Page<ReportResponse>> search(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestBody ReportSearchEnvelope body
+    ) {
+        Pageable pageable = body.toPageable();
+        ReportSearchRequest req = body.request();
+        return ResponseEntity.ok(reportService.search(user, req, pageable));
     }
 }

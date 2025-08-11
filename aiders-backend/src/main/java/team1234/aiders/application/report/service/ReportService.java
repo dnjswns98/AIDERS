@@ -43,6 +43,11 @@ public class ReportService {
                 .map(ReportResponse::from);
     }
 
+    @Transactional(readOnly = true)
+    public Page<ReportResponse> search(CustomUserDetails user, ReportSearchRequest req, Pageable pageable) {
+        return reportQueryRepository.search(user.getId(), req, pageable).map(ReportResponse::from);
+    }
+
     public Report create(CustomUserDetails user) {
         Ambulance amb = ambulanceRepository.findById(user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Ambulance not found"));
