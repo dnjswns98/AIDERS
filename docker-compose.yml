@@ -4,99 +4,59 @@ services:
     image: redis:7-alpine
     container_name: aiders-redis
     ports:
-      - ${REDIS_PORT}:6379
+      - "6379:6379"
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
-    networks:
-      - aiders-network
     restart: unless-stopped
-
   # MySQL Database
   mysql:
     image: mysql:8.0
     container_name: aiders-mysql
     ports:
-      - ${MYSQL_PORT}:3306
-    command: [
-      "mysqld",
-      "--character-set-server=utf8mb4",
-      "--collation-server=utf8mb4_unicode_ci",
-      "--default-time-zone=+09:00",
-      "--init-connect=SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
-      "--skip-character-set-client-handshake"
-    ]
+      - "3306:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_ROOT_PASSWORD=1234
+      - MYSQL_DATABASE=mydb
     volumes:
       - mysql_data:/var/lib/mysql
-    networks:
-      - aiders-network
     restart: unless-stopped
-
-  # OpenVidu Development Server
-  openvidu-server:
-    image: openvidu/openvidu-dev:2.31.0
-    container_name: aiders-openvidu
-    ports:
-      - ${OPENVIDU_PORT}:4443
-    environment:
-      - OPENVIDU_SECRET=${OPENVIDU_SECRET}
-      - DOMAIN_OR_PUBLIC_IP=${DOMAIN_OR_PUBLIC_IP}
-      - OPENVIDU_PUBLICURL=${OPENVIDU_PUBLICURL}
-      - HTTPS_PORT=${HTTPS_PORT}
-      - HTTP_PORT=${HTTP_PORT}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - aiders-network
-    restart: unless-stopped
-
-  # Aiders Backend Application
+  # Backend Application
   aiders-app:
     build: ./aiders-backend
     container_name: aiders-backend
-    ports:
-      - ${BACKEND_PORT}:8080
+    network_mode: host  # 추가!
+    # ports: 제거 (host 네트워크에서는 불필요)
     environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/mydb  # localhost 사용
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - OPENVIDU_URL=http://aiders-openvidu:4443/
-      - OPENVIDU_SECRET=${OPENVIDU_SECRET}
+      - SPRING_DATASOURCE_PASSWORD=1234
+      - OPENVIDU_SECRET=MY_SECRET
+      - OPENVIDU_URL=http://localhost:5443  # localhost로 변경!
     depends_on:
-      mysql:
-        condition: service_started
-      redis:
-        condition: service_started
-      openvidu-server:
-        condition: service_started
-    networks:
-      - aiders-network
+      - mysql
+      - redis
     restart: unless-stopped
-
-  # Aiders Frontend Application
+  # Frontend Application
   aiders-frontend:
     build: ./aiders-frontend
     container_name: aiders-frontend
     ports:
-      - ${FRONTEND_PORT}:${FRONTEND_INTERNAL_PORT}
+      - "3000:5173"
     environment:
       - VITE_API_BASE_URL=${VITE_API_BASE_URL}
-      - VITE_OPENVIDU_URL=${VITE_OPENVIDU_URL}
-    command: sh -c "cd /app && npm run dev -- --host 0.0.0.0"
+      - VITE_KAKAO_MAP_API_KEY=d9e2776635cfc4df321e42a6106442e1
+      - VITE_WS_BASE_URL=wss://i13d107.p.ssafy.io/ws
+    command: sh -c "cd /app && npm run dev -- --host 0.0.0.0 --port 5173"
     depends_on:
       - aiders-app
-    networks:
-      - aiders-network
     restart: unless-stopped
-
 volumes:
   mysql_data:
   redis_data:
-
+# 공통 네트워크 추가!
 networks:
-  aiders-network:
-    driver: bridge
+  default:
+    external: true
+    name: common-network
