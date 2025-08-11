@@ -52,11 +52,37 @@ services:
     depends_on:
       - aiders-app
     restart: unless-stopped
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: aiders-prometheus
+    network_mode: host
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+  # Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: aiders-grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    restart: unless-stopped
+
 volumes:
   mysql_data:
   redis_data:
+  prometheus_data:
+  grafana_data:
+
 # 공통 네트워크 추가!
-networks:
-  default:
-    external: true
-    name: common-network
+#networks:
+#  default:
+#    external: true
