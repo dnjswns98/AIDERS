@@ -567,20 +567,14 @@ export default function EmergencyPatientPage() {
   const [webRtcSessionId, setWebRtcSessionId] = useState(null);
   const [webRtcComponent, setWebRtcComponent] = useState(null);
   const { user } = useAuthStore();
-  const { selectedPatientDetail, isLoadingDetail, fetchPatientDetail, error: detailError } = useWaitingAmbulanceStore();
 
   const handleCallStatusChange = (isActive, ambulance) => {
     setIsCallActive(isActive);
     setCurrentCallAmbulance(ambulance);
   };
 
-  const handleSelectAmbulance = async (ambulance) => {
+  const handleSelectAmbulance = (ambulance) => {
     selectAmbulance(ambulance);
-    
-    // 환자 상세정보 가져오기 (삭제)
-    // if (user?.userId && (ambulance.sessionId || ambulance.ambulanceId)) {
-    //   await fetchPatientDetail(user.userId, ambulance.sessionId || ambulance.ambulanceId);
-    // }
   };
 
   const handleStartCall = async (ambulance) => {
@@ -596,8 +590,8 @@ export default function EmergencyPatientPage() {
       setIsCallActive(true);
       setCurrentCallAmbulance(ambulance);
       
-      // 구급차 선택 및 환자 상세정보 가져오기
-      await handleSelectAmbulance(ambulance);
+      // 구급차 선택
+      handleSelectAmbulance(ambulance);
       
       // WebRTC 컴포넌트 생성
       const webRtcElement = (
@@ -880,18 +874,7 @@ export default function EmergencyPatientPage() {
             </div>
           )}
           {activeTab === "detail" && (
-            <DetailInfoTab
-              selectedAmbulance={selectedAmbulance}
-              newTreatment={newTreatment}
-              setNewTreatment={setNewTreatment}
-              addTreatmentRecord={addTreatmentRecord}
-              hospitalId={user?.userId}
-              isCallActive={isCallActive}
-              currentCallAmbulance={currentCallAmbulance}
-              patientDetails={selectedPatientDetail}
-              isLoadingDetail={isLoadingDetail}
-              error={detailError}
-            />
+            <DetailInfoTab />
           )}
         </div>
       </main>

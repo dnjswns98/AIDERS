@@ -6,8 +6,7 @@ import {
   saveRequiredPatientInfo,
   saveOptionalPatientInfo,
   requestHospitalMatching,
-  getMatchedHospital,
-  getAmbulancePatientDetail
+  getMatchedHospital
 } from "../api/api";
 import { useAuthStore } from "./useAuthStore";
 

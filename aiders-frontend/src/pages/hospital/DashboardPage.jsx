@@ -5,6 +5,7 @@ import useHospitalStore from "../../store/useHospitalStore";
 import useBedStore from "../../store/useBedStore";
 import BedCard from "../../components/hospital/BedCard";
 import WaitingAmbulanceList from "../../components/hospital/WaitingAmbulanceList";
+import RealTimeMap from "../../components/hospital/RealTimeMap";
 
 const InitialSetupModal = ({ onSave, onCancel }) => {
   const [generalTotal, setGeneralTotal] = useState(20);
@@ -660,45 +661,17 @@ export default function DashboardPage() {
           <div
             style={{
               flex: 1,
-              backgroundColor: "#f1f5f9",
               borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "2px dashed #cbd5e1",
               minHeight: "400px",
             }}
           >
-            <div style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  fontSize: "64px",
-                  marginBottom: "16px",
-                }}
-              >
-                🗺️
-              </div>
-              <p
-                style={{
-                  color: "#64748b",
-                  fontSize: "16px",
-                  margin: 0,
-                }}
-              >
-                지도 API 연동 예정
-              </p>
-              <p
-                style={{
-                  color: "#94a3b8",
-                  fontSize: "14px",
-                  marginTop: "8px",
-                }}
-              >
-                {hospitalInfo
-                  ? `${hospitalInfo.name} 중심 실시간 구급차 위치`
-                  : "실시간 구급차 위치"}
-              </p>
-            </div>
+            <RealTimeMap 
+              hospitalLocation={{
+                latitude: hospitalLocation?.latitude,
+                longitude: hospitalLocation?.longitude,
+                name: hospitalInfo?.name
+              }}
+            />
           </div>
         </div>
 
