@@ -1,63 +1,40 @@
-// src/store/useEmergencyStore.js - 구급차 전용 상태관리 (소방서 배차 연동 지원)
+// src/store/useEmergencyStore.js - 구급차/소방서 역할 분리 (최종 버전)
 
 import { create } from "zustand";
 import { 
-  // 구급차 관련 API
   getAmbulances,
   getAmbulanceDetail,
   updateAmbulanceStatus,
   getAmbulanceLocation,
-  
-  // 환자 정보 API
   saveRequiredPatientInfo,
   saveOptionalPatientInfo,
   getPatientInfo,
-  
-  // 병원 매칭 API
   requestHospitalMatching,
   getMatchedHospital,
   getHospitals,
-  
-  // 출동 관련 API
   getDispatchHistory,
-  
-  // 위치 관련 API
   geocodeAddress,
   reverseGeocode,
   calculateDistance
 } from "../api/api";
-
 import { useAuthStore } from "./useAuthStore";
 
 // === 유틸리티 함수들 ===
-
-/**
- * 현재 위치 조회 (GPS)
- */
 const getCurrentLocationFromDashboard = () => {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       reject(new Error('이 기기에서는 GPS를 지원하지 않습니다.'));
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude, accuracy } = position.coords;
-        const locationData = {
-          latitude,
-          longitude,
-          accuracy,
-          timestamp: new Date().toISOString(),
-          source: 'gps'
-        };
-        
+        const locationData = { latitude, longitude, accuracy, timestamp: new Date().toISOString(), source: 'gps' };
         console.log('[GPS] 위치 조회 성공:', locationData);
         resolve(locationData);
       },
       (error) => {
         let errorMessage = 'GPS 위치 조회에 실패했습니다.';
-        
         switch (error.code) {
           case error.PERMISSION_DENIED:
             errorMessage = 'GPS 권한이 거부되었습니다. 설정에서 위치 권한을 허용해주세요.';
@@ -69,31 +46,20 @@ const getCurrentLocationFromDashboard = () => {
             errorMessage = 'GPS 위치 조회 시간이 초과되었습니다. 다시 시도해주세요.';
             break;
         }
-        
         console.error('[GPS] 위치 조회 실패:', error);
         reject(new Error(errorMessage));
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000, // 15초로 증가
-        maximumAge: 60000 // 1분
-      }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
     );
   });
 };
 
-/**
- * 환자 정보 데이터 검증 및 변환
- */
 const validatePatientData = (patientData) => {
   if (!patientData || typeof patientData !== 'object') {
     return { isValid: false, errors: ['환자 정보가 유효하지 않습니다.'] };
   }
-
   const errors = [];
   const validated = {};
-
-  // KTAS 검증
   if (patientData.ktasLevel) {
     const ktas = parseInt(patientData.ktasLevel.replace(/[^0-9]/g, ''), 10);
     if (ktas >= 1 && ktas <= 5) {
@@ -102,18 +68,12 @@ const validatePatientData = (patientData) => {
       errors.push('KTAS는 1-5등급 사이여야 합니다.');
     }
   }
-
-  // 진료과 검증
   if (patientData.department && patientData.department.trim()) {
     validated.department = patientData.department.trim();
   }
-
-  // 이름 검증
   if (patientData.name && patientData.name.trim()) {
     validated.name = patientData.name.trim();
   }
-
-  // 성별 검증
   if (patientData.gender) {
     const genderMap = { '남': 1, '여': 2, '남성': 1, '여성': 2 };
     const sex = genderMap[patientData.gender];
@@ -121,8 +81,6 @@ const validatePatientData = (patientData) => {
       validated.sex = sex;
     }
   }
-
-  // 연령대 검증
   if (patientData.ageRange) {
     const ageMap = {
       '신생아': 'NEWBORN', '유아': 'INFANT', '어린이': 'KIDS',
@@ -133,13 +91,9 @@ const validatePatientData = (patientData) => {
       validated.ageRange = mappedAge;
     }
   }
-
-  // 의료 정보 검증
   ['chiefComplaint', 'familyHistory', 'pastHistory', 'medications', 'vitalSigns'].forEach(field => {
     if (patientData[field]) {
       let value = patientData[field];
-      
-      // JSON 문자열인 경우 파싱
       if (typeof value === 'string' && (value.startsWith('{') || value.startsWith('['))) {
         try {
           const parsed = JSON.parse(value);
@@ -149,58 +103,34 @@ const validatePatientData = (patientData) => {
             const values = Object.values(parsed).filter(v => v && v.trim);
             value = values.length > 0 ? values[0] : '';
           }
-        } catch (e) {
-          // 파싱 실패시 원본 문자열 사용
-        }
+        } catch (e) {}
       }
-      
       if (typeof value === 'string' && value.trim()) {
-        // 백엔드 필드명으로 매핑
-        const fieldMap = {
-          chiefComplaint: 'medicalRecord',
-          medications: 'medicine'
-        };
+        const fieldMap = { chiefComplaint: 'medicalRecord', medications: 'medicine' };
         const backendField = fieldMap[field] || field;
         validated[backendField] = value.trim();
       }
     }
   });
-
-  // 주민등록번호, 국적 등
   if (patientData.rrn && patientData.rrn.trim()) {
     validated.rrn = patientData.rrn.trim();
   }
-  
   if (patientData.nationality && patientData.nationality.trim()) {
     validated.nationality = patientData.nationality.trim();
   }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-    data: validated
-  };
+  return { isValid: errors.length === 0, errors, data: validated };
 };
 
-/**
- * 구급차 상태 한글 변환
- */
 const getAmbulanceStatusText = (status) => {
   const statusMap = {
-    'WAIT': '대기중',
-    'DISPATCH': '출동중',
-    'TRANSFER': '이송중',
-    'standby': '대기중',
-    'dispatched': '출동중',
-    'transporting': '이송중',
-    'completed': '완료',
-    'maintenance': '정비중'
+    'WAIT': '대기중', 'DISPATCH': '출동중', 'TRANSFER': '이송중',
+    'standby': '대기중', 'dispatched': '출동중', 'transporting': '이송중',
+    'completed': '완료', 'maintenance': '정비중'
   };
   return statusMap[status] || '알 수 없음';
 };
 
 // === 메인 스토어 ===
-
 const useEmergencyStore = create((set, get) => ({
   // === 기본 상태 ===
   selectedAmbulance: null,
@@ -250,87 +180,46 @@ const useEmergencyStore = create((set, get) => ({
   // ======================================================================
 
   /**
-   * 구급차 목록 조회 (실제 API 호출)
+   * 🔥 [추가됨] 현재 로그인한 구급차 정보로 상태를 설정하는 핵심 액션
+   * 구급차 사용자가 로그인했을 때, 이 함수를 호출하여 자신의 정보만 상태에 설정합니다.
+   */
+  selectMyAmbulance: () => {
+    const { user } = useAuthStore.getState();
+    // 사용자 역할이 'ambulance' 또는 'ambulance' 타입일 때만 실행
+    if (user && (user.role === 'ambulance' || user.userType === 'ambulance')) {
+      const myAmbulance = {
+        id: user.userId,
+        userKey: user.userKey,
+        carNumber: user.userKey, // userKey를 차량 번호로 사용
+        currentStatus: 'WAIT',   // 로그인 직후 기본 상태
+        status: 'standby',
+        patientInfo: get().patientInfo, // 기존 환자 정보 유지
+        patientDetails: get().patientDetails,
+      };
+      
+      // selectedAmbulance와 ambulances 배열을 현재 내 정보로 설정합니다.
+      set({ selectedAmbulance: myAmbulance, ambulances: [myAmbulance], isLoading: false, error: null });
+      
+      // 서버에서 최신 환자 정보를 가져와 동기화 (선택적)
+      get().fetchPatientInfo(user.userId);
+    } else {
+        console.warn("[Emergency Store] 구급차 사용자가 아니거나 사용자 정보가 없습니다.");
+    }
+  },
+
+  /**
+   * 🔥 [유지] 소방서에서 전체 구급차 목록을 조회하기 위한 함수
+   * 이 함수는 구급차 페이지에서는 호출되지 않아야 합니다.
    */
   fetchAmbulances: async () => {
-    console.log('[Emergency Store] 구급차 목록 조회 시작');
+    console.log('[Emergency Store] fetchAmbulances 호출됨 (소방서용)');
     set({ isLoading: true, error: null });
-
     try {
-      const authState = useAuthStore.getState();
-      const currentUser = authState.user;
-      const accessToken = authState.accessToken;
-
-      if (!currentUser || !accessToken) {
-        console.warn('[Emergency Store] 인증 정보 없음 - 더미 데이터로 대체');
-        
-        // 현재 사용자 기반 더미 구급차 데이터
-        const dummyAmbulance = {
-          id: currentUser?.userId || 1,
-          carNumber: currentUser?.userKey || '구급차-01',
-          userKey: currentUser?.userKey,
-          currentStatus: 'WAIT',
-          status: 'standby',
-          priority: 'normal',
-          location: '구미시 소재',
-          lastUpdate: new Date().toISOString(),
-          patientInfo: get().patientInfo,
-          patientDetails: get().patientDetails
-        };
-
-        set({
-          selectedAmbulance: dummyAmbulance,
-          ambulances: [dummyAmbulance],
-          isLoading: false,
-          lastUpdated: new Date().toISOString()
-        });
-        return [dummyAmbulance];
-      }
-
-      // 실제 API 호출
-      console.log('[Emergency Store] 실제 구급차 목록 API 호출');
       const ambulanceList = await getAmbulances();
-      
-      // 현재 사용자의 구급차만 필터링
-      const userAmbulance = ambulanceList.find(amb => 
-        amb.userKey === currentUser.userKey || amb.id === currentUser.userId
-      );
-
-      if (!userAmbulance) {
-        throw new Error('사용자의 구급차 정보를 찾을 수 없습니다.');
-      }
-
-      // 환자 정보 보완
-      const enrichedAmbulance = {
-        ...userAmbulance,
-        patientInfo: get().patientInfo,
-        patientDetails: get().patientDetails,
-        statusText: getAmbulanceStatusText(userAmbulance.currentStatus || userAmbulance.status)
-      };
-
-      set({
-        selectedAmbulance: enrichedAmbulance,
-        ambulances: [enrichedAmbulance],
-        isLoading: false,
-        lastUpdated: new Date().toISOString()
-      });
-
-      console.log('[Emergency Store] 구급차 목록 조회 성공:', enrichedAmbulance);
-      return [enrichedAmbulance];
-
+      set({ ambulances: ambulanceList, isLoading: false });
+      return ambulanceList;
     } catch (error) {
-      console.error('[Emergency Store] 구급차 목록 조회 실패:', error);
-      
-      const errorMessage = error.response?.data?.message || error.message || '구급차 정보를 불러오는데 실패했습니다.';
-      
-      set({
-        error: errorMessage,
-        isLoading: false
-      });
-
-      // 사용자에게 에러 알림
-      alert(`❌ 구급차 정보 조회 실패\n${errorMessage}`);
-      
+      set({ error: error.message, isLoading: false });
       throw error;
     }
   },
@@ -1085,22 +974,5 @@ const useEmergencyStore = create((set, get) => ({
     return validation;
   }
 }));
-
-// ======================================================================
-// 📡 실시간 업데이트 리스너 (WebSocket 연결시 활성화)
-// ======================================================================
-
-// WebSocket 연결이 구현되면 이 함수들을 사용
-export const setupRealtimeListeners = (ambulanceId) => {
-  console.log(`[Emergency Store] 구급차 ${ambulanceId} 실시간 리스너 설정`);
-  
-  // WebSocket 연결 및 리스너 설정
-  // 구급차 상태 변경, 출동 지시, 병원 매칭 등의 실시간 이벤트 처리
-  
-  return () => {
-    console.log(`[Emergency Store] 구급차 ${ambulanceId} 실시간 리스너 해제`);
-    // WebSocket 연결 해제
-  };
-};
 
 export default useEmergencyStore;

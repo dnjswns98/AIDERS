@@ -679,53 +679,7 @@ export default function AmbulanceDashboardPage() {
         </div>
       </div>
 
-      {/* {import.meta.env.DEV && (
-        <div className="fixed bottom-4 right-4 bg-black bg-opacity-90 text-white p-4 rounded-lg text-xs max-w-sm z-50">
-          <div className="font-bold text-yellow-300 mb-2">🔧 실시간 디버깅 (실제 좌표)</div>
-          <div className="space-y-1">
-            <p>구급차 ID: {currentAmbulanceId}</p>
-            <p>차량번호: {currentUserKey}</p>
-            <p>WebSocket: {wsConnected ? '✅' : '❌'} ({wsStatus})</p>
-            <p>구급차 위치: {ambulanceLocation ? '✅' : '❌'}</p>
-            <p>병원 거리: {hospitalDistanceInfo ? `${(hospitalDistanceInfo.distance / 1000).toFixed(2)}km` : '❌'}</p>
-            <p>매칭된 병원: {matchedHospitals.length}개</p>
-            {matchedHospitals.length > 0 && (
-              <>
-                <p className="text-green-400">🏥 병원명: {matchedHospitals[0].name}</p>
-                <p className="text-green-400">📍 병원 좌표: {matchedHospitals[0].latitude?.toFixed(4)}, {matchedHospitals[0].longitude?.toFixed(4)}</p>
-                <p className="text-green-400">✅ 실제 좌표: {matchedHospitals[0].latitude && matchedHospitals[0].longitude ? 'YES' : 'NO'}</p>
-              </>
-            )}
-            <p>환자 KTAS: {selectedAmbulance?.patientDetails?.ktasLevel || "없음"}</p>
-            <p>환자 진료과: {selectedAmbulance?.patientDetails?.department || "없음"}</p>
-          </div>
-          
-          <div className="mt-3 space-y-1">
-            <button
-              onClick={wsReconnect}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs w-full"
-            >
-              🔄 WebSocket 재연결
-            </button>
-            <button
-              onClick={() => {}}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs w-full"
-            >
-              🔍 콘솔 로그 출력
-            </button>
-            <button
-              onClick={() => {
-                if (matchedHospitals.length > 0) {
-                } else {
-                }
-              }}
-              className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs w-full"
-            >
-              🏥 병원 좌표 확인
-            </button>
-          </div>
-        </div>
-      )} */}
+     
     </AmbulanceLayout>
   );
 }
