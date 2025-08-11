@@ -6,7 +6,8 @@ import {
   saveRequiredPatientInfo,
   saveOptionalPatientInfo,
   requestHospitalMatching,
-  getMatchedHospital
+  getMatchedHospital,
+  getAmbulancePatientDetail
 } from "../api/api";
 import { useAuthStore } from "./useAuthStore";
 
@@ -309,6 +310,7 @@ const validateAndFilterApiData = async (data, type = 'optional', includeLocation
 const useEmergencyStore = create((set, get) => ({
   selectedAmbulance: null,
   ambulances: [],
+  ambulanceDetails: null,
   
   currentLocation: null,
   locationError: null,
@@ -879,7 +881,79 @@ const useEmergencyStore = create((set, get) => ({
     });
     
     return results;
+  },
+
+  fetchAmbulanceDetails: async (hospitalId, ambulanceId) => {
+    try {
+      const details = await getAmbulancePatientDetail(hospitalId, ambulanceId);
+      set({ ambulanceDetails: details });
+      return details;
+    } catch (error) {
+      console.error(`Failed to fetch details for ambulance ${ambulanceId}:`, error);
+      set({ ambulanceDetails: null });
+      throw error;
+    }
   }
 }));
 
 export default useEmergencyStore;
+
+export const useEmergency = () => useEmergencyStore();
+export const useAmbulance = (ambulanceId) => {
+  return useEmergencyStore((state) =>
+    state.ambulances.find((amb) => amb.id === ambulanceId)
+  );
+};
+export const useSelectedAmbulance = () => {
+  return useEmergencyStore((state) => state.selectedAmbulance);
+};
+export const useAmbulanceActions = () => {
+  return useEmergencyStore((state) => ({
+    selectAmbulance: state.selectAmbulance,
+    updateAmbulanceStatus: state.updateAmbulanceStatus,
+    addTreatmentRecord: state.addTreatmentRecord,
+    updatePatientInfo: state.updatePatientInfo,
+    fetchAmbulances: state.fetchAmbulances,
+    triggerHospitalMatching: state.triggerHospitalMatching,
+    checkHospitalMatchingStatus: state.checkHospitalMatchingStatus,
+    cancelHospitalMatching: state.cancelHospitalMatching,
+    resetHospitalMatching: state.resetHospitalMatching,
+    getCurrentLocation: state.getCurrentLocation,
+    debugCurrentState: state.debugCurrentState,
+    testHospitalMatching: state.testHospitalMatching,
+    testPureStringMapping: state.testPureStringMapping,
+    testJsonStringParsing: state.testJsonStringParsing,
+  }));
+};
+export const useAmbulanceList = () => {
+  return useEmergencyStore((state) => ({
+    ambulances: state.ambulances,
+    dispatched: state.getDispatchedAmbulances(),
+    available: state.getAvailableAmbulances(),
+    stats: state.getStatistics(),
+  }));
+};
+export const useHospitalMatching = () => {
+  return useEmergencyStore((state) => ({
+    matchedHospitals: state.matchedHospitals,
+    status: state.hospitalMatchingStatus,
+    error: state.hospitalMatchingError,
+    isMatching: state.isMatching,
+  }));
+};
+export const usePatientData = (ambulanceId) => {
+  return useEmergencyStore((state) => {
+    const ambulance = state.ambulances.find((amb) => amb.id === ambulanceId);
+    if (!ambulance) return { patientInfo: {}, patientDetails: {} };
+    return {
+      patientInfo: ambulance.patientInfo,
+      patientDetails: ambulance.patientDetails,
+    };
+  });
+};
+export const useCurrentLocation = () => {
+  return useEmergencyStore((state) => ({
+    location: state.currentLocation,
+    error: state.locationError,
+  }));
+};

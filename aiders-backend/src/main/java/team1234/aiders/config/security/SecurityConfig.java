@@ -61,7 +61,8 @@ public class SecurityConfig {
             "/api/v1/ambulance/**",
             "/api/v1/alarm/send",
             "/api/v1/alarm/all/**",
-            "/api/v1/match/**"
+            "/api/v1/match/**",
+            "/api/v1/hospital/location/{userId}",
     };
 
     //TODO: HOSPITAL 전용 API 경로들
