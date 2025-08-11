@@ -253,6 +253,16 @@ export const getWaitingAmbulances = async (hospitalId) => {
   }
 };
 
+export const getAmbulancePatientDetail = async (hospitalId, ambulanceId) => {
+  try {
+    const response = await apiClient.get(`/api/v1/redis/waiting/${hospitalId}/${ambulanceId}/detail`);
+    return response.data;
+  } catch (error) {
+    console.error('[API] getAmbulancePatientDetail 실패:', error.message);
+    throw error;
+  }
+};
+
 export const createAmbulanceToken = async (request) => {
   try {
     const body = {

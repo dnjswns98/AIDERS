@@ -105,35 +105,46 @@ const safeRenderMedications = (medications, emptyText = '-') => {
 
 export default function AmbulancePatientInfoPage() {
   const navigate = useNavigate();
-  const { selectedAmbulance } = useEmergencyStore();
+  const { selectedAmbulance, ambulanceDetails } = useEmergencyStore();
+
+  // Determine the source of data to display
+  const dataSource = ambulanceDetails || selectedAmbulance;
+  const isHospitalView = !!ambulanceDetails; // If ambulanceDetails exists, it's a hospital view
 
   const handleGoToEdit = () => {
     navigate('/emergency/patient-input', { state: { isEditMode: true } });
   };
 
-  if (!selectedAmbulance) {
+  if (!dataSource) {
     return (
       <AmbulanceLayout>
         <div className="bg-white p-8 rounded-lg shadow-md text-center">
-          <h1 className="text-2xl font-bold mb-4">선택된 구급차 정보가 없습니다.</h1>
+          <h1 className="text-2xl font-bold mb-4">환자 정보가 없습니다.</h1>
+          <p className="text-gray-600">표시할 구급차 정보가 선택되지 않았거나, 통화가 연결되지 않았습니다.</p>
         </div>
       </AmbulanceLayout>
     );
   }
 
-  const { patientInfo, patientDetails } = selectedAmbulance;
+  // The API for getAmbulancePatientDetail might return a flat object.
+  // The existing component expects patientInfo and patientDetails.
+  // We will accommodate both structures.
+  const patientInfo = dataSource.patientInfo || dataSource;
+  const patientDetails = dataSource.patientDetails || dataSource;
 
   return (
     <AmbulanceLayout>
       <div className="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6 border-b pb-4">
           <h1 className="text-2xl font-bold text-gray-800">환자 정보 조회</h1>
-          <button
-            onClick={handleGoToEdit}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
-          >
-            수정하기
-          </button>
+          {!isHospitalView && (
+            <button
+              onClick={handleGoToEdit}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+            >
+              수정하기
+            </button>
+          )}
         </div>
         
         <div className="mb-8">
@@ -141,7 +152,7 @@ export default function AmbulancePatientInfoPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-500">KTAS</label>
-              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientDetails?.ktasLevel || '-'}</p>
+              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientDetails?.ktasLevel || patientDetails?.ktas || '-'}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">진료 과목</label>
@@ -149,7 +160,7 @@ export default function AmbulancePatientInfoPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">성별</label>
-              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientInfo?.gender || '-'}</p>
+              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientInfo?.gender || patientInfo?.sex || '-'}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">연령대</label>
@@ -175,7 +186,7 @@ export default function AmbulancePatientInfoPage() {
                 {patientDetails?.vitalSigns?.bloodPressure && patientDetails.vitalSigns.bloodPressure.startsWith('data:image') ? (
                   <img src={patientDetails.vitalSigns.bloodPressure} alt="바이탈 사인 필기" className="mt-1 w-full border rounded-md" />
                 ) : (
-                  <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientDetails?.vitalSigns?.bloodPressure || '-'}</p>
+                  <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientDetails?.vitalSigns?.bloodPressure || patientDetails?.vitalSigns || '-'}</p>
                 )}
               </div>
             </div>
@@ -184,7 +195,7 @@ export default function AmbulancePatientInfoPage() {
               {patientDetails?.chiefComplaint && patientDetails.chiefComplaint.startsWith('data:image') ? (
                 <img src={patientDetails.chiefComplaint} alt="주요 증상 필기" className="mt-1 w-full border rounded-md" />
               ) : (
-                <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientDetails?.chiefComplaint || '-'}</p>
+                <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientDetails?.chiefComplaint || patientDetails?.medicalRecord || '-'}</p>
               )}
             </div>
             <div>
@@ -223,7 +234,7 @@ export default function AmbulancePatientInfoPage() {
                 <img src={patientDetails.medications} alt="복용중인 약 필기" className="mt-1 w-full border rounded-md" />
               ) : (
                 <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">
-                  {safeRenderMedications(patientDetails?.medications)}
+                  {safeRenderMedications(patientDetails?.medications || patientDetails?.medicine)}
                 </p>
               )}
             </div>
@@ -233,19 +244,9 @@ export default function AmbulancePatientInfoPage() {
         {process.env.NODE_ENV === 'development' && (
           <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <h3 className="text-sm font-semibold text-yellow-800 mb-2">🔍 디버깅 정보</h3>
+            <p><strong>Data Source:</strong> {isHospitalView ? 'ambulanceDetails (Hospital View)' : 'selectedAmbulance (Ambulance View)'}</p>
             <div className="text-xs text-yellow-700 space-y-1">
-              <p><strong>과거력 타입:</strong> {typeof patientDetails?.pastHistory}</p>
-              <p><strong>과거력 값:</strong> {JSON.stringify(patientDetails?.pastHistory)?.substring(0, 100)}...</p>
-              <p><strong>가족력 타입:</strong> {typeof patientDetails?.familyHistory}</p>
-              <p><strong>가족력 값:</strong> {JSON.stringify(patientDetails?.familyHistory)?.substring(0, 100)}...</p>
-              <p><strong>약물 타입:</strong> {typeof patientDetails?.medications}</p>
-              <p><strong>약물 값:</strong> {JSON.stringify(patientDetails?.medications)?.substring(0, 100)}...</p>
-            </div>
-            <div className="mt-3 space-y-1 text-xs">
-              <p><strong>안전 렌더링 결과:</strong></p>
-              <p><strong>과거력:</strong> {safeRenderObject(patientDetails?.pastHistory)}</p>
-              <p><strong>가족력:</strong> {safeRenderObject(patientDetails?.familyHistory)}</p>
-              <p><strong>약물:</strong> {safeRenderMedications(patientDetails?.medications)}</p>
+              <p><strong>Raw Data:</strong> {JSON.stringify(dataSource)?.substring(0, 300)}...</p>
             </div>
           </div>
         )}

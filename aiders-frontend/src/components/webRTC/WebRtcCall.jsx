@@ -6,10 +6,12 @@ import { useMediaStream } from "../../hooks/useMediaStream";
 import { useFullScreen } from "../../hooks/useFullScreen";
 import VideoDisplay from "./VideoDisplay";
 import CallControls from "./CallControls";
+import useEmergencyStore from "../../store/useEmergencyStore";
 
 export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, patientName, ktas, onLeave }) {
   const { togglePipMode } = useWebRtc();
   const location = useLocation();
+  const fetchAmbulanceDetails = useEmergencyStore((state) => state.fetchAmbulanceDetails);
   
   const { joinSession, leaveSession } = useOpenVidu({ 
     sessionId, 
@@ -32,6 +34,9 @@ export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, pat
 
   useEffect(() => {
     joinSession();
+    if (hospitalId && ambulanceNumber) {
+      fetchAmbulanceDetails(hospitalId, ambulanceNumber);
+    }
 
   const handleBeforeUnload = (event) => {
     leaveSession();

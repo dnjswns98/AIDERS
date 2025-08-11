@@ -5,7 +5,246 @@ import WebRtcCall from "../../components/webRTC/WebRtcCall";
 import useEmergencyStore from "../../store/useEmergencyStore";
 import useWaitingAmbulanceStore from "../../store/useWaitingAmbulanceStore";
 import { useAuthStore } from "../../store/useAuthStore";
-import { startVideoCall, removeFromWaitingList } from "../../api/api";
+import { startVideoCall, endVideoCall } from "../../api/api";
+
+const DraggablePipVideoContainer = ({ webRtcComponent }) => {
+  const [position, setPosition] = useState({ x: 20, y: 20 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  const handleMouseDown = (e) => {
+    // 헤더 부분에서만 드래그 가능
+    if (e.target.closest('.drag-handle')) {
+      e.preventDefault();
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - position.x,
+        y: e.clientY - position.y
+      });
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const elementWidth = 320;
+    const elementHeight = 240;
+    
+    let newX = e.clientX - dragStart.x;
+    let newY = e.clientY - dragStart.y;
+    
+    // 경계 제한: 화면을 벗어나지 않도록
+    newX = Math.max(0, Math.min(newX, windowWidth - elementWidth));
+    newY = Math.max(0, Math.min(newY, windowHeight - elementHeight));
+    
+    setPosition({
+      x: newX,
+      y: newY
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragStart]);
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: position.y,
+        left: position.x,
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        boxShadow: isDragging 
+          ? '0 12px 35px rgba(0, 0, 0, 0.25)' 
+          : '0 8px 25px rgba(0, 0, 0, 0.15)',
+        width: '320px',
+        height: '240px',
+        zIndex: 1000,
+        userSelect: 'none',
+        transform: isDragging ? 'scale(1.02)' : 'scale(1)',
+        transition: isDragging ? 'none' : 'all 0.2s ease',
+        border: isDragging ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+        overflow: 'hidden'
+      }}
+    >
+      <div
+        className="drag-handle"
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '8px 12px',
+          borderBottom: '1px solid #e5e7eb',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          backgroundColor: '#f8fafc'
+        }}
+        onMouseDown={handleMouseDown}
+      >
+        <h4
+          style={{
+            fontSize: '14px',
+            fontWeight: 'bold',
+            color: '#1f2937',
+            margin: 0
+          }}
+        >
+          화상통화 (PIP)
+        </h4>
+        <div style={{
+          fontSize: '12px',
+          color: '#6b7280'
+        }}>
+          드래그로 이동
+        </div>
+      </div>
+
+      <div style={{ 
+        height: '200px',
+        pointerEvents: isDragging ? 'none' : 'auto'
+      }}>
+        {webRtcComponent}
+      </div>
+    </div>
+  );
+};
+
+const DraggablePipVideo = ({ webRtcSessionId, hospitalId, onLeave, patientName, ktas }) => {
+  const [position, setPosition] = useState({ x: 20, y: 20 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  const handleMouseDown = (e) => {
+    // 헤더 부분에서만 드래그 가능
+    if (e.target.closest('.drag-handle')) {
+      e.preventDefault();
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - position.x,
+        y: e.clientY - position.y
+      });
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const elementWidth = 320;
+    const elementHeight = 240;
+    
+    let newX = e.clientX - dragStart.x;
+    let newY = e.clientY - dragStart.y;
+    
+    // 경계 제한: 화면을 벗어나지 않도록
+    newX = Math.max(0, Math.min(newX, windowWidth - elementWidth));
+    newY = Math.max(0, Math.min(newY, windowHeight - elementHeight));
+    
+    setPosition({
+      x: newX,
+      y: newY
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragStart]);
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: position.y,
+        left: position.x,
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        boxShadow: isDragging 
+          ? '0 12px 35px rgba(0, 0, 0, 0.25)' 
+          : '0 8px 25px rgba(0, 0, 0, 0.15)',
+        width: '320px',
+        height: '240px',
+        zIndex: 1000,
+        userSelect: 'none',
+        transform: isDragging ? 'scale(1.02)' : 'scale(1)',
+        transition: isDragging ? 'none' : 'all 0.2s ease',
+        border: isDragging ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+        overflow: 'hidden'
+      }}
+    >
+      <div
+        className="drag-handle"
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '8px 12px',
+          borderBottom: '1px solid #e5e7eb',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          backgroundColor: '#f8fafc'
+        }}
+        onMouseDown={handleMouseDown}
+      >
+        <h4
+          style={{
+            fontSize: '14px',
+            fontWeight: 'bold',
+            color: '#1f2937',
+            margin: 0
+          }}
+        >
+          화상통화
+        </h4>
+        <div style={{
+          fontSize: '12px',
+          color: '#6b7280'
+        }}>
+          드래그로 이동
+        </div>
+      </div>
+
+      <div style={{ 
+        height: '200px',
+        pointerEvents: isDragging ? 'none' : 'auto'
+      }}>
+        <WebRtcCall
+          sessionId={webRtcSessionId}
+          hospitalId={hospitalId}
+          onLeave={onLeave}
+          patientName={patientName}
+          ktas={ktas}
+          renderMode="pip"
+        />
+      </div>
+    </div>
+  );
+};
 
 const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) => {
   const { ambulances, isLoading, error, fetchWaitingAmbulances } =
@@ -24,6 +263,7 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
       return () => clearInterval(intervalId);
     }
   }, [fetchWaitingAmbulances, user?.userId]);
+
   return (
     <div
       style={{
@@ -32,7 +272,7 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
         borderRight: "2px solid #e5e7eb",
         padding: "20px",
         overflow: "auto",
-        height: "calc(100vh - 64px)",
+        height: "100%",
       }}
     >
       <div
@@ -92,7 +332,7 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
         ) : (
           ambulances.map((ambulance) => (
             <div
-              key={ambulance.sessionId || ambulance.ambulanceId || ambulance.id}
+              key={`ambulance-item-${ambulance.ambulanceNumber}-${ambulance.sessionId || ambulance.ambulanceId || ambulance.id}`}
               style={{
                 padding: "16px",
                 backgroundColor: "#f8fafc",
@@ -293,935 +533,25 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
   );
 };
 
-const VideoCallTab = ({
-  selectedAmbulance,
-  hospitalId,
-  onCallStatusChange,
-}) => {
+const DetailInfoTab = () => {
   return (
     <div
       style={{
-        height: "calc(100vh - 160px)",
-        display: "flex",
-        gap: "20px",
+        height: "calc(100% - 160px)",
         padding: "20px",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
       }}
     >
-      <div
-        style={{
-          flex: 2,
-          backgroundColor: "white",
-          borderRadius: "12px",
-          padding: "20px",
-          display: "flex",
-          flexDirection: "column",
-          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "20px",
-            paddingBottom: "16px",
-            borderBottom: "2px solid #e5e7eb",
-          }}
-        >
-          <h3
-            style={{
-              fontSize: "18px",
-              fontWeight: "bold",
-              color: "#1f2937",
-              margin: 0,
-            }}
-          >
-            구급차 화상통화
-          </h3>
-        </div>
-
-        <div style={{ flex: 1 }}>
-          <VideoCallManager
-            selectedAmbulance={selectedAmbulance}
-            hospitalId={hospitalId}
-            onCallStatusChange={onCallStatusChange}
-            renderMode="full"
-          />
-        </div>
-      </div>
-
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: "white",
-            borderRadius: "12px",
-            padding: "20px",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          <h4
-            style={{
-              fontSize: "16px",
-              fontWeight: "bold",
-              color: "#1f2937",
-              marginBottom: "16px",
-            }}
-          >
-            환자 정보
-          </h4>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-              fontSize: "14px",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: "#6b7280" }}>성별/나이:</span>
-              <span style={{ fontWeight: "600" }}>
-                {selectedAmbulance?.patientInfo?.basicInfo ||
-                  "선택된 구급차 없음"}
-              </span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: "#6b7280" }}>증상:</span>
-              <span style={{ fontWeight: "600", color: "#ef4444" }}>
-                {selectedAmbulance?.condition || "-"}
-              </span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: "#6b7280" }}>우선순위:</span>
-              <span
-                style={{
-                  padding: "4px 8px",
-                  backgroundColor:
-                    selectedAmbulance?.priority === "응급"
-                      ? "#fee2e2"
-                      : selectedAmbulance?.priority === "긴급"
-                      ? "#fef3c7"
-                      : "#f3f4f6",
-                  color:
-                    selectedAmbulance?.priority === "응급"
-                      ? "#991b1b"
-                      : selectedAmbulance?.priority === "긴급"
-                      ? "#92400e"
-                      : "#374151",
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                }}
-              >
-                {selectedAmbulance?.priority || "-"}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            backgroundColor: "white",
-            borderRadius: "12px",
-            padding: "20px",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          <h4
-            style={{
-              fontSize: "16px",
-              fontWeight: "bold",
-              color: "#1f2937",
-              marginBottom: "16px",
-            }}
-          >
-            구급차 정보
-          </h4>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-              fontSize: "14px",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: "#6b7280" }}>차량번호:</span>
-              <span style={{ fontWeight: "600" }}>
-                {selectedAmbulance?.vehicleNumber || "-"}
-              </span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: "#6b7280" }}>현재거리:</span>
-              <span style={{ fontWeight: "600" }}>
-                {selectedAmbulance?.distance || "-"}
-              </span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: "#6b7280" }}>도착예정:</span>
-              <span style={{ fontWeight: "600", color: "#10b981" }}>
-                {selectedAmbulance?.eta || "-"}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            backgroundColor: "white",
-            borderRadius: "12px",
-            padding: "20px",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-            flex: 1,
-          }}
-        >
-          <h4
-            style={{
-              fontSize: "16px",
-              fontWeight: "bold",
-              color: "#1f2937",
-              marginBottom: "16px",
-            }}
-          >
-            실시간 메모
-          </h4>
-          <textarea
-            placeholder="통화 중 중요 사항을 기록하세요..."
-            style={{
-              width: "100%",
-              height: "120px",
-              border: "1px solid #e5e7eb",
-              borderRadius: "8px",
-              padding: "12px",
-              fontSize: "14px",
-              resize: "none",
-            }}
-          />
-        </div>
+      <div style={{ textAlign: "center", color: "#6b7280" }}>
+        <div style={{ fontSize: "24px", marginBottom: "12px" }}>🚧</div>
+        <h3 style={{ fontSize: "18px", fontWeight: "bold" }}>제작전</h3>
+        <p style={{ fontSize: "14px", marginTop: "4px" }}>해당 기능은 현재 준비 중입니다.</p>
       </div>
     </div>
   );
-};
-
-const DetailInfoTab = ({
-  selectedAmbulance,
-  newTreatment,
-  setNewTreatment,
-  addTreatmentRecord,
-  hospitalId,
-  isCallActive,
-  currentCallAmbulance,
-}) => {
-  const patientDetails = selectedAmbulance?.patientDetails;
-
-  return (
-    <div
-      style={{
-        height: "calc(100vh - 160px)",
-        display: "flex",
-        gap: "20px",
-        padding: "20px",
-      }}
-    >
-      <div
-        style={{
-          flex: 2,
-          backgroundColor: "white",
-          borderRadius: "12px",
-          padding: "24px",
-          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-          overflow: "auto",
-        }}
-      >
-        <h3
-          style={{
-            fontSize: "20px",
-            fontWeight: "bold",
-            color: "#1f2937",
-            marginBottom: "24px",
-            paddingBottom: "16px",
-            borderBottom: "2px solid #e5e7eb",
-          }}
-        >
-          환자 상세 정보
-        </h3>
-
-        <div style={{ marginBottom: "32px" }}>
-          <h4
-            style={{
-              fontSize: "16px",
-              fontWeight: "600",
-              color: "#374151",
-              marginBottom: "16px",
-            }}
-          >
-            기본 정보
-          </h4>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "16px",
-              fontSize: "14px",
-            }}
-          >
-            <div>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                성명
-              </label>
-              <div style={{ fontWeight: "600" }}>
-                {selectedAmbulance?.patientInfo?.name || "-"}
-              </div>
-            </div>
-            <div>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                성별/연령
-              </label>
-              <div style={{ fontWeight: "600" }}>
-                {selectedAmbulance?.patientInfo?.basicInfo || "-"}
-              </div>
-            </div>
-            <div>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                KTAS 등급
-              </label>
-              <div
-                style={{
-                  fontWeight: "600",
-                  color: "#f59e0b",
-                  backgroundColor: "#fef3c7",
-                  padding: "2px 6px",
-                  borderRadius: "4px",
-                  display: "inline-block",
-                }}
-              >
-                {patientDetails?.ktasLevel || "KTAS 등급 미정"}
-              </div>
-            </div>
-            <div>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                내원 경위
-              </label>
-              <div
-                style={{
-                  fontWeight: "600",
-                  fontSize: "13px",
-                  lineHeight: "1.4",
-                }}
-              >
-                {patientDetails?.admissionRoute || "-"}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: "32px" }}>
-          <h4
-            style={{
-              fontSize: "16px",
-              fontWeight: "600",
-              color: "#374151",
-              marginBottom: "16px",
-            }}
-          >
-            활력징후
-          </h4>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "16px",
-              fontSize: "14px",
-            }}
-          >
-            <div>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                혈압
-              </label>
-              <div style={{ fontWeight: "600", color: "#ef4444" }}>
-                {patientDetails?.vitalSigns?.bloodPressure || "-"}
-              </div>
-            </div>
-            <div>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                맥박
-              </label>
-              <div style={{ fontWeight: "600", color: "#ef4444" }}>
-                {patientDetails?.vitalSigns?.pulse || "-"}
-              </div>
-            </div>
-            <div>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                호흡
-              </label>
-              <div style={{ fontWeight: "600", color: "#ef4444" }}>
-                {patientDetails?.vitalSigns?.respiration || "-"}
-              </div>
-            </div>
-            <div>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                체온
-              </label>
-              <div style={{ fontWeight: "600" }}>
-                {patientDetails?.vitalSigns?.temperature || "-"}
-              </div>
-            </div>
-            <div>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                산소포화도
-              </label>
-              <div style={{ fontWeight: "600", color: "#ef4444" }}>
-                {patientDetails?.vitalSigns?.oxygenSaturation || "-"}
-              </div>
-            </div>
-            <div>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                의식상태
-              </label>
-              <div style={{ fontWeight: "600" }}>
-                {patientDetails?.vitalSigns?.consciousness || "-"}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: "32px" }}>
-          <h4
-            style={{
-              fontSize: "16px",
-              fontWeight: "600",
-              color: "#374151",
-              marginBottom: "16px",
-            }}
-          >
-            현병력 및 주증상
-          </h4>
-          <div style={{ fontSize: "14px" }}>
-            <div style={{ marginBottom: "12px" }}>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                주증상
-              </label>
-              <div style={{ fontWeight: "600", color: "#ef4444" }}>
-                {patientDetails?.chiefComplaint || "-"}
-              </div>
-            </div>
-            <div style={{ marginBottom: "12px" }}>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                응급 지속 시간
-              </label>
-              <div style={{ fontWeight: "600" }}>
-                {patientDetails?.duration || "-"}
-              </div>
-            </div>
-            <div style={{ marginBottom: "12px" }}>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                발병 상황
-              </label>
-              <div style={{ fontWeight: "600" }}>
-                {patientDetails?.onsetSituation || "-"}
-              </div>
-            </div>
-            <div>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                동반 증상
-              </label>
-              <div style={{ fontWeight: "600" }}>
-                {patientDetails?.accompanyingSymptoms || "-"}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: "32px" }}>
-          <h4
-            style={{
-              fontSize: "16px",
-              fontWeight: "600",
-              color: "#374151",
-              marginBottom: "16px",
-            }}
-          >
-            과거력
-          </h4>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "16px",
-              fontSize: "14px",
-            }}
-          >
-            <div>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                고혈압
-              </label>
-              <div style={{ fontWeight: "600" }}>
-                {patientDetails?.pastHistory?.hypertension || "-"}
-              </div>
-            </div>
-            <div>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                당뇨병
-              </label>
-              <div style={{ fontWeight: "600" }}>
-                {patientDetails?.pastHistory?.diabetes || "-"}
-              </div>
-            </div>
-            <div>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                갑상선기능저하증
-              </label>
-              <div style={{ fontWeight: "600" }}>
-                {patientDetails?.pastHistory?.hypothyroidism || "-"}
-              </div>
-            </div>
-            <div>
-              <label
-                style={{
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                  display: "block",
-                }}
-              >
-                골다공증
-              </label>
-              <div style={{ fontWeight: "600" }}>
-                {patientDetails?.pastHistory?.osteoporosis || "-"}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: "32px" }}>
-          <h4
-            style={{
-              fontSize: "16px",
-              fontWeight: "600",
-              color: "#374151",
-              marginBottom: "16px",
-            }}
-          >
-            현재 복용 중인 약물
-          </h4>
-          <div style={{ fontSize: "13px", lineHeight: "1.6" }}>
-            {patientDetails?.medications?.map((medication, index) => (
-              <div
-                key={index}
-                style={{
-                  marginBottom: "8px",
-                  padding: "8px",
-                  backgroundColor: "#f9fafb",
-                  borderRadius: "4px",
-                }}
-              >
-                <strong>{medication.name}</strong> - {medication.frequency}{" "}
-                {medication.indication && `(${medication.indication})`}
-              </div>
-            )) || <div style={{ color: "#6b7280" }}>복용약물 정보 없음</div>}
-          </div>
-        </div>
-
-        <div style={{ marginBottom: "32px" }}>
-          <h4
-            style={{
-              fontSize: "16px",
-              fontWeight: "600",
-              color: "#374151",
-              marginBottom: "16px",
-            }}
-          >
-            가족력
-          </h4>
-          <div style={{ fontSize: "14px" }}>
-            <div style={{ marginBottom: "8px" }}>
-              <strong>부:</strong>{" "}
-              {patientDetails?.familyHistory?.father || "-"}
-            </div>
-            <div style={{ marginBottom: "8px" }}>
-              <strong>모:</strong>{" "}
-              {patientDetails?.familyHistory?.mother || "-"}
-            </div>
-            <div>
-              <strong>형제자매:</strong>{" "}
-              {patientDetails?.familyHistory?.siblings || "-"}
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h4
-            style={{
-              fontSize: "16px",
-              fontWeight: "600",
-              color: "#374151",
-              marginBottom: "16px",
-            }}
-          >
-            이송 정보
-          </h4>
-          <div
-            style={{
-              backgroundColor: "#f0f9ff",
-              border: "1px solid #bfdbfe",
-              borderRadius: "8px",
-              padding: "12px",
-              fontSize: "14px",
-            }}
-          >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "12px",
-                marginBottom: "12px",
-              }}
-            >
-              <div>
-                <strong>출동 시간:</strong>{" "}
-                {patientDetails?.transportInfo?.dispatchTime || "-"}
-              </div>
-              <div>
-                <strong>현장 도착:</strong>{" "}
-                {patientDetails?.transportInfo?.arrivalTime || "-"}
-              </div>
-              <div>
-                <strong>현장 출발:</strong>{" "}
-                {patientDetails?.transportInfo?.departureTime || "-"}
-              </div>
-              <div>
-                <strong>병원 도착:</strong>{" "}
-                {patientDetails?.transportInfo?.hospitalArrival || "-"}
-              </div>
-            </div>
-            <div
-              style={{
-                borderTop: "1px solid #bfdbfe",
-                paddingTop: "8px",
-                fontSize: "13px",
-                color: "#0369a1",
-              }}
-            >
-              <div>
-                <strong>총 이송 거리:</strong>{" "}
-                {patientDetails?.transportInfo?.totalDistance || "-"}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: "white",
-            borderRadius: "12px",
-            padding: "16px",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-            height: "280px",
-          }}
-        >
-          <h4
-            style={{
-              fontSize: "16px",
-              fontWeight: "bold",
-              color: "#1f2937",
-              marginBottom: "12px",
-            }}
-          >
-            화상통화
-          </h4>
-
-          <div style={{ height: "240px" }}>
-            <VideoCallManager
-              selectedAmbulance={
-                isCallActive ? currentCallAmbulance : selectedAmbulance
-              }
-              hospitalId={hospitalId}
-              onCallStatusChange={() => {}}
-              renderMode="compact"
-            />
-          </div>
-        </div>
-
-        <div
-          style={{
-            backgroundColor: "white",
-            borderRadius: "12px",
-            padding: "24px",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-            flex: 1,
-            overflow: "auto",
-          }}
-        >
-          <h3
-            style={{
-              fontSize: "20px",
-              fontWeight: "bold",
-              color: "#1f2937",
-              marginBottom: "24px",
-              paddingBottom: "16px",
-              borderBottom: "2px solid #e5e7eb",
-            }}
-          >
-            응급처치 기록
-          </h3>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "20px",
-            }}
-          >
-            {(selectedAmbulance?.treatmentRecords || []).map(
-              (record, index) => (
-                <div
-                  key={index}
-                  style={{
-                    display: "flex",
-                    gap: "16px",
-                    paddingBottom: "16px",
-                    borderBottom:
-                      index < selectedAmbulance?.treatmentRecords?.length - 1
-                        ? "1px solid #f3f4f6"
-                        : "none",
-                  }}
-                >
-                  <div
-                    style={{
-                      backgroundColor: "#3b82f6",
-                      color: "white",
-                      borderRadius: "50%",
-                      width: "32px",
-                      height: "32px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {index + 1}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontWeight: "600",
-                          color: "#1f2937",
-                          fontSize: "14px",
-                        }}
-                      >
-                        {record.action}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: "12px",
-                          color: "#6b7280",
-                        }}
-                      >
-                        {record.time}
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        color: "#6b7280",
-                      }}
-                    >
-                      {record.detail}
-                    </div>
-                  </div>
-                </div>
-              )
-            )}
-          </div>
-
-          <div
-            style={{
-              marginTop: "24px",
-              padding: "16px",
-              backgroundColor: "#f9fafb",
-              borderRadius: "8px",
-              border: "1px dashed #d1d5db",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "14px",
-                fontWeight: "600",
-                color: "#374151",
-                marginBottom: "12px",
-              }}
-            >
-              새 처치 기록 추가
-            </div>
-            <textarea
-              value={newTreatment}
-              onChange={(e) => setNewTreatment(e.target.value)}
-              placeholder="처치 내용을 입력하세요..."
-              style={{
-                width: "100%",
-                height: "60px",
-                border: "1px solid #e5e7eb",
-                borderRadius: "6px",
-                padding: "8px",
-                fontSize: "14px",
-                resize: "none",
-                marginBottom: "8px",
-              }}
-            />
-            <button
-              onClick={() => {
-                if (newTreatment.trim() && selectedAmbulance) {
-                  addTreatmentRecord(selectedAmbulance.id, {
-                    action: "의료진 기록",
-                    detail: newTreatment.trim(),
-                  });
-                  setNewTreatment("");
-                }
-              }}
-              style={{
-                backgroundColor: "#3b82f6",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                padding: "8px 16px",
-                fontSize: "14px",
-                cursor: "pointer",
-                fontWeight: "600",
-              }}
-            >
-              기록 추가
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+};;
 
 export default function EmergencyPatientPage() {
   const [activeTab, setActiveTab] = useState("video");
@@ -1235,11 +565,22 @@ export default function EmergencyPatientPage() {
   const [isCallActive, setIsCallActive] = useState(false);
   const [currentCallAmbulance, setCurrentCallAmbulance] = useState(null);
   const [webRtcSessionId, setWebRtcSessionId] = useState(null);
+  const [webRtcComponent, setWebRtcComponent] = useState(null);
   const { user } = useAuthStore();
+  const { selectedPatientDetail, isLoadingDetail, fetchPatientDetail, error: detailError } = useWaitingAmbulanceStore();
 
   const handleCallStatusChange = (isActive, ambulance) => {
     setIsCallActive(isActive);
     setCurrentCallAmbulance(ambulance);
+  };
+
+  const handleSelectAmbulance = async (ambulance) => {
+    selectAmbulance(ambulance);
+    
+    // 환자 상세정보 가져오기 (삭제)
+    // if (user?.userId && (ambulance.sessionId || ambulance.ambulanceId)) {
+    //   await fetchPatientDetail(user.userId, ambulance.sessionId || ambulance.ambulanceId);
+    // }
   };
 
   const handleStartCall = async (ambulance) => {
@@ -1250,18 +591,33 @@ export default function EmergencyPatientPage() {
         hospitalId: parseInt(user?.userId)
       });
       
-      setWebRtcSessionId(ambulance.sessionId || ambulance.ambulanceId);
+      const sessionId = ambulance.sessionId || ambulance.ambulanceId;
+      setWebRtcSessionId(sessionId);
       setIsCallActive(true);
       setCurrentCallAmbulance(ambulance);
-      selectAmbulance(ambulance);
       
-      const { fetchWaitingAmbulances } = useWaitingAmbulanceStore.getState();
-      if (user?.userId) {
-        fetchWaitingAmbulances(user.userId);
-      }
+      // 구급차 선택 및 환자 상세정보 가져오기
+      await handleSelectAmbulance(ambulance);
+      
+      // WebRTC 컴포넌트 생성
+      const webRtcElement = (
+        <WebRtcCall
+          sessionId={sessionId}
+          hospitalId={user?.userId}
+          onLeave={handleEndCall}
+          patientName={ambulance.patientName || ""}
+          ktas={ambulance.ktas || ""}
+        />
+      );
+      setWebRtcComponent(webRtcElement);
+      
+      // 구급차 상태를 연결중으로 업데이트
+      const { updateAmbulanceCallStatus } = useWaitingAmbulanceStore.getState();
+      updateAmbulanceCallStatus(sessionId, true);
+      
     } catch (error) {
       console.error('[EmergencyPatient] 통화 시작 실패:', error);
-      alert('통화 시작에 실패했습니다: ' + error.message);
+      // alert('통화 시작에 실패했습니다: ' + error.message); // 사용자 경험을 위해 alert 대신 UI 피드백으로 처리
     }
   };
 
@@ -1271,20 +627,38 @@ export default function EmergencyPatientPage() {
       if (currentCallAmbulance && user?.userId) {
         const sessionId = webRtcSessionId || currentCallAmbulance.sessionId || currentCallAmbulance.ambulanceId;
         
-        await removeFromWaitingList(user.userId, sessionId);
+        // 병원측에서는 세션 삭제가 아닌 통화 종료 API 호출
+        await endVideoCall({
+          sessionId: sessionId,
+          hospitalId: parseInt(user.userId)
+        });
         
-        const { fetchWaitingAmbulances } = useWaitingAmbulanceStore.getState();
+        // 구급차 상태를 대기중으로 복원
+        const { updateAmbulanceCallStatus, fetchWaitingAmbulances } = useWaitingAmbulanceStore.getState();
+        updateAmbulanceCallStatus(sessionId, false);
+        
+        // 목록 새로고침
         fetchWaitingAmbulances(user.userId);
       }
       
       setWebRtcSessionId(null);
       setIsCallActive(false);
       setCurrentCallAmbulance(null);
+      setWebRtcComponent(null);
     } catch (error) {
       console.error('[EmergencyPatient] 통화 종료 처리 실패:', error);
+      
+      // 오류가 발생해도 로컬 상태는 초기화
+      if (currentCallAmbulance) {
+        const sessionId = webRtcSessionId || currentCallAmbulance.sessionId || currentCallAmbulance.ambulanceId;
+        const { updateAmbulanceCallStatus } = useWaitingAmbulanceStore.getState();
+        updateAmbulanceCallStatus(sessionId, false);
+      }
+      
       setWebRtcSessionId(null);
       setIsCallActive(false);
       setCurrentCallAmbulance(null);
+      setWebRtcComponent(null);
       alert('통화 종료 처리 중 오류가 발생했습니다: ' + error.message);
     }
   };
@@ -1301,16 +675,22 @@ export default function EmergencyPatientPage() {
       <main
         style={{
           paddingTop: "64px",
-          minHeight: "100vh",
+          height: "calc(100vh - 64px)",
           backgroundColor: "#f9fafb",
           display: "flex",
+          overflow: "hidden",
         }}
       >
         <AmbulanceList
           selectedAmbulance={selectedAmbulance}
-          onSelectAmbulance={selectAmbulance}
+          onSelectAmbulance={handleSelectAmbulance}
           onStartCall={handleStartCall}
         />
+
+        {/* PIP 모드 - 상세정보 탭일 때만 표시 */}
+        {isCallActive && activeTab === "detail" && webRtcComponent && (
+          <DraggablePipVideoContainer webRtcComponent={webRtcComponent} />
+        )}
 
         <div
           style={{
@@ -1403,15 +783,14 @@ export default function EmergencyPatientPage() {
           {activeTab === "video" && (
             <div
               style={{
-                height: "calc(100vh - 160px)",
-                display: "flex",
-                gap: "20px",
+                height: "calc(100% - 160px)",
                 padding: "20px",
               }}
             >
               <div
                 style={{
-                  flex: 2,
+                  width: "100%",
+                  height: "100%",
                   backgroundColor: "white",
                   borderRadius: "12px",
                   padding: "20px",
@@ -1465,14 +844,8 @@ export default function EmergencyPatientPage() {
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  {isCallActive && webRtcSessionId ? (
-                    <WebRtcCall
-                      sessionId={webRtcSessionId}
-                      hospitalId={user?.userId}
-                      onLeave={handleEndCall}
-                      patientName={currentCallAmbulance?.patientName || ""}
-                      ktas={currentCallAmbulance?.ktas || ""}
-                    />
+                  {isCallActive && webRtcComponent ? (
+                    webRtcComponent
                   ) : (
                     <div
                       style={{
@@ -1486,183 +859,22 @@ export default function EmergencyPatientPage() {
                         border: "2px dashed #d1d5db",
                       }}
                     >
-                      <div style={{ fontSize: "48px", marginBottom: "16px" }}>📹</div>
+                      <div style={{ fontSize: "64px", marginBottom: "24px" }}>📹</div>
                       <h4
                         style={{
-                          fontSize: "18px",
+                          fontSize: "24px",
                           color: "#6b7280",
-                          marginBottom: "8px",
+                          marginBottom: "12px",
                         }}
                       >
                         화상통화 대기중
                       </h4>
-                      <p style={{ fontSize: "14px", color: "#9ca3af" }}>
-                        왼쪽 구급차 목록에서 "통화 시작" 버튼을 클릭하여 화상통화를 시작하세요.
+                      <p style={{ fontSize: "16px", color: "#9ca3af", textAlign: "center", lineHeight: "1.5" }}>
+                        왼쪽 구급차 목록에서 "통화 시작" 버튼을 클릭하여<br />
+                        화상통화를 시작하세요.
                       </p>
                     </div>
                   )}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "16px",
-                }}
-              >
-                <div
-                  style={{
-                    backgroundColor: "white",
-                    borderRadius: "12px",
-                    padding: "20px",
-                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                  }}
-                >
-                  <h4
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "bold",
-                      color: "#1f2937",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    환자 정보
-                  </h4>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "12px",
-                      fontSize: "14px",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#6b7280" }}>환자명:</span>
-                      <span style={{ fontWeight: "600" }}>
-                        {selectedAmbulance?.patientName || currentCallAmbulance?.patientName || "선택된 구급차 없음"}
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#6b7280" }}>KTAS:</span>
-                      <span
-                        style={{
-                          padding: "4px 8px",
-                          backgroundColor:
-                            (selectedAmbulance?.ktas || currentCallAmbulance?.ktas) <= 2
-                              ? "#fee2e2"
-                              : (selectedAmbulance?.ktas || currentCallAmbulance?.ktas) <= 3
-                              ? "#fef3c7"
-                              : "#f3f4f6",
-                          color:
-                            (selectedAmbulance?.ktas || currentCallAmbulance?.ktas) <= 2
-                              ? "#991b1b"
-                              : (selectedAmbulance?.ktas || currentCallAmbulance?.ktas) <= 3
-                              ? "#92400e"
-                              : "#374151",
-                          borderRadius: "4px",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {(selectedAmbulance?.ktas || currentCallAmbulance?.ktas) ? 
-                          `KTAS ${selectedAmbulance?.ktas || currentCallAmbulance?.ktas}` : "미분류"}
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#6b7280" }}>통화 상태:</span>
-                      <span
-                        style={{
-                          color: isCallActive ? "#10b981" : "#6b7280",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {isCallActive ? "연결됨" : "대기중"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    backgroundColor: "white",
-                    borderRadius: "12px",
-                    padding: "20px",
-                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                  }}
-                >
-                  <h4
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "bold",
-                      color: "#1f2937",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    구급차 정보
-                  </h4>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "12px",
-                      fontSize: "14px",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#6b7280" }}>구급차 ID:</span>
-                      <span style={{ fontWeight: "600" }}>
-                        {selectedAmbulance?.ambulanceId || currentCallAmbulance?.ambulanceId || "-"}
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#6b7280" }}>세션 ID:</span>
-                      <span style={{ fontWeight: "600", fontSize: "12px" }}>
-                        {webRtcSessionId || selectedAmbulance?.sessionId || currentCallAmbulance?.sessionId || "-"}
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#6b7280" }}>등록시간:</span>
-                      <span style={{ fontWeight: "600", fontSize: "12px" }}>
-                        {(selectedAmbulance?.createdAt || currentCallAmbulance?.createdAt) ?
-                          new Date(selectedAmbulance?.createdAt || currentCallAmbulance?.createdAt).toLocaleString("ko-KR") : "-"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    backgroundColor: "white",
-                    borderRadius: "12px",
-                    padding: "20px",
-                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                    flex: 1,
-                  }}
-                >
-                  <h4
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "bold",
-                      color: "#1f2937",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    실시간 메모
-                  </h4>
-                  <textarea
-                    placeholder="통화 중 중요 사항을 기록하세요..."
-                    style={{
-                      width: "100%",
-                      height: "120px",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "8px",
-                      padding: "12px",
-                      fontSize: "14px",
-                      resize: "none",
-                    }}
-                  />
                 </div>
               </div>
             </div>
@@ -1676,6 +888,9 @@ export default function EmergencyPatientPage() {
               hospitalId={user?.userId}
               isCallActive={isCallActive}
               currentCallAmbulance={currentCallAmbulance}
+              patientDetails={selectedPatientDetail}
+              isLoadingDetail={isLoadingDetail}
+              error={detailError}
             />
           )}
         </div>
