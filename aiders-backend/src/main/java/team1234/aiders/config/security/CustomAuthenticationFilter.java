@@ -36,20 +36,20 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             String token = authHeader.substring("Bearer ".length());
 
             if (jwtProvider.validateToken(token)) {
-                // ✅ 1. 토큰에서 userKey 추출
+                // ✅ 1. 토큰에서 userId, userKey, role 추출
+                Long userId = jwtProvider.getUserIdFromToken(token);
                 String userKey = jwtProvider.getUserKeyFromToken(token);
+                String role = jwtProvider.getRoleFromToken(token);
 
-                if (userKey != null) {
-                    // ✅ 2. userKey로 사용자 조회
-                    UserDetails userDetails = customUserDetailsService.loadUserByUsername(userKey);
+                CustomUserDetails userDetails = CustomUserDetails.fromJwtClaims(userId, userKey, role);
 
-                    // ✅ 3. 인증 객체 생성 및 등록
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                // ✅ 3. 인증 객체 생성 및 등록
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                }
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+
             }
         }
 

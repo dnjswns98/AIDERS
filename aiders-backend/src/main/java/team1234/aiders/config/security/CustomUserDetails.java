@@ -31,6 +31,10 @@ public class CustomUserDetails implements UserDetails {
         return new CustomUserDetails(p.getId(), p.getUserKey(), p.getPassword(), p.getRole());
     }
 
+    public static CustomUserDetails fromJwtClaims(Long id, String userKey, String role) {
+        return new CustomUserDetails(id, userKey, "", role); // password 빈 문자열
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // ROLE 접두사 붙이기 (Spring Security 표준)
