@@ -29,8 +29,9 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/auth/**",
-            "/api/v1/video-call/**",  // 모든 video-call API 허용
-            "/api/**",  // 임시로 모든 API 허용
+            "/api/v1/user/password/**",
+//            "/api/v1/video-call/**",  // 모든 video-call API 허용
+//            "/api/**",  // 임시로 모든 API 허용
             "/ws/**",              // WebSocket 연결 허용
             "/ws"
     };
@@ -46,24 +47,36 @@ public class SecurityConfig {
 
     //TODO: ADMIN 전용 API 경로들
     private static final String[] ADMIN_ENDPOINT = {
-            "/api/v1/user/",
+            "/api/v1/user",
             "/api/v1/regist/**",
             "/api/v1/user/{userId}"
     };
 
     //TODO: AMBULANCE 전용 API 경로들
     private static final String[] AMBULANCE_ENDPOINT = {
-
+            "/api/v1/video-call/ambulance/**",
+            "/api/v1/video-call/session/**",
+            "/api/v1/patient/required",
+            "/api/v1/patient/optional",
+            "/api/v1/ambulance/**",
+            "/api/v1/alarm/send",
+            "/api/v1/alarm/all/**",
+            "/api/v1/match/**"
     };
 
     //TODO: HOSPITAL 전용 API 경로들
     private static final String[] HOSPITAL_ENDPOINT = {
-
+            "/api/v1/video-call/hospital/**",
+            "/api/v1/patient",
+            "/api/v1/hospital/**",
+            "/api/v1/alarm/**",
+            "/api/v1/redis/**"
     };
 
     //TODO: FIRESTATION 전용 API 경로들
     private static final String[] FIRESTATION_ENDPOINT = {
-
+            "/api/v1/dispatch/**",
+            "/api/v1/firestation/**"
     };
 
     @Bean
