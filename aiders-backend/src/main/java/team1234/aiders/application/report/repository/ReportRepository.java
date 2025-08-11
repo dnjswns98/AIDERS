@@ -13,8 +13,6 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 
     Report findByDispatchId(Long dispatchId);
 
-    boolean existsByDispatchId(Long dispatchId);
-
     Optional<Report> findByIdAndFirestationId(Long id, Long firestationId);
 
     boolean existsByIdAndFirestationId(Long id, Long firestationId);
