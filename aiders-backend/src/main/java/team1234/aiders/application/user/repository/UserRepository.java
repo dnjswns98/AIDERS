@@ -23,8 +23,18 @@ public interface UserRepository extends JpaRepository<User, Long>, CustomUserRep
     Optional<LoginProjection> findUserByUserKey(@Param("userKey") String userKey);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query(value = "update user set refresh_token = :refreshToken where user_id = :userId", nativeQuery = true)
+    @Query(value =
+            "update user " +
+            "set refresh_token = :refreshToken " +
+            "where user_id = :userId", nativeQuery = true)
     int updateRefreshToken(@Param("userId") Long userId, @Param("refreshToken") String refreshToken);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value =
+            "update user " +
+            "set refresh_token = NULL " +
+            "where user_key = :userKey and is_deleted = 0", nativeQuery = true)
+    int clearRefreshTokenByUserKey(@Param("userKey") String userKey);
 
     interface LoginProjection {
         Long getId();
