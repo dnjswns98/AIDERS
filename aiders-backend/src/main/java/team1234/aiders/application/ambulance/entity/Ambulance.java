@@ -32,6 +32,7 @@ public class Ambulance extends User {
     private Double pLongitude;
     private String pAddress;
     private String pCondition;
+
     private Integer pKtas;
 
     private String pDepartment;
