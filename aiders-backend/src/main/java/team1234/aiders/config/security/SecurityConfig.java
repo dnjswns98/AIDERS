@@ -58,7 +58,7 @@ public class SecurityConfig {
             "/api/v1/video-call/session/**",
             "/api/v1/patient/required",
             "/api/v1/patient/optional",
-            "/api/v1/ambulance/**",
+            "/api/v1/ambulance/transfer/**",
             "/api/v1/alarm/send",
             "/api/v1/alarm/all/**",
             "/api/v1/match/**",

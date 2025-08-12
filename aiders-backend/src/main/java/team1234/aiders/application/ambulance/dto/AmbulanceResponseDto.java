@@ -9,12 +9,14 @@ import java.time.LocalDateTime;
 @Getter
 public class AmbulanceResponseDto {
 
+    private final Long ambulanceId;
     private final String userKey;
     private final AmbCurrentStatus status;
     private final String hospitalName;
     private final LocalDateTime transferStartTime;
 
     private AmbulanceResponseDto(Ambulance ambulance) {
+        this.ambulanceId = ambulance.getId();
         this.userKey = ambulance.getUserKey();
         this.status = ambulance.getCurrentStatus();
         this.hospitalName = ambulance.getHospitalName();
