@@ -20,11 +20,11 @@ const Dispatch = () => {
     const [showDispatchModal, setShowDispatchModal] = useState(false);
 
     const fetchData = useCallback(async () => {
-      if (user?.userId) {
-          await fetchFirestationInfo();
-          await fetchFirestationAmbulances(user.userId);
-          await fetchDispatchHistory();
-      }
+        if (user?.userId) {
+            await fetchFirestationInfo();
+            await fetchFirestationAmbulances(user.userId);
+            await fetchDispatchHistory();
+        }
     }, [user?.userId, fetchFirestationInfo, fetchFirestationAmbulances, fetchDispatchHistory]);
 
     useEffect(() => {
@@ -39,17 +39,21 @@ const Dispatch = () => {
     const formatDateTime = (dateString) => {
         if (!dateString) return '시간 정보 없음';
         
-        const date = new Date(dateString);
-        if (date instanceof Date && !isNaN(date)) {
-            return date.toLocaleString('ko-KR', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            });
+        try {
+            const date = new Date(dateString);
+            if (date instanceof Date && !isNaN(date)) {
+                return date.toLocaleString('ko-KR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+            }
+        } catch (e) {
+            console.error("날짜 파싱 오류:", e);
         }
         return '시간 정보 없음';
     };
@@ -64,7 +68,7 @@ const Dispatch = () => {
             </div>
         );
     }
-
+    
     return (
         <div className="p-8 bg-gray-50 min-h-full">
             <div className="flex items-center justify-between mb-6">
@@ -95,24 +99,13 @@ const Dispatch = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                             {dispatchHistory && dispatchHistory.length > 0 ? (
                                 dispatchHistory.map((dispatch, index) => {
-                                    const ambulanceId = dispatch.ambulanceIds?.[0]; // 예: 998
-                                    
-                                    // [!code focus start]
-                                    // userKey(예: "998버4200")에서 숫자 부분만 추출하여
-                                    // 배차 내역의 숫자 ID와 비교하는 로직으로 수정합니다.
-                                    const ambulance = ambulances.find(amb => {
-                                        if (!amb || !amb.userKey) return false;
-                                        const numericPartOfUserKey = amb.userKey.match(/^\d+/);
-                                        return numericPartOfUserKey && numericPartOfUserKey[0] == ambulanceId;
-                                    });
-                                    // [!code focus end]
-                                    
-                                    const ambulanceStatus = ambulance ? (ambulance.currentStatus || ambulance.status) : null;
+                                    const ambulance = ambulances[index] || null;
+                                    const ambulanceStatus = ambulance?.status || 'UNKNOWN';
 
                                     return (
                                         <tr key={dispatch.id || index} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                                {ambulance ? ambulance.userKey : `ID: ${ambulanceId || '정보 없음'}`}
+                                                {ambulance ? ambulance.userKey : `ID: ${index}`}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2 py-1 text-xs font-medium rounded-full text-white ${
@@ -122,7 +115,7 @@ const Dispatch = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-500">{dispatch.address}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-500">{formatDateTime(dispatch.dispatchTime)}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">{formatDateTime(dispatch.id)}</td>
                                             <td className="px-6 py-4 text-sm text-gray-500">{dispatch.condition}</td>
                                         </tr>
                                     );

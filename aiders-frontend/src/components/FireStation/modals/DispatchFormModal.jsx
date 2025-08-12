@@ -15,7 +15,7 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
     } = useFireStationStore();
 
     const [formData, setFormData] = useState({
-        ambulanceId: "",
+        ambulanceIds: [], // userKey(문자열)를 담을 배열
         priority: "normal",
         condition: "",
         notes: "",
@@ -38,7 +38,8 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
         return ambulances.filter(ambulance => {
             const status = (ambulance.status || '').toUpperCase();
             const isAvailable = status === 'WAIT';
-            const isNotDispatching = !isAmbulanceDispatching(ambulance.id);
+            // isAmbulanceDispatching 함수가 userKey를 사용하도록 수정
+            const isNotDispatching = !isAmbulanceDispatching(ambulance.userKey); 
             return isAvailable && isNotDispatching;
         });
     }, [ambulances, isAmbulanceDispatching]);
@@ -48,7 +49,21 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
         setFormData(prev => ({ ...prev, [name]: value }));
         if (validationErrors[name]) setValidationErrors(prev => ({ ...prev, [name]: "" }));
     }, [validationErrors]);
-    
+
+    // 체크박스 핸들러: userKey(문자열)를 받아서 처리
+    const handleCheckboxChange = useCallback((userKey) => {
+        setFormData(prev => {
+            const currentKeys = prev.ambulanceIds;
+
+            if (currentKeys.includes(userKey)) {
+                return { ...prev, ambulanceIds: currentKeys.filter(key => key !== userKey) };
+            } else {
+                return { ...prev, ambulanceIds: [...currentKeys, userKey] };
+            }
+        });
+        if (validationErrors.ambulanceIds) setValidationErrors(prev => ({ ...prev, ambulanceIds: "" }));
+    }, [validationErrors]);
+
     const handleLocationChange = useCallback((e) => {
         const { name, value } = e.target;
         setLocationData(prev => ({ ...prev, [name]: value }));
@@ -67,16 +82,14 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
 
     const validateForm = useCallback(() => {
         const errors = {};
-        if (!formData.ambulanceId) errors.ambulanceId = "출동할 구급차를 선택해주세요.";
+        if (formData.ambulanceIds.length === 0) errors.ambulanceIds = "출동할 구급차를 한 대 이상 선택해주세요.";
         if (!locationData.address) errors.address = "지도에서 출동 위치를 지정해주세요.";
-        // ✅ '환자 상태' 필수 조건 제거
-        // if (!formData.condition) errors.condition = "환자의 상태를 입력해주세요.";
         setValidationErrors(errors);
         return Object.keys(errors).length === 0;
     }, [formData, locationData]);
-    
+
     const handleClose = useCallback(() => {
-        setFormData({ ambulanceId: "", priority: "normal", condition: "", notes: "" });
+        setFormData({ ambulanceIds: [], priority: "normal", condition: "", notes: "" });
         setLocationData({ address: "", latitude: null, longitude: null, landmark: "" });
         setValidationErrors({});
         setLocalError(null);
@@ -93,19 +106,27 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
         setIsSubmitting(true);
         setLocalError(null);
         try {
-            const selectedAmbulance = availableAmbulances.find(a => a.id === parseInt(formData.ambulanceId));
+            // userKey(문자열)에서 숫자 ID를 추출하여 Long 타입으로 변환
+            const numericAmbulanceIds = formData.ambulanceIds.map(userKey => {
+                const ambulance = ambulances.find(a => a.userKey === userKey);
+                // ambulances 객체에 id 필드가 없으므로 userKey에서 숫자만 추출
+                return parseInt(userKey.match(/^\d+/)?.[0], 10);
+            }).filter(id => !isNaN(id));
+            
+            console.log("전송할 구급차 ID:", numericAmbulanceIds); // 디버깅용 로그
+
             const dispatchData = {
-                ambulanceIds: [parseInt(formData.ambulanceId, 10)],
+                ambulanceIds: numericAmbulanceIds, // 숫자 ID 배열을 전송
                 latitude: locationData.latitude,
                 longitude: locationData.longitude,
                 address: locationData.address,
-                // ✅ '환자 상태'가 비어있으면 기본값("상태 미입력")으로 전송
                 condition: formData.condition || "상태 미입력",
             };
+
             await dispatchAmbulance(dispatchData);
             await fetchFirestationAmbulances(firestationInfo.id);
             if (onDispatchSuccess) onDispatchSuccess();
-            alert(`✅ 배차 완료!\n구급차: ${selectedAmbulance?.userKey}\n출동지: ${locationData.address}`);
+            alert(`✅ 배차 완료!\n구급차: ${formData.ambulanceIds.join(", ")}\n출동지: ${locationData.address}`);
             handleClose();
         } catch (error) {
             const errorMessage = error.response?.data?.message || error.message || '배차 신청 중 오류가 발생했습니다.';
@@ -115,7 +136,7 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
             setIsSubmitting(false);
         }
     }, [
-        validateForm, formData, locationData, availableAmbulances,
+        validateForm, formData, locationData, ambulances,
         dispatchAmbulance, onDispatchSuccess, handleClose, fetchFirestationAmbulances, firestationInfo
     ]);
 
@@ -170,29 +191,32 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
                                 className="w-full p-3 border border-gray-300 rounded-lg"
                             />
                         </div>
+
                         <div>
-                            <label htmlFor="ambulanceId" className="block text-sm font-medium text-gray-700 mb-2">출동 구급차 *</label>
-                            <select
-                                id="ambulanceId"
-                                name="ambulanceId"
-                                value={formData.ambulanceId}
-                                onChange={handleInputChange}
-                                className={`w-full p-3 border rounded-lg ${validationErrors.ambulanceId ? 'border-red-300' : 'border-gray-300'}`}
-                            >
-                                <option value="">대기중인 구급차를 선택하세요</option>
-                                {availableAmbulances.map(ambulance => (
-                                    <option key={ambulance.id} value={ambulance.id}>
-                                        {ambulance.userKey} ({getStatusText(ambulance.status)})
-                                    </option>
-                                ))}
-                            </select>
-                            {availableAmbulances.length === 0 && (
-                                <p className="mt-1 text-sm text-yellow-600">사용 가능한 구급차가 없습니다.</p>
-                            )}
-                            {validationErrors.ambulanceId && <p className="mt-1 text-sm text-red-600">{validationErrors.ambulanceId}</p>}
+                            <label className="block text-sm font-medium text-gray-700 mb-2">출동 구급차 *</label>
+                            <div className={`p-3 border rounded-lg ${validationErrors.ambulanceIds ? 'border-red-300' : 'border-gray-300'}`}>
+                                {availableAmbulances.length > 0 ? (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {availableAmbulances.map(ambulance => (
+                                            <label key={ambulance.userKey} className="flex items-center space-x-2">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.ambulanceIds.includes(ambulance.userKey)}
+                                                    onChange={() => handleCheckboxChange(ambulance.userKey)}
+                                                    className="form-checkbox h-5 w-5 text-blue-600"
+                                                />
+                                                <span className="text-sm text-gray-900">{ambulance.userKey} ({getStatusText(ambulance.status)})</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="mt-1 text-sm text-yellow-600">사용 가능한 구급차가 없습니다.</p>
+                                )}
+                            </div>
+                            {validationErrors.ambulanceIds && <p className="mt-1 text-sm text-red-600">{validationErrors.ambulanceIds}</p>}
                         </div>
+
                         <div>
-                            {/* ✅ 라벨에서 '*' 제거 */}
                             <label htmlFor="condition" className="block text-sm font-medium text-gray-700 mb-2">환자 상태</label>
                             <textarea
                                 id="condition"
@@ -219,7 +243,7 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
                             type="submit"
                             form="dispatch-form"
                             className="px-6 py-3 bg-red-600 text-white hover:bg-red-700 rounded-lg disabled:bg-red-300 flex items-center"
-                            disabled={isSubmitting || storeLoading || availableAmbulances.length === 0}
+                            disabled={isSubmitting || storeLoading || formData.ambulanceIds.length === 0}
                         >
                             배차 신청
                         </button>
