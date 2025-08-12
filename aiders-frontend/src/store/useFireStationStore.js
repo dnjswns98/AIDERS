@@ -1,29 +1,21 @@
-// src/store/useFireStationStore.js - 소방서 전용 상태관리 (최종 수정 버전)
-
 import { create } from "zustand";
-import { useAuthStore } from './useAuthStore';
 import {
   createDispatch,
   getDispatchHistory,
   getDispatchDetail,
-  updateDispatchStatus,
-  completeDispatch,
   updateAmbulanceStatus,
   getAmbulanceDetail,
   getAmbulances,
   getAmbulancesByStatus,
   getAvailableAmbulances,
   getAmbulanceLocation,
-  getTodayStats,
-  getAmbulanceStats,
-  getDispatchStats,
-  getResponseTimeAnalysis,
   getFirestationInfo,
   getFirestationLocation,
   getFirestationInfoById,
   getCurrentUserInfo
 } from "../api/api";
 import { fetchWithAuth } from "../utils/apiInterceptor";
+import { useAuthStore } from "./useAuthStore";
 
 // === 유틸리티 함수들 ===
 const getStatusText = (status) => {
@@ -52,10 +44,10 @@ const getPriorityColor = (priority) => {
 
 const calculateResponseTimeMinutes = (startTime, endTime) => {
   if (!startTime || !endTime) return 0;
-  
+
   const start = typeof startTime === 'string' ? new Date(startTime) : startTime;
   const end = typeof endTime === 'string' ? new Date(endTime) : endTime;
-  
+
   return Math.round((end - start) / (1000 * 60));
 };
 
@@ -76,12 +68,12 @@ const useFireStationStore = create((set, get) => ({
   isLoading: false,
   error: null,
   lastUpdated: null,
-  
+
   // === 실시간 배차 추적 ===
   dispatchingAmbulances: new Map(),
   recentDispatches: [],
   dispatchQueue: [],
-  
+
   // === 통계 데이터 ===
   todayStats: {
     totalDispatches: 0,
@@ -92,11 +84,11 @@ const useFireStationStore = create((set, get) => ({
     urgentDispatches: 0,
     normalDispatches: 0
   },
-  
+
   // === 구급차 현황 캐시 ===
   ambulanceStatusCache: new Map(),
   ambulanceDetailsCache: new Map(),
-  
+
   // === 소방서 정보 ===
   firestationInfo: null,
   firestationLocation: null,
@@ -104,47 +96,47 @@ const useFireStationStore = create((set, get) => ({
   // ======================================================================
   // 🚨 출동 관련 액션들
   // ======================================================================
+  // 이 부분의 함수들은 개별적으로 호출되는 대신, initializeData에 통합됩니다.
 
   fetchDispatchHistory: async (options = {}) => {
-    set({ isLoading: true, error: null });
-    
     try {
       const history = await getDispatchHistory(options);
-      
-      const todayDispatches = history?.filter(dispatch => isToday(dispatch.dispatchTime)) || [];
-      const completedToday = todayDispatches.filter(dispatch => 
-        ['completed', 'arrived'].includes(dispatch.status) || 
+
+      const todayDispatches = history?.filter(dispatch => isToday(dispatch.createdAt)) || [];
+      const completedToday = todayDispatches.filter(dispatch =>
+        ['completed', 'arrived'].includes(dispatch.status) ||
         ['WAIT'].includes(dispatch.ambulance?.currentStatus)
       );
-      const activeToday = todayDispatches.filter(dispatch => 
+      const activeToday = todayDispatches.filter(dispatch =>
         ['dispatched', 'transporting'].includes(dispatch.status) ||
         ['DISPATCH', 'TRANSFER'].includes(dispatch.ambulance?.currentStatus)
       );
-      
-      const completedWithTimes = completedToday.filter(d => d.dispatchTime && (d.completeTime || d.arrivalTime));
+
+      const completedWithTimes = completedToday.filter(d => d.createdAt && (d.completeTime || d.arrivalTime));
       const averageResponseTime = completedWithTimes.length > 0
-        ? Math.round(completedWithTimes.reduce((sum, d) => sum + calculateResponseTimeMinutes(d.dispatchTime, d.completeTime || d.arrivalTime), 0) / completedWithTimes.length)
+        ? Math.round(completedWithTimes.reduce((sum, d) => sum + calculateResponseTimeMinutes(d.createdAt, d.completeTime || d.arrivalTime), 0) / completedWithTimes.length)
         : 0;
+
+      const newStats = {
+        totalDispatches: todayDispatches.length,
+        completedDispatches: completedToday.length,
+        activeDispatches: activeToday.length,
+        averageResponseTime: averageResponseTime,
+        emergencyDispatches: todayDispatches.filter(d => d.priority === 'emergency').length,
+        urgentDispatches: todayDispatches.filter(d => d.priority === 'urgent').length,
+        normalDispatches: todayDispatches.filter(d => d.priority === 'normal').length
+      };
 
       set({
         dispatchHistory: history || [],
-        isLoading: false,
+        todayStats: newStats,
         lastUpdated: new Date().toISOString(),
-        todayStats: {
-          totalDispatches: todayDispatches.length,
-          completedDispatches: completedToday.length,
-          activeDispatches: activeToday.length,
-          averageResponseTime: averageResponseTime,
-          emergencyDispatches: todayDispatches.filter(d => d.priority === 'emergency').length,
-          urgentDispatches: todayDispatches.filter(d => d.priority === 'urgent').length,
-          normalDispatches: todayDispatches.filter(d => d.priority === 'normal').length
-        }
       });
       return history;
-      
+
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || "출동 기록을 불러오는데 실패했습니다.";
-      set({ error: errorMessage, isLoading: false });
+      set({ error: errorMessage });
       throw error;
     }
   },
@@ -152,18 +144,18 @@ const useFireStationStore = create((set, get) => ({
   dispatchAmbulance: async (dispatchRequest) => {
     const { ambulanceIds } = dispatchRequest;
     const ambulanceId = ambulanceIds?.[0];
-    
+
     if (!ambulanceId) throw new Error('구급차 ID가 필요합니다.');
-    
+
     set(state => ({
       dispatchingAmbulances: new Map(state.dispatchingAmbulances).set(ambulanceId, { status: "requesting", timestamp: Date.now() }),
       error: null
     }));
-    
+
     try {
       const dispatchResult = await createDispatch(dispatchRequest);
       await get().fetchDispatchHistory();
-      
+
       set(state => {
         const newDispatchingAmbulances = new Map(state.dispatchingAmbulances);
         newDispatchingAmbulances.delete(ambulanceId);
@@ -171,7 +163,7 @@ const useFireStationStore = create((set, get) => ({
       });
 
       return { ...dispatchResult, success: true };
-      
+
     } catch (error) {
       set(state => ({
         dispatchingAmbulances: new Map(state.dispatchingAmbulances).set(ambulanceId, { status: "error", error: error.message }),
@@ -184,22 +176,21 @@ const useFireStationStore = create((set, get) => ({
   // ======================================================================
   // 🚑 구급차 관련 액션들
   // ======================================================================
+  // 이 부분의 함수들은 개별적으로 호출되는 대신, initializeData에 통합됩니다.
 
   fetchFirestationAmbulances: async (firestationId) => {
-    set({ isLoading: true, error: null });
     try {
         const ambulanceList = await getAmbulances();
-        set({ ambulances: ambulanceList || [], isLoading: false });
+        set({ ambulances: ambulanceList || [] });
         return ambulanceList;
     } catch (error) {
         const errorMessage = error.message || "소방서 소속 구급차를 불러오는데 실패했습니다.";
-        set({ error: errorMessage, isLoading: false, ambulances: [] });
+        set({ error: errorMessage, ambulances: [] });
         throw error;
     }
   },
 
   fetchFirestationInfo: async () => {
-    set({ isLoading: true, error: null });
     try {
       const [info, location] = await Promise.all([
         getFirestationInfo(),
@@ -212,19 +203,43 @@ const useFireStationStore = create((set, get) => ({
         longitude: location?.longitude || null,
       };
 
-      set({ firestationInfo: combinedInfo, isLoading: false });
+      set({ firestationInfo: combinedInfo });
       return combinedInfo;
     } catch (error) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message });
       throw error;
     }
   },
-
-  // [!code focus start]
-  // ======================================================================
-  // 🛠️ 유틸리티 및 상태 추적 함수 (누락된 부분 추가)
-  // ======================================================================
   
+  // ======================================================================
+  // 🛠️ 유틸리티 및 상태 추적 함수
+  // ======================================================================
+
+  // 🔥 모든 초기 데이터를 한 번에 불러오는 함수 (핵심)
+  initializeData: async () => {
+    set({ isLoading: true, error: null });
+    const { user } = useAuthStore.getState();
+    if (!user?.userId) {
+      set({ isLoading: false, error: '사용자 정보가 없습니다.' });
+      return;
+    }
+
+    try {
+      await Promise.all([
+        get().fetchFirestationInfo(),
+        get().fetchFirestationAmbulances(user.userId),
+        get().fetchDispatchHistory()
+      ]);
+      set({ isLoading: false });
+    } catch (error) {
+      console.error("초기 데이터 로딩 실패:", error);
+      set({ 
+        isLoading: false, 
+        error: error.message || '초기 데이터 로딩에 실패했습니다.' 
+      });
+    }
+  },
+
   isAmbulanceDispatching: (ambulanceId) => {
     if (!ambulanceId) return false;
     const dispatching = get().dispatchingAmbulances.get(ambulanceId);
@@ -238,16 +253,39 @@ const useFireStationStore = create((set, get) => ({
 
   refreshTodayStats: async () => {
     try {
-      const stats = await getTodayStats();
+      const history = await get().fetchDispatchHistory();
+      
+      const todayDispatches = history?.filter(dispatch => isToday(dispatch.createdAt)) || [];
+      const completedToday = todayDispatches.filter(dispatch =>
+        ['completed', 'arrived'].includes(dispatch.status) ||
+        ['WAIT'].includes(dispatch.ambulance?.currentStatus)
+      );
+      const activeToday = todayDispatches.filter(dispatch =>
+        ['dispatched', 'transporting'].includes(dispatch.status) ||
+        ['DISPATCH', 'TRANSFER'].includes(dispatch.ambulance?.currentStatus)
+      );
+
+      const completedWithTimes = completedToday.filter(d => d.createdAt && (d.completeTime || d.arrivalTime));
+      const averageResponseTime = completedWithTimes.length > 0
+        ? Math.round(completedWithTimes.reduce((sum, d) => sum + calculateResponseTimeMinutes(d.createdAt, d.completeTime || d.arrivalTime), 0) / completedWithTimes.length)
+        : 0;
+
       set(state => ({
-        todayStats: { ...state.todayStats, ...stats }
+        todayStats: {
+          totalDispatches: todayDispatches.length,
+          completedDispatches: completedToday.length,
+          activeDispatches: activeToday.length,
+          averageResponseTime: averageResponseTime,
+          emergencyDispatches: todayDispatches.filter(d => d.priority === 'emergency').length,
+          urgentDispatches: todayDispatches.filter(d => d.priority === 'urgent').length,
+          normalDispatches: todayDispatches.filter(d => d.priority === 'normal').length
+        }
       }));
     } catch (error) {
       console.error("오늘 통계 새로고침 실패:", error);
     }
   },
-  // [!code focus end]
-  
+
   clearError: () => set({ error: null }),
 
   reset: () => {

@@ -43,11 +43,14 @@ const HospitalMarkers = ({ map, hospitals, infoWindow }) => {
         marker.setMap(map);
 
         const hospitalContent = `
-          <div style="padding:10px; min-width:180px; font-family:Arial, sans-serif;">
-            <div style="font-weight:bold; color:#e74c3c; margin-bottom:8px; font-size:14px;">
-              🏥 ${hospital.name || `병원 ${hospital.id}`}
+          <div style="padding:10px; min-width:180px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="font-weight:bold; color:#e74c3c; font-size:14px; white-space: normal; overflow-wrap: break-word;">
+                🏥 ${hospital.name || `병원 ${hospital.id}`}
+              </div>
+              <button onclick="infoWindow.current.close()" style="border: none; background: none; font-size: 16px; cursor: pointer; color: #999;">×</button>
             </div>
-            <div style="font-size:12px; line-height:1.4;">
+            <div style="font-size:12px; line-height:1.4; white-space: normal; overflow-wrap: break-word;">
               ${hospital.address ? `
                 <div style="margin-bottom:4px;">
                   <span style="color:#666;">주소:</span> ${hospital.address}
@@ -73,7 +76,7 @@ const HospitalMarkers = ({ map, hospitals, infoWindow }) => {
         `;
 
         window.kakao.maps.event.addListener(marker, 'click', () => {
-          infoWindow.current.setContent(hospitalContent);
+          infoWindow.current.setContent(`<div class="info-window-content">${hospitalContent}</div>`);
           infoWindow.current.open(map, marker);
         });
 

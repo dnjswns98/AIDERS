@@ -1,10 +1,9 @@
-
-
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 const MapContainer = ({ center, onMapInitialized, mapRef }) => {
   const mapContainer = useRef(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const initialCenterSet = useRef(false);
 
   useEffect(() => {
     if (!mapContainer.current) {
@@ -38,6 +37,7 @@ const MapContainer = ({ center, onMapInitialized, mapRef }) => {
           console.log('[MapContainer] 지도 초기화 완료');
           setIsMapLoaded(true);
           onMapInitialized(true);
+          initialCenterSet.current = true;
         }
 
         if (mapContainer.current.offsetWidth > 0 && mapContainer.current.offsetHeight > 0 && !mapRef.current.relayoutCalled) {
@@ -45,8 +45,12 @@ const MapContainer = ({ center, onMapInitialized, mapRef }) => {
           mapRef.current.relayoutCalled = true;
         }
 
-        const moveLatLon = new window.kakao.maps.LatLng(center.lat, center.lng);
-        mapRef.current.panTo(moveLatLon);
+        if (initialCenterSet.current && mapRef.current) {
+            const moveLatLon = new window.kakao.maps.LatLng(center.lat, center.lng);
+            mapRef.current.panTo(moveLatLon);
+            initialCenterSet.current = false;
+        }
+
 
       } else {
         console.warn('[MapContainer] 카카오맵 SDK 로딩 대기 중...');
@@ -57,10 +61,18 @@ const MapContainer = ({ center, onMapInitialized, mapRef }) => {
     checkKakaoMap();
   }, [center, onMapInitialized, mapRef]);
 
+  const goBackToFirestation = useCallback(() => {
+    if (mapRef.current && center && typeof center.lat === 'number' && typeof center.lng === 'number') {
+      const firestationPos = new window.kakao.maps.LatLng(center.lat, center.lng);
+      mapRef.current.panTo(firestationPos);
+      mapRef.current.setLevel(5);
+    }
+  }, [mapRef, center]);
+
   return (
     <div 
       ref={mapContainer}
-      className="w-full h-full"
+      className="w-full h-full relative"
       style={{ minHeight: '400px' }}
     >
       {!isMapLoaded && (
@@ -71,6 +83,15 @@ const MapContainer = ({ center, onMapInitialized, mapRef }) => {
             <p className="text-xs text-gray-500 mt-1">카카오맵을 초기화하고 있습니다.</p>
           </div>
         </div>
+      )}
+      {isMapLoaded && (
+        <button
+          onClick={goBackToFirestation}
+          className="absolute bottom-4 right-4 z-10 p-3 bg-white rounded-full shadow-lg hover:bg-gray-100"
+          title="소방서 위치로 돌아가기"
+        >
+          📍
+        </button>
       )}
     </div>
   );

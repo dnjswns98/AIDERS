@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAppContext } from '../../hooks/useAppContext';
 import useFireStationStore from '../../store/useFireStationStore';
@@ -8,14 +7,10 @@ const FireStationHeader = () => {
     const { currentTime, notifications, setNotifications } = useAppContext();
     const [showNotifications, setShowNotifications] = useState(false);
 
-    const { firestationInfo, fetchFirestationInfo, isLoading, error } = useFireStationStore();
+    // useFireStationStore에서 데이터와 로딩 상태만 가져옵니다.
+    const { firestationInfo, isLoading } = useFireStationStore();
 
-    useEffect(() => {
-        if (!firestationInfo) {
-            fetchFirestationInfo();
-        }
-    }, [fetchFirestationInfo, firestationInfo]);
-
+    // displayName은 firestationInfo가 있을 때만 설정합니다.
     const displayName = firestationInfo?.name || '소방서';
 
     const unreadCount = notifications.filter(n => n.status === 'unread').length;
@@ -97,4 +92,3 @@ const FireStationHeader = () => {
 };
 
 export default FireStationHeader;
-

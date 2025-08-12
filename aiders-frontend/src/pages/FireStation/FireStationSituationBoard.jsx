@@ -8,12 +8,14 @@ import {
   getPriorityColor,
   getPriorityText,
 } from "../../utils/statusUtils";
-import SituationMap from "../../components/FireStation/SituationMap"
+import SituationMap from "../../components/FireStation/SituationMap";
+import { useAuthStore } from "../../store/useAuthStore";
+import { getHospitals } from "../../api/api";
 
 const FireStationSituationBoard = () => {
+  const { user } = useAuthStore();
   const { getDispatchedAmbulances, getAvailableAmbulances } = useEmergencyStore();
-  const { getHospitals } = useBedStore();
-  
+
   const {
     ambulances,
     firestationInfo,
@@ -24,17 +26,19 @@ const FireStationSituationBoard = () => {
     getDispatchProgress,
     refreshTodayStats,
     fetchDispatchHistory,
+    fetchFirestationAmbulances,
+    fetchFirestationInfo,
     error: storeError,
     clearError,
     isLoading: storeLoading,
   } = useFireStationStore();
 
   // === 상태 관리 ===
-  const [filterStatus, setFilterStatus] = useState("all"); // 'all', 'dispatched', 'transporting', 'standby'
+  const [filterStatus, setFilterStatus] = useState("all");
   const [selectedAmbulance, setSelectedAmbulance] = useState(null);
   const [hospitals, setHospitals] = useState([]);
-  const [mapCenter, setMapCenter] = useState({ lat: 36.145, lng: 128.39 }); // 구미시청
-  
+  const [mapCenter, setMapCenter] = useState({ lat: 36.145, lng: 128.39 });
+
   // UI 상태
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAutoRefresh, setIsAutoRefresh] = useState(true);
@@ -48,26 +52,26 @@ const FireStationSituationBoard = () => {
       dispatched: 0,
       transporting: 0,
       standby: 0,
-      maintenance: 0
+      maintenance: 0,
     };
 
-    ambulances.forEach(ambulance => {
+    ambulances.forEach((ambulance) => {
       const status = ambulance.currentStatus || ambulance.status;
       switch (status) {
-        case 'DISPATCH':
-        case 'dispatched':
+        case "DISPATCH":
+        case "dispatched":
           stats.dispatched++;
           break;
-        case 'TRANSFER':
-        case 'transporting':
+        case "TRANSFER":
+        case "transporting":
           stats.transporting++;
           break;
-        case 'WAIT':
-        case 'standby':
+        case "WAIT":
+        case "standby":
           stats.standby++;
           break;
-        case 'MAINTENANCE':
-        case 'maintenance':
+        case "MAINTENANCE":
+        case "maintenance":
           stats.maintenance++;
           break;
       }
@@ -81,25 +85,29 @@ const FireStationSituationBoard = () => {
     let filtered = [...ambulances];
 
     switch (filterStatus) {
-      case 'dispatched':
-        filtered = filtered.filter(a => {
+      case "dispatched":
+        filtered = filtered.filter((a) => {
           const status = a.currentStatus || a.status;
-          return status === 'DISPATCH' || status === 'dispatched' || isAmbulanceDispatching(a.userKey);
+          return (
+            status === "DISPATCH" ||
+            status === "dispatched" ||
+            isAmbulanceDispatching(a.userKey)
+          );
         });
         break;
-      case 'transporting':
-        filtered = filtered.filter(a => {
+      case "transporting":
+        filtered = filtered.filter((a) => {
           const status = a.currentStatus || a.status;
-          return status === 'TRANSFER' || status === 'transporting';
+          return status === "TRANSFER" || status === "transporting";
         });
         break;
-      case 'standby':
-        filtered = filtered.filter(a => {
+      case "standby":
+        filtered = filtered.filter((a) => {
           const status = a.currentStatus || a.status;
-          return status === 'WAIT' || status === 'standby';
+          return status === "WAIT" || status === "standby";
         });
         break;
-      case 'all':
+      case "all":
       default:
         // 전체 표시
         break;
@@ -108,22 +116,26 @@ const FireStationSituationBoard = () => {
     // 우선순위 정렬: 배차중 > 출동중 > 이송중 > 대기중
     filtered.sort((a, b) => {
       const statusPriority = {
-        'dispatching': 1000, // 배차 중
-        'DISPATCH': 900,
-        'dispatched': 900,
-        'TRANSFER': 800,
-        'transporting': 800,
-        'WAIT': 100,
-        'standby': 100,
-        'MAINTENANCE': 10,
-        'maintenance': 10
+        dispatching: 1000, // 배차 중
+        DISPATCH: 900,
+        dispatched: 900,
+        TRANSFER: 800,
+        transporting: 800,
+        WAIT: 100,
+        standby: 100,
+        MAINTENANCE: 10,
+        maintenance: 10,
       };
 
       const aIsDispatching = isAmbulanceDispatching(a.userKey);
       const bIsDispatching = isAmbulanceDispatching(b.userKey);
-      
-      const aPriority = aIsDispatching ? 1000 : statusPriority[a.currentStatus || a.status] || 50;
-      const bPriority = bIsDispatching ? 1000 : statusPriority[b.currentStatus || b.status] || 50;
+
+      const aPriority = aIsDispatching
+        ? 1000
+        : statusPriority[a.currentStatus || a.status] || 50;
+      const bPriority = bIsDispatching
+        ? 1000
+        : statusPriority[b.currentStatus || b.status] || 50;
 
       return bPriority - aPriority;
     });
@@ -131,12 +143,33 @@ const FireStationSituationBoard = () => {
     return filtered;
   }, [ambulances, filterStatus, isAmbulanceDispatching]);
 
-  // === 데이터 초기화 ===
+  // === 데이터 로딩이 완료된 후 지도 중앙 위치 설정 ===
   useEffect(() => {
-    if (!firestationInfo || dispatchHistory.length === 0) {
-      fetchDispatchHistory();
+    if (firestationInfo?.latitude && firestationInfo?.longitude) {
+      setMapCenter({
+        lat: firestationInfo.latitude,
+        lng: firestationInfo.longitude,
+      });
     }
-  }, [fetchDispatchHistory, firestationInfo, dispatchHistory]);
+  }, [firestationInfo]);
+
+  // === 자동 새로고침 ===
+  useEffect(() => {
+    let interval;
+    if (isAutoRefresh) {
+      interval = setInterval(() => {
+        const { initializeData } = useFireStationStore.getState();
+        initializeData();
+        setLastRefreshTime(new Date());
+      }, 30000);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isAutoRefresh]);
 
   // === 에러 자동 클리어 ===
   useEffect(() => {
@@ -156,8 +189,12 @@ const FireStationSituationBoard = () => {
     console.log("[상황판] 구급차 선택:", ambulance.userKey);
     setSelectedAmbulance(ambulance);
 
-    if (ambulance.latitude && ambulance.longitude && 
-        typeof ambulance.latitude === 'number' && typeof ambulance.longitude === 'number') {
+    if (
+      ambulance.latitude &&
+      ambulance.longitude &&
+      typeof ambulance.latitude === "number" &&
+      typeof ambulance.longitude === "number"
+    ) {
       setMapCenter({
         lat: ambulance.latitude,
         lng: ambulance.longitude,
@@ -171,8 +208,8 @@ const FireStationSituationBoard = () => {
 
     setIsRefreshing(true);
     try {
-      await fetchDispatchHistory();
-      refreshTodayStats();
+      const { initializeData } = useFireStationStore.getState();
+      await initializeData();
       setLastRefreshTime(new Date());
       setLocalError(null);
     } catch (error) {
@@ -181,104 +218,126 @@ const FireStationSituationBoard = () => {
     } finally {
       setIsRefreshing(false);
     }
-  }, [isRefreshing, storeLoading, fetchDispatchHistory, refreshTodayStats]);
+  }, [isRefreshing, storeLoading]);
 
   // 자동 새로고침 토글
   const toggleAutoRefresh = useCallback(() => {
-    setIsAutoRefresh(prev => !prev);
+    setIsAutoRefresh((prev) => !prev);
   }, []);
 
   // 필터 상태별 색상 및 아이콘
-  const getFilterStyle = useCallback((status) => {
-    const isActive = filterStatus === status;
-    
-    const styles = {
-      all: {
-        color: isActive ? 'bg-gray-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
-        icon: '📋'
-      },
-      dispatched: {
-        color: isActive ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-700 hover:bg-orange-200',
-        icon: '🚨'
-      },
-      transporting: {
-        color: isActive ? 'bg-green-600 text-white' : 'bg-green-100 text-green-700 hover:bg-green-200',
-        icon: '🏥'
-      },
-      standby: {
-        color: isActive ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-700 hover:bg-blue-200',
-        icon: '⭐'
-      }
-    };
+  const getFilterStyle = useCallback(
+    (status) => {
+      const isActive = filterStatus === status;
 
-    return styles[status] || styles.all;
-  }, [filterStatus]);
+      const styles = {
+        all: {
+          color: isActive
+            ? "bg-gray-600 text-white"
+            : "bg-gray-100 text-gray-700 hover:bg-gray-200",
+          icon: "📋",
+        },
+        dispatched: {
+          color: isActive
+            ? "bg-orange-600 text-white"
+            : "bg-orange-100 text-orange-700 hover:bg-orange-200",
+          icon: "🚨",
+        },
+        transporting: {
+          color: isActive
+            ? "bg-green-600 text-white"
+            : "bg-green-100 text-green-700 hover:bg-green-200",
+          icon: "🏥",
+        },
+        standby: {
+          color: isActive
+            ? "bg-blue-600 text-white"
+            : "bg-blue-100 text-blue-700 hover:bg-blue-200",
+          icon: "⭐",
+        },
+      };
+
+      return styles[status] || styles.all;
+    },
+    [filterStatus]
+  );
 
   // 구급차 상태 표시 스타일
-  const getAmbulanceStatusStyle = useCallback((ambulance) => {
-    const isDispatching = isAmbulanceDispatching(ambulance.userKey);
-    const status = ambulance.currentStatus || ambulance.status;
+  const getAmbulanceStatusStyle = useCallback(
+    (ambulance) => {
+      const isDispatching = isAmbulanceDispatching(ambulance.userKey);
+      const status = ambulance.currentStatus || ambulance.status;
 
-    if (isDispatching) {
-      return {
-        bgColor: 'bg-blue-50',
-        borderColor: 'border-l-blue-500',
-        textColor: 'text-blue-700',
-        icon: '🔄',
-        statusText: '배차 중...'
-      };
-    }
+      if (isDispatching) {
+        return {
+          bgColor: "bg-blue-50",
+          borderColor: "border-l-blue-500",
+          textColor: "text-blue-700",
+          icon: "🔄",
+          statusText: "배차 중...",
+        };
+      }
 
-    switch (status) {
-      case 'DISPATCH':
-      case 'dispatched':
-        return {
-          bgColor: 'bg-orange-50',
-          borderColor: 'border-l-orange-500',
-          textColor: 'text-orange-700',
-          icon: '🚨',
-          statusText: '출동 중'
-        };
-      case 'TRANSFER':
-      case 'transporting':
-        return {
-          bgColor: 'bg-green-50',
-          borderColor: 'border-l-green-500',
-          textColor: 'text-green-700',
-          icon: '🏥',
-          statusText: '이송 중'
-        };
-      case 'WAIT':
-      case 'standby':
-        return {
-          bgColor: 'bg-blue-50',
-          borderColor: 'border-l-blue-500',
-          textColor: 'text-blue-700',
-          icon: '⭐',
-          statusText: '대기 중'
-        };
-      case 'MAINTENANCE':
-      case 'maintenance':
-        return {
-          bgColor: 'bg-gray-50',
-          borderColor: 'border-l-gray-500',
-          textColor: 'text-gray-700',
-          icon: '🔧',
-          statusText: '정비 중'
-        };
-      default:
-        return {
-          bgColor: 'bg-gray-50',
-          borderColor: 'border-l-gray-500',
-          textColor: 'text-gray-700',
-          icon: '❓',
-          statusText: '상태 불명'
-        };
-    }
-  }, [isAmbulanceDispatching]);
+      switch (status) {
+        case "DISPATCH":
+        case "dispatched":
+          return {
+            bgColor: "bg-orange-50",
+            borderColor: "border-l-orange-500",
+            textColor: "text-orange-700",
+            icon: "🚨",
+            statusText: "출동 중",
+          };
+        case "TRANSFER":
+        case "transporting":
+          return {
+            bgColor: "bg-green-50",
+            borderColor: "border-l-green-500",
+            textColor: "text-green-700",
+            icon: "🏥",
+            statusText: "이송 중",
+          };
+        case "WAIT":
+        case "standby":
+          return {
+            bgColor: "bg-blue-50",
+            borderColor: "border-l-blue-500",
+            textColor: "text-blue-700",
+            icon: "⭐",
+            statusText: "대기 중",
+          };
+        case "MAINTENANCE":
+        case "maintenance":
+          return {
+            bgColor: "bg-gray-50",
+            borderColor: "border-l-gray-500",
+            textColor: "text-gray-700",
+            icon: "🔧",
+            statusText: "정비 중",
+          };
+        default:
+          return {
+            bgColor: "bg-gray-50",
+            borderColor: "border-l-gray-500",
+            textColor: "text-gray-700",
+            icon: "❓",
+            statusText: "상태 불명",
+          };
+      }
+    },
+    [isAmbulanceDispatching]
+  );
+
+  if (!firestationInfo || storeLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-full bg-gray-100">
       {/* === 좌측 사이드바 === */}
       <aside className="w-80 bg-white border-r border-gray-300 flex flex-col shadow-lg">
         {/* 사이드바 헤더 */}
@@ -292,15 +351,27 @@ const FireStationSituationBoard = () => {
               {filteredAmbulances.length} / {ambulances.length}
             </div>
           </div>
-          
+
           {/* 상태 필터 버튼들 */}
           <div className="mt-4 grid grid-cols-2 gap-2">
             {[
-              { key: 'all', label: '전체', count: ambulanceStats.total },
-              { key: 'dispatched', label: '출동중', count: ambulanceStats.dispatched },
-              { key: 'transporting', label: '이송중', count: ambulanceStats.transporting },
-              { key: 'standby', label: '대기중', count: ambulanceStats.standby }
-            ].map(filter => {
+              { key: "all", label: "전체", count: ambulanceStats.total },
+              {
+                key: "dispatched",
+                label: "출동중",
+                count: ambulanceStats.dispatched,
+              },
+              {
+                key: "transporting",
+                label: "이송중",
+                count: ambulanceStats.transporting,
+              },
+              {
+                key: "standby",
+                label: "대기중",
+                count: ambulanceStats.standby,
+              },
+            ].map((filter) => {
               const style = getFilterStyle(filter.key);
               return (
                 <button
@@ -310,7 +381,9 @@ const FireStationSituationBoard = () => {
                 >
                   <span className="mr-1">{style.icon}</span>
                   {filter.label}
-                  <span className="ml-1 text-xs opacity-75">({filter.count})</span>
+                  <span className="ml-1 text-xs opacity-75">
+                    ({filter.count})
+                  </span>
                 </button>
               );
             })}
@@ -323,31 +396,37 @@ const FireStationSituationBoard = () => {
             <div className="p-6 text-center">
               <div className="text-gray-500">
                 <span className="text-4xl block mb-4">🚑</span>
-                <div className="font-medium">해당 상태의 구급차가 없습니다</div>
+                <div className="font-medium">
+                  해당 상태의 구급차가 없습니다
+                </div>
                 <div className="text-sm mt-1">
-                  {filterStatus === 'all' ? '구급차가 없습니다.' :
-                   filterStatus === 'dispatched' ? '출동 중인 구급차가 없습니다.' :
-                   filterStatus === 'transporting' ? '이송 중인 구급차가 없습니다.' :
-                   filterStatus === 'standby' ? '대기 중인 구급차가 없습니다.' :
-                   '해당 조건의 구급차가 없습니다.'}
+                  {filterStatus === "all"
+                    ? "구급차가 없습니다."
+                    : filterStatus === "dispatched"
+                    ? "출동 중인 구급차가 없습니다."
+                    : filterStatus === "transporting"
+                    ? "이송 중인 구급차가 없습니다."
+                    : filterStatus === "standby"
+                    ? "대기 중인 구급차가 없습니다."
+                    : "해당 조건의 구급차가 없습니다."}
                 </div>
               </div>
             </div>
           ) : (
             <div className="p-2">
-              {filteredAmbulances.map(ambulance => {
+              {filteredAmbulances.map((ambulance) => {
                 const statusStyle = getAmbulanceStatusStyle(ambulance);
                 const isSelected = selectedAmbulance?.userKey === ambulance.userKey;
-                const dispatchProgress = getDispatchProgress(ambulance.userKey);
-                
+                const dispatchProgress = getDispatchProgress(
+                  ambulance.userKey
+                );
+
                 return (
                   <div
                     key={ambulance.userKey}
                     onClick={() => handleSelectAmbulance(ambulance)}
-                    className={`mb-2 p-3 rounded-lg border-l-4 cursor-pointer transition-all hover:shadow-md ${
-                      statusStyle.bgColor
-                    } ${statusStyle.borderColor} ${
-                      isSelected ? 'ring-2 ring-blue-400 bg-blue-100' : ''
+                    className={`mb-2 p-3 rounded-lg border-l-4 cursor-pointer transition-all hover:shadow-md ${statusStyle.bgColor} ${statusStyle.borderColor} ${
+                      isSelected ? "ring-2 ring-blue-400 bg-blue-100" : ""
                     }`}
                   >
                     {/* 구급차 헤더 */}
@@ -356,14 +435,18 @@ const FireStationSituationBoard = () => {
                         <span className="text-lg mr-2">{statusStyle.icon}</span>
                         <div>
                           <div className="font-bold text-gray-900">
-                            {ambulance.carNumber || ambulance.userKey || `구급차 정보 없음`}
+                            {ambulance.carNumber ||
+                              ambulance.userKey ||
+                              `구급차 정보 없음`}
                           </div>
-                          <div className={`text-xs font-medium ${statusStyle.textColor}`}>
+                          <div
+                            className={`text-xs font-medium ${statusStyle.textColor}`}
+                          >
                             {statusStyle.statusText}
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* 실시간 표시 */}
                       <div className="flex items-center space-x-1">
                         {isAmbulanceDispatching(ambulance.userKey) && (
@@ -379,8 +462,12 @@ const FireStationSituationBoard = () => {
                     {dispatchProgress && (
                       <div className="mb-2">
                         <div className="flex items-center justify-between text-xs text-blue-600 mb-1">
-                          <span>배차 진행률: {dispatchProgress.progress}%</span>
-                          <span>{dispatchProgress.step}/{dispatchProgress.totalSteps}</span>
+                          <span>
+                            배차 진행률: {dispatchProgress.progress}%
+                          </span>
+                          <span>
+                            {dispatchProgress.step}/{dispatchProgress.totalSteps}
+                          </span>
                         </div>
                         <div className="w-full bg-blue-200 rounded-full h-1.5">
                           <div
@@ -398,7 +485,7 @@ const FireStationSituationBoard = () => {
                           📍 {ambulance.pAddress}
                         </div>
                       )}
-                      
+
                       {ambulance.condition && (
                         <div className="text-gray-600 truncate">
                           🏥 {ambulance.condition}
@@ -413,7 +500,8 @@ const FireStationSituationBoard = () => {
 
                       {ambulance.dispatchTime && (
                         <div className="text-gray-500 text-xs">
-                          출동: {new Date(ambulance.dispatchTime).toLocaleTimeString()}
+                          출동:{" "}
+                          {new Date(ambulance.dispatchTime).toLocaleTimeString()}
                         </div>
                       )}
 
@@ -434,14 +522,14 @@ const FireStationSituationBoard = () => {
         <div className="p-4 border-t border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between text-sm text-gray-600">
             <div className="flex items-center">
-              <div className={`w-2 h-2 rounded-full mr-2 ${isAutoRefresh ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-              {isAutoRefresh ? '자동 새로고침 ON' : '자동 새로고침 OFF'}
+              <div
+                className={`w-2 h-2 rounded-full mr-2 ${
+                  isAutoRefresh ? "bg-green-500 animate-pulse" : "bg-gray-400"
+                }`}
+              ></div>
+              {isAutoRefresh ? "자동 새로고침 ON" : "자동 새로고침 OFF"}
             </div>
-            {lastRefreshTime && (
-              <div>
-                {lastRefreshTime.toLocaleTimeString()}
-              </div>
-            )}
+            {lastRefreshTime && <div>{lastRefreshTime.toLocaleTimeString()}</div>}
           </div>
         </div>
       </aside>
@@ -458,21 +546,21 @@ const FireStationSituationBoard = () => {
                   실시간 상황판
                 </h1>
                 <p className="text-sm text-gray-600">
-                  {firestationInfo?.name || '소방서'} · 실시간 모니터링
+                  {firestationInfo?.name || "소방서"} · 실시간 모니터링
                 </p>
               </div>
-              
+
               <div className="flex items-center space-x-3">
                 {/* 자동 새로고침 토글 */}
                 <button
                   onClick={toggleAutoRefresh}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isAutoRefresh
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      ? "bg-green-600 text-white hover:bg-green-700"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                   }`}
                 >
-                  {isAutoRefresh ? '⏸️ 자동새로고침' : '▶️ 자동새로고침'}
+                  {isAutoRefresh ? "⏸️ 자동새로고침" : "▶️ 자동새로고침"}
                 </button>
 
                 {/* 수동 새로고침 */}
@@ -481,10 +569,14 @@ const FireStationSituationBoard = () => {
                   disabled={isRefreshing || storeLoading}
                   className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed flex items-center"
                 >
-                  <span className={`mr-2 ${isRefreshing || storeLoading ? 'animate-spin' : ''}`}>
+                  <span
+                    className={`mr-2 ${
+                      isRefreshing || storeLoading ? "animate-spin" : ""
+                    }`}
+                  >
                     🔄
                   </span>
-                  {isRefreshing || storeLoading ? '새로고침 중...' : '새로고침'}
+                  {isRefreshing || storeLoading ? "새로고침 중..." : "새로고침"}
                 </button>
               </div>
             </div>
@@ -498,8 +590,12 @@ const FireStationSituationBoard = () => {
                     <span className="text-lg">📊</span>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-purple-600">오늘 출동</p>
-                    <p className="text-lg font-bold text-purple-900">{todayStats.totalDispatches || 0}</p>
+                    <p className="text-xs font-medium text-purple-600">
+                      오늘 출동
+                    </p>
+                    <p className="text-lg font-bold text-purple-900">
+                      {todayStats.totalDispatches || 0}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -511,8 +607,12 @@ const FireStationSituationBoard = () => {
                     <span className="text-lg">🚨</span>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-orange-600">출동 중</p>
-                    <p className="text-lg font-bold text-orange-900">{ambulanceStats.dispatched}</p>
+                    <p className="text-xs font-medium text-orange-600">
+                      출동 중
+                    </p>
+                    <p className="text-lg font-bold text-orange-900">
+                      {ambulanceStats.dispatched}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -524,8 +624,12 @@ const FireStationSituationBoard = () => {
                     <span className="text-lg">🏥</span>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-green-600">이송 중</p>
-                    <p className="text-lg font-bold text-green-900">{ambulanceStats.transporting}</p>
+                    <p className="text-xs font-medium text-green-600">
+                      이송 중
+                    </p>
+                    <p className="text-lg font-bold text-green-900">
+                      {ambulanceStats.transporting}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -537,8 +641,12 @@ const FireStationSituationBoard = () => {
                     <span className="text-lg">⭐</span>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-blue-600">대기 중</p>
-                    <p className="text-lg font-bold text-blue-900">{ambulanceStats.standby}</p>
+                    <p className="text-xs font-medium text-blue-600">
+                      대기 중
+                    </p>
+                    <p className="text-lg font-bold text-blue-900">
+                      {ambulanceStats.standby}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -550,8 +658,12 @@ const FireStationSituationBoard = () => {
                     <span className="text-lg">⏱️</span>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-indigo-600">평균응답</p>
-                    <p className="text-lg font-bold text-indigo-900">{todayStats.averageResponseTime || 0}분</p>
+                    <p className="text-xs font-medium text-indigo-600">
+                      평균응답
+                    </p>
+                    <p className="text-lg font-bold text-indigo-900">
+                      {todayStats.averageResponseTime || 0}분
+                    </p>
                   </div>
                 </div>
               </div>
@@ -566,7 +678,9 @@ const FireStationSituationBoard = () => {
               <div className="flex items-center">
                 <span className="text-red-600 mr-2">⚠️</span>
                 <div>
-                  <p className="text-red-800 font-medium">오류가 발생했습니다</p>
+                  <p className="text-red-800 font-medium">
+                    오류가 발생했습니다
+                  </p>
                   <p className="text-red-700 text-sm mt-1">
                     {storeError || localError}
                   </p>
@@ -591,7 +705,6 @@ const FireStationSituationBoard = () => {
             <div className="h-full">
               <SituationMap
                 ambulances={filteredAmbulances}
-                hospitals={hospitals}
                 selectedAmbulance={selectedAmbulance}
                 center={mapCenter}
               />

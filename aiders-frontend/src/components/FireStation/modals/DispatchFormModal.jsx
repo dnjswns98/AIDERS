@@ -38,8 +38,9 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
         return ambulances.filter(ambulance => {
             const status = (ambulance.status || '').toUpperCase();
             const isAvailable = status === 'WAIT';
+            console.log(ambulance)
             // isAmbulanceDispatching 함수가 userKey를 사용하도록 수정
-            const isNotDispatching = !isAmbulanceDispatching(ambulance.userKey); 
+            const isNotDispatching = !isAmbulanceDispatching(ambulance.userKey);
             return isAvailable && isNotDispatching;
         });
     }, [ambulances, isAmbulanceDispatching]);
@@ -106,17 +107,16 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
         setIsSubmitting(true);
         setLocalError(null);
         try {
-            // userKey(문자열)에서 숫자 ID를 추출하여 Long 타입으로 변환
+            // 수정된 부분: userKey를 사용하여 ambulances 배열에서 id를 찾습니다.
             const numericAmbulanceIds = formData.ambulanceIds.map(userKey => {
                 const ambulance = ambulances.find(a => a.userKey === userKey);
-                // ambulances 객체에 id 필드가 없으므로 userKey에서 숫자만 추출
-                return parseInt(userKey.match(/^\d+/)?.[0], 10);
-            }).filter(id => !isNaN(id));
-            
+                return ambulance ? ambulance.ambulanceId : null;
+            }).filter(id => id !== null);
+
             console.log("전송할 구급차 ID:", numericAmbulanceIds); // 디버깅용 로그
 
             const dispatchData = {
-                ambulanceIds: numericAmbulanceIds, // 숫자 ID 배열을 전송
+                ambulanceIds: numericAmbulanceIds, // 수정된 숫자 ID 배열을 전송
                 latitude: locationData.latitude,
                 longitude: locationData.longitude,
                 address: locationData.address,
