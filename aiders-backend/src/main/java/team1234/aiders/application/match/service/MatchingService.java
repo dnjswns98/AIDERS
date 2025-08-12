@@ -1,5 +1,9 @@
+// src/main/java/team1234/aiders/application/match/service/MatchingService.java
 package team1234.aiders.application.match.service;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -7,16 +11,20 @@ import org.springframework.transaction.annotation.Transactional;
 import team1234.aiders.application.ambulance.entity.Ambulance;
 import team1234.aiders.application.ambulance.repository.AmbulanceRepository;
 import team1234.aiders.application.hospital.dto.HospitalData;
+import team1234.aiders.application.hospital.entity.EmergencyBed;
 import team1234.aiders.application.hospital.entity.Hospital;
 import team1234.aiders.application.hospital.repository.HospitalRepository;
+import team1234.aiders.application.hospital.util.BedType;
 import team1234.aiders.application.match.dto.MatchingCondition;
-import static team1234.aiders.common.util.DistanceUtils.calculateDistance;
-
 import team1234.aiders.application.report.repository.ReportRepository;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+
+import static team1234.aiders.common.util.DistanceUtils.calculateDistance;
 
 @Slf4j
 @Service
@@ -27,6 +35,9 @@ public class MatchingService {
     private final AmbulanceRepository ambulanceRepository;
     private final HospitalRepository hospitalRepository;
     private final ReportRepository reportRepository;
+
+    @PersistenceContext
+    private EntityManager em;
 
     record ScoredHospitalData(HospitalData data, double distance) {}
     record HospitalScore(ScoredHospitalData hospitalData, double score) {}
@@ -45,78 +56,70 @@ public class MatchingService {
     }
 
     public Hospital autoMatch(Long ambulanceId, double ambLat, double ambLng) {
-        log.info("🚑 [Start Auto-Matching] ambulanceId={}, lat={}, lng={}", ambulanceId, ambLat, ambLng);
+        log.info("[Start Auto-Matching] ambulanceId={}, lat={}, lng={}", ambulanceId, ambLat, ambLng);
+
         Ambulance ambulance = ambulanceRepository.findById(ambulanceId)
                 .orElseThrow(() -> new IllegalArgumentException("Ambulance not found"));
-        log.info("✅ [Ambulance Loaded] KTAS={}, AgeRange={}, Department={}",
+        log.info("[Ambulance Loaded] KTAS={}, AgeRange={}, Department={}",
                 ambulance.getPKtas(), ambulance.getPAgeRange(), ambulance.getPDepartment());
 
-        // 환자 정보 기반 MatchingCondition 생성
+        // 1) 조건 구성 + 후보 병원 조회
         MatchingCondition condition = MatchingCondition.builder()
-                .ageRange(ambulance.getPAgeRange().name())  // NEWBORN, ADULT
+                .ageRange(ambulance.getPAgeRange().name())
                 .departmentCode(mapToCode(ambulance.getPDepartment()))
-                .isTrauma(ambulance.getPDepartment().contains("외과"))
+                .isTrauma(ambulance.getPDepartment() != null && ambulance.getPDepartment().contains("외科"))
                 .build();
 
-        // 병원 목록 필터링 (동적 쿼리)
         List<HospitalData> hospitalDataList = hospitalRepository.searchHospitalsDynamic(condition);
-        log.info("🏥 [Number of Hospitals Matching Condition] = {}", hospitalDataList.size());
+        if (hospitalDataList.isEmpty()) throw new IllegalStateException("조건에 맞는 병원이 없습니다.");
 
-        if (hospitalDataList.isEmpty()) {
-            throw new IllegalStateException("조건에 맞는 병원이 없습니다.");
-        }
-
-        // 거리 기준 상위 25개 병원만 필터링
+        // 2) 거리 상위 25
         List<ScoredHospitalData> nearestHospitals = hospitalDataList.stream()
                 .map(h -> new ScoredHospitalData(
-                        h,
-                        calculateDistance(ambLat, ambLng, h.getHospital().getLatitude(), h.getHospital().getLongitude())))
-                .sorted(Comparator.comparingDouble(ScoredHospitalData::distance)) // 거리 기준 정렬
+                        h, calculateDistance(ambLat, ambLng, h.getHospital().getLatitude(), h.getHospital().getLongitude())))
+                .sorted(Comparator.comparingDouble(ScoredHospitalData::distance))
                 .limit(25)
                 .toList();
 
-        log.info("📍 [Top 25 Hospitals by Distance]");
-        for (ScoredHospitalData h : nearestHospitals) {
-            log.info("- {} (distance: {} km)", h.data().getHospital().getId(), h.distance());
-        }
-
-        // 병원 이름 리스트
-        List<String> topHospitalNames = nearestHospitals.stream()
-                .map(h -> h.data().getHospital().getName())
-                .toList();
-
-        // 최근 이송 횟수 조회 (최근 1일 기준)
+        // 3) 최근 이송 빈도 조회 (최근 1일)
+        List<String> topHospitalNames = nearestHospitals.stream().map(h -> h.data().getHospital().getName()).toList();
         LocalDateTime ago = LocalDateTime.now().minusDays(1);
-        List<Object[]> result = reportRepository.countRecentTransfersByHospitalName(ago, topHospitalNames);
+        Map<String, Long> recentTransferCountMap = reportRepository.countRecentTransfersByHospitalName(ago, topHospitalNames)
+                .stream().collect(Collectors.toMap(r -> (String) r[0], r -> (Long) r[1]));
 
-        // 병원이름 -> 이송 횟수 맵핑
-        Map<String, Long> recentTransferCountMap = result.stream()
-                .collect(Collectors.toMap(
-                        row -> (String) row[0],
-                        row -> (Long) row[1]
-                ));
-
-        // 점수 계산 및 병원 선택
-        List<HospitalScore> scoredList = nearestHospitals.stream()
-                .map(h -> new HospitalScore(h,
-                        calculateScore(h.data(), h.distance(), ambulance, recentTransferCountMap)))
-                .toList();
-
-        // 점수 기준으로 최대값 선택
-        HospitalScore selected = scoredList.stream()
+        // 4) 점수 계산 후 최종 선택
+        HospitalScore selected = nearestHospitals.stream()
+                .map(h -> new HospitalScore(h, calculateScore(h.data(), h.distance(), ambulance, recentTransferCountMap)))
                 .max(Comparator.comparingDouble(HospitalScore::score))
                 .orElseThrow(() -> new IllegalStateException("No suitable hospital"));
 
-        // 구급차에 병원 정보 저장
-        Hospital hospital = selected.hospitalData().data().getHospital();
+        HospitalData selectedData = selected.hospitalData().data();
+        Hospital hospital = selectedData.getHospital();
+
+        // 5) 병상 감소: 행 잠금 + 엔티티 메서드로 원자적 감소
+        BedType bedType = resolveBedType(selectedData, ambulance);
+
+        // 동일 병원에 대한 동시 갱신 충돌 방지를 위해 FOR UPDATE 잠금
+        EmergencyBed bed = em.find(EmergencyBed.class, hospital.getId(), LockModeType.PESSIMISTIC_WRITE);
+        if (bed == null) throw new IllegalStateException("응급병상 정보가 없습니다. hospitalId=" + hospital.getId());
+
+        int before = getAvailable(bed, bedType);
+        if (before <= 0) {
+            throw new IllegalStateException("가용 병상이 부족합니다. hospitalId=%d, type=%s"
+                    .formatted(hospital.getId(), bedType));
+        }
+        bed.decreaseAvailable(bedType);
+
+        log.info("[Beds Decremented] hospitalId={}, type={}, before={}, after={}",
+                hospital.getId(), bedType, before, getAvailable(bed, bedType));
+
+        // 6) 병원 매칭 저장
         ambulance.setMatchedHospital(hospital, hospital.getName(), hospital.getAddress());
 
-        log.info("🎯 [Matching Completed] Selected Hospital: {})",
-                hospital.getId());
+        log.info("🎯 [Matching Completed] Selected Hospital: {}", hospital.getId());
         return hospital;
     }
 
-    // 진료과 문자열을 코드로 변환
     private String mapToCode(String department) {
         if (department == null) return null;
         return switch (department.toLowerCase()) {
@@ -139,64 +142,50 @@ public class MatchingService {
         };
     }
 
-    // 점수 계산 함수
     private double calculateScore(HospitalData h, double distance, Ambulance amb, Map<String, Long> transferCountMap) {
         double normDistance = distance / 10.0;
         long transferCount = transferCountMap.getOrDefault(h.getHospital().getName(), 0L);
         double[] bedCounts = calcBedCounts(h, amb);
-        double pressureScore = (bedCounts[0] + 0.5 * transferCount) / bedCounts[1];
-        pressureScore = Math.min(pressureScore, 1.0);
-
+        double pressureScore = Math.min((bedCounts[0] + 0.5 * transferCount) / bedCounts[1], 1.0);
         double alpha = Math.min((6 - amb.getPKtas()) / 5.0, 0.9);
         double beta = 1.0 - alpha;
-
-//        double bonus = calcDepartmentBonus(h, amb);
-
-        double score = -(alpha * normDistance + beta * pressureScore);
-
-        log.info("Hospital: {}, Distance: {} km, Score: {} [unavail_rate: {}, transfer_rate: {}, pressureScore: {}]",
-                h.getHospital().getId(),
-                String.format("%.5f", distance),
-                String.format("%.5f", score),
-                String.format("%.5f", bedCounts[0]/bedCounts[1]),
-                String.format("%.5f", transferCount/bedCounts[1]),
-                String.format("%.5f", pressureScore)
-        );
-
-        return score;
+        return -(alpha * normDistance + beta * pressureScore);
     }
 
-    // 보너스 점수 계산
-    private double calcDepartmentBonus(HospitalData h, Ambulance amb) {
-        String dept = amb.getPDepartment();
-        if (dept == null) return 0;
+    private BedType resolveBedType(HospitalData h, Ambulance amb) {
+        boolean isTrauma = amb.getPDepartment() != null && amb.getPDepartment().contains("외과");
+        int availNeonatal = safeInt(h.getBed().getNeonatal().getAvailable());
+        int availPediatric = safeInt(h.getBed().getPediatric().getAvailable());
+        int availGeneral   = safeInt(h.getBed().getGeneral().getAvailable());
+        int availTrauma    = safeInt(h.getBed().getTrauma().getAvailable());
 
-        String mappedDept = mapToCode(dept);
+        if (isTrauma && h.getBed().getTrauma().getIsExist() && h.getBed().getTrauma().getIsAvailable() && availTrauma > 0) {
+            return BedType.TRAUMA;
+        }
+        switch (amb.getPAgeRange()) {
+            case NEWBORN -> {
+                if (h.getBed().getNeonatal().getIsExist() && h.getBed().getNeonatal().getIsAvailable() && availNeonatal > 0)
+                    return BedType.NEONATAL;
+            }
+            case INFANT, KIDS, TEENAGER -> {
+                if (h.getBed().getPediatric().getIsExist() && h.getBed().getPediatric().getIsAvailable() && availPediatric > 0)
+                    return BedType.PEDIATRIC;
+            }
+            case ADULT, ELDERLY, UNDECIDED -> {
+                if (h.getBed().getGeneral().getIsExist() && h.getBed().getGeneral().getIsAvailable() && availGeneral > 0)
+                    return BedType.GENERAL;
+            }
+        }
+        if (availGeneral   > 0) return BedType.GENERAL;
+        if (availPediatric > 0) return BedType.PEDIATRIC;
+        if (availNeonatal  > 0) return BedType.NEONATAL;
+        if (availTrauma    > 0) return BedType.TRAUMA;
 
-        return switch (mappedDept) {
-            case "gs" -> h.getDepartment().getGsIsAvailable() ? 5 : 0;
-            case "ts" -> h.getDepartment().getTsIsAvailable() ? 5 : 0;
-            case "os" -> h.getDepartment().getOsIsAvailable() ? 5 : 0;
-            case "pd" -> h.getDepartment().getPdIsAvailable() ? 5 : 0;
-            case "im" -> h.getDepartment().getImIsAvailable() ? 5 : 0;
-            case "nr" -> h.getDepartment().getNrIsAvailable() ? 5 : 0;
-            case "ob" -> h.getDepartment().getObIsAvailable() ? 5 : 0;
-            case "op" -> h.getDepartment().getOpIsAvailable() ? 5 : 0;
-            case "ent" -> h.getDepartment().getEntIsAvailable() ? 5 : 0;
-            case "dr" -> h.getDepartment().getDrIsAvailable() ? 5 : 0;
-            case "ur" -> h.getDepartment().getUrIsAvailable() ? 5 : 0;
-            case "psy" -> h.getDepartment().getPsyIsAvailable() ? 5 : 0;
-            case "dt" -> h.getDepartment().getDtIsAvailable() ? 5 : 0;
-            case "ns" -> h.getDepartment().getNsIsAvailable() ? 5 : 0;
-            default -> 0;
-        };
+        throw new IllegalStateException("가용 병상이 없습니다. hospitalId=%d".formatted(h.getHospital().getId()));
     }
 
-    // 혼잡도 계산 (가용 병상 수/전체 병상 수)
     private double[] calcBedCounts(HospitalData h, Ambulance amb) {
-        int total = 0;
-        int available = 0;
-
+        int total = 0, available = 0;
         switch (amb.getPAgeRange()) {
             case NEWBORN -> {
                 if (h.getBed().getNeonatal().getIsExist() && h.getBed().getNeonatal().getIsAvailable()) {
@@ -217,21 +206,23 @@ public class MatchingService {
                 }
             }
         }
-
-        // 외상 환자라면 trauma 병상도 고려
         if (amb.getPDepartment() != null && amb.getPDepartment().contains("외과")) {
             if (h.getBed().getTrauma().getIsExist() && h.getBed().getTrauma().getIsAvailable()) {
                 total += safeInt(h.getBed().getTrauma().getTotal());
                 available += safeInt(h.getBed().getTrauma().getAvailable());
             }
         }
-
-
-        return new double[] {total - available, total};
+        return new double[]{total - available, total};
     }
 
-    private int safeInt(Integer value) {
-        return value != null ? value : 0;
+    private int getAvailable(EmergencyBed bed, BedType type) {
+        return switch (type) {
+            case GENERAL   -> safeInt(bed.getGeneral().getAvailable());
+            case PEDIATRIC -> safeInt(bed.getPediatric().getAvailable());
+            case TRAUMA    -> safeInt(bed.getTrauma().getAvailable());
+            case NEONATAL  -> safeInt(bed.getNeonatal().getAvailable());
+        };
     }
 
+    private int safeInt(Integer v) { return v == null ? 0 : v; }
 }

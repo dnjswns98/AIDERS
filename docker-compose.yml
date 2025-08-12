@@ -4,41 +4,56 @@ services:
     image: redis:7-alpine
     container_name: aiders-redis
     ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes
+      - "127.0.0.1:6379:6379"
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass "SJ0pbTsi2024"
+      --bind 0.0.0.0
+      --protected-mode yes
     volumes:
       - redis_data:/data
     restart: unless-stopped
+    
   # MySQL Database
   mysql:
     image: mysql:8.0
     container_name: aiders-mysql
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=1234
+      - MYSQL_ROOT_PASSWORD=SJ0pbTsi2024
       - MYSQL_DATABASE=mydb
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+      --skip-character-set-client-handshake
+      --init-connect='SET NAMES utf8mb4; SET character_set_client = utf8mb4; SET character_set_connection = utf8mb4; SET character_set_results = utf8mb4;'
     restart: unless-stopped
+    
   # Backend Application
   aiders-app:
     build: ./aiders-backend
     container_name: aiders-backend
-    network_mode: host  # 추가!
-    # ports: 제거 (host 네트워크에서는 불필요)
+    network_mode: host
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/mydb  # localhost 사용
+      - SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/mydb
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=1234
+      - SPRING_DATASOURCE_PASSWORD=SJ0pbTsi2024
       - OPENVIDU_SECRET=MY_SECRET
-      - OPENVIDU_URL=http://localhost:5443  # localhost로 변경!
+      - OPENVIDU_URL=http://localhost:5443
+      - SPRING_DATA_REDIS_URL=redis://:SJ0pbTsi2024@localhost:6379
     depends_on:
       - mysql
       - redis
     restart: unless-stopped
-  # Frontend Application
+    
+  # 나머지 서비스들...
   aiders-frontend:
     build: ./aiders-frontend
     container_name: aiders-frontend
@@ -52,37 +67,9 @@ services:
     depends_on:
       - aiders-app
     restart: unless-stopped
-  # Prometheus
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: aiders-prometheus
-    network_mode: host
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-    restart: unless-stopped
-  # Grafana
-  grafana:
-    image: grafana/grafana:latest
-    container_name: aiders-grafana
-    ports:
-      - "3001:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    restart: unless-stopped
 
 volumes:
   mysql_data:
   redis_data:
   prometheus_data:
   grafana_data:
-
-# 공통 네트워크 추가!
-#networks:
-#  default:
-#    external: true
