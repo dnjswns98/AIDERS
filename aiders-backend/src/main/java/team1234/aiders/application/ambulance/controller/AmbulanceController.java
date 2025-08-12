@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import team1234.aiders.application.ambulance.dto.AmbulanceDispatchPatientInfoResponseDto;
 import team1234.aiders.application.ambulance.dto.AmbulanceResponseDto;
 import team1234.aiders.application.ambulance.dto.AmbulanceStatusResponseDto;
 import team1234.aiders.application.ambulance.service.AmbulanceService;
@@ -31,6 +32,12 @@ public class AmbulanceController {
     @GetMapping("/status")
     public ResponseEntity<AmbulanceStatusResponseDto> getAmbulanceStatus(@AuthenticationPrincipal CustomUserDetails user) {
         AmbulanceStatusResponseDto result = ambulanceService.getAmbulanceStatus(user);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/patient-info")
+    public ResponseEntity<AmbulanceDispatchPatientInfoResponseDto> getAmbulanceDispatchPatientInfo(@AuthenticationPrincipal CustomUserDetails user) {
+        AmbulanceDispatchPatientInfoResponseDto result = ambulanceService.getAmbulanceDispatchPatientInfo(user);
         return ResponseEntity.ok(result);
     }
 
