@@ -1,3 +1,5 @@
+// src/components/webRTC/WebRtcCall.jsx
+
 import React, { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useWebRtc } from "../../context/WebRtcContext";
@@ -6,21 +8,21 @@ import { useMediaStream } from "../../hooks/useMediaStream";
 import { useFullScreen } from "../../hooks/useFullScreen";
 import VideoDisplay from "./VideoDisplay";
 import CallControls from "./CallControls";
-import useEmergencyStore from "../../store/useEmergencyStore";
 
 export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, patientName, ktas, onLeave }) {
   const { togglePipMode } = useWebRtc();
   const location = useLocation();
-  const fetchAmbulanceDetails = useEmergencyStore((state) => state.fetchAmbulanceDetails);
   
   const { joinSession, leaveSession } = useOpenVidu({ 
     sessionId, 
     ambulanceNumber,
-    hospitalId, // hospitalId 전달 추가
-    ktas, // KTAS 정보 전달
-    patientName, // 환자명 전달
+    hospitalId,
+    ktas,
+    patientName,
     onError: (error) => {
-      alert(error.message);
+      console.error("WebRTC Hook Error:", error);
+      alert(error.message); // 사용자에게 오류 알림
+      onLeave?.(); // 오류 발생 시 통화 종료 처리
     }
   });
   
@@ -32,22 +34,21 @@ export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, pat
   
   const { isFullScreen, toggleFullScreen } = useFullScreen();
 
+  // 🔥 수정: 컴포넌트 생명주기와 세션 참여/종료 로직을 명확하게 연결합니다.
   useEffect(() => {
     joinSession();
-    if (hospitalId && ambulanceNumber) {
-      fetchAmbulanceDetails(hospitalId, ambulanceNumber);
-    }
 
-  const handleBeforeUnload = (event) => {
-    leaveSession();
-  };
-  window.addEventListener("beforeunload", handleBeforeUnload);
+    const handleBeforeUnload = (event) => {
+        leaveSession();
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
-  return () => {
-    window.removeEventListener("beforeunload", handleBeforeUnload);
-    leaveSession();
-  };
-}, []);
+    // 컴포넌트가 언마운트될 때 세션을 확실하게 종료합니다.
+    return () => {
+        window.removeEventListener("beforeunload", handleBeforeUnload);
+        leaveSession();
+    };
+  }, [joinSession, leaveSession]); // 🔥 수정: 의존성 배열에 joinSession과 leaveSession을 추가
 
   useEffect(() => {
     if (togglePipMode) {
