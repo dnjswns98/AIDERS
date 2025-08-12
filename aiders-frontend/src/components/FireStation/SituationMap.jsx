@@ -1,153 +1,137 @@
-import { useEffect, useRef } from 'react';
-import { getStatusText, getStatusColor } from '../../utils/statusUtils';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { getCurrentUserInfo, getFirestationLocation } from '../../api/api';
+import useFireStationStore from '../../store/useFireStationStore';
+import MapContainer from './MapContainer';
+import AmbulanceMarkers from './AmbulanceMarkers';
+import HospitalMarkers from './HospitalMarkers';
+import InfoPanel from './InfoPanel';
 
-const statusColors = {
-  'dispatched': 'blue',
-  'transporting': 'green',
-  'completed': 'purple',
-  'returning': 'orange',
-  'standby': 'gray',
-  'maintenance': 'gray',
-};
 
-const getAmbulanceMarkerImage = (status, isSelected) => {
-  if (!window.kakao || !window.kakao.maps) return null;
-  const color = statusColors[status] || 'gray';
-  const size = isSelected ? 48 : 32;
-  const imgSrc = `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
-  
-  return new window.kakao.maps.MarkerImage(
-    imgSrc,
-    new window.kakao.maps.Size(size, size),
-    {
-      offset: new window.kakao.maps.Point(size / 2, size),
-    }
-  );
-};
-
-const getHospitalMarkerImage = () => {
-  if (!window.kakao || !window.kakao.maps) return null;
-  const imgSrc = 'https://maps.google.com/mapfiles/kml/shapes/hospitals.png'; 
-  const imgSize = new window.kakao.maps.Size(32, 32);
-  return new window.kakao.maps.MarkerImage(imgSrc, imgSize);
-};
-
-export default function SituationMap({ ambulances, hospitals, selectedAmbulance, center }) {
-  const mapContainer = useRef(null);
+export default function SituationMap({
+  ambulances = [],
+  hospitals = [],
+  selectedAmbulance,
+  center,
+  showOnlyMyFirestation = true,
+  statusFilter = 'ALL'
+}) {
   const map = useRef(null);
-  const ambulanceMarkers = useRef([]);
-  const hospitalMarkers = useRef([]);
   const infoWindow = useRef(null);
+  const firestationMarker = useRef(null);
+
+  const { firestationInfo } = useFireStationStore();
+  const [currentFirestationId, setCurrentFirestationId] = useState(null);
+  const [isMapInitialized, setIsMapInitialized] = useState(false);
+
+  // 현재 사용자의 firestation_id 추출
+  const getCurrentFirestationId = useCallback(() => {
+    try {
+      const userInfo = getCurrentUserInfo();
+      if (userInfo) {
+        return userInfo.firestation_id || userInfo.firestationId || userInfo.userKey;
+      }
+    } catch (error) {
+      console.error('[SituationMap] 사용자 정보 추출 실패:', error);
+    }
+    return null;
+  }, []);
 
   useEffect(() => {
-    if (!mapContainer.current) {
+    setCurrentFirestationId(getCurrentFirestationId());
+  }, [getCurrentFirestationId]);
+
+  // 지도 초기화 및 마커 생성
+  useEffect(() => {
+    if (!map.current || !window.kakao || !window.kakao.maps || !isMapInitialized) {
       return;
     }
 
-    const checkKakaoMap = () => {
-      if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
-        if (!map.current) {
-          const options = {
-            center: new window.kakao.maps.LatLng(center.lat, center.lng),
-            level: 5,
-          };
-          map.current = new window.kakao.maps.Map(mapContainer.current, options);
-          infoWindow.current = new window.kakao.maps.InfoWindow({ zIndex: 1 });
-          window.kakao.maps.event.addListener(map.current, 'idle', () => {
-            if (map.current) {
-              map.current.relayout();
-            }
-          });
-        }
+    if (!infoWindow.current) {
+      infoWindow.current = new window.kakao.maps.InfoWindow({ zIndex: 1 });
+    }
 
-        if (mapContainer.current.offsetWidth > 0 && mapContainer.current.offsetHeight > 0 && !map.current.relayoutCalled) {
-          map.current.relayout();
-          map.current.relayoutCalled = true; // 중복 호출 방지 플래그
-        }
+    // 기존 소방서 마커 삭제
+    if (firestationMarker.current) {
+      firestationMarker.current.setMap(null);
+      firestationMarker.current = null;
+    }
+    
+    // 소방서 마커 생성
+    if (firestationInfo?.latitude && firestationInfo?.longitude) {
+      const position = new window.kakao.maps.LatLng(firestationInfo.latitude, firestationInfo.longitude);
+      const markerImage = new window.kakao.maps.MarkerImage(
+        'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
+        new window.kakao.maps.Size(32, 32)
+      );
 
-        const moveLatLon = new window.kakao.maps.LatLng(center.lat, center.lng);
-        map.current.panTo(moveLatLon);
+      firestationMarker.current = new window.kakao.maps.Marker({
+        position: position,
+        image: markerImage,
+        map: map.current,
+        title: firestationInfo.name || '소방서',
+        zIndex: 5,
+      });
 
-        ambulanceMarkers.current.forEach(marker => marker.setMap(null));
-        ambulanceMarkers.current = [];
-
-        ambulances.forEach(ambulance => {
-          if (ambulance.status === 'standby' || ambulance.status === 'maintenance' || ambulance.status === 'completed') {
-            return;
-          }
-
-          const isSelected = selectedAmbulance?.id === ambulance.id;
-          const position = new window.kakao.maps.LatLng(ambulance.latitude, ambulance.longitude);
-          const markerImage = getAmbulanceMarkerImage(ambulance.status, isSelected);
-          
-          if (!markerImage) return;
-
-          const marker = new window.kakao.maps.Marker({
-            position: position,
-            image: markerImage,
-            zIndex: isSelected ? 10 : 1,
-          });
-
-          marker.setMap(map.current);
-
-          const content = `
-            <div style="padding:5px; font-size:12px;">
-              <strong>${ambulance.number}</strong><br/>
-              상태: <span style="color: ${getStatusColor(ambulance.status)};">${getStatusText(ambulance.status)}</span><br/>
-              환자: ${ambulance.patientInfo?.name || '없음'}<br/>
-              주요증상: ${ambulance.condition || '없음'}<br/>
-              신고시각: ${ambulance.callTime || '없음'}
+      const content = `
+        <div style="padding:10px; min-width:200px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="font-weight:bold; color:#d9534f; font-size:14px;">
+              🚒 ${firestationInfo.name || '소방서'}
             </div>
-          `;
+            <button onclick="this.closest('div.info-window-content').remove();" style="border: none; background: none; font-size: 16px; cursor: pointer; color: #999;">×</button>
+          </div>
+          <div style="font-size:12px; color:#666;">
+            ${firestationInfo.address || '주소 정보 없음'}
+          </div>
+        </div>
+      `;
 
-          window.kakao.maps.event.addListener(marker, 'click', () => {
-            infoWindow.current.setContent(content);
-            infoWindow.current.open(map.current, marker);
-          });
+      window.kakao.maps.event.addListener(firestationMarker.current, 'click', () => {
+        infoWindow.current.setContent(`<div class="info-window-content">${content}</div>`);
+        infoWindow.current.open(map.current, firestationMarker.current);
+      });
+    }
 
-          ambulanceMarkers.current.push(marker);
-        });
+    infoWindow.current?.close();
 
-        if (hospitals && hospitalMarkers.current.length === 0) {
-          hospitals.forEach(hospital => {
-            const position = new window.kakao.maps.LatLng(hospital.latitude, hospital.longitude);
-            const markerImage = getHospitalMarkerImage();
+    if (map.current) {
+      map.current.relayout();
+    }
 
-            if (!markerImage) return;
+  }, [isMapInitialized, firestationInfo, center]);
 
-            const marker = new window.kakao.maps.Marker({
-              position: position,
-              image: markerImage,
-            });
-
-            marker.setMap(map.current);
-
-            const content = `
-              <div style="padding:5px; font-size:12px;">
-                <strong>${hospital.name}</strong><br/>
-                총 병상: ${hospital.beds}
-              </div>
-            `;
-
-            window.kakao.maps.event.addListener(marker, 'click', () => {
-              infoWindow.current.setContent(content);
-              infoWindow.current.open(map.current, marker);
-            });
-
-            hospitalMarkers.current.push(marker);
-          });
-        }
-
-      } else {
-        setTimeout(checkKakaoMap, 100);
-      }
-    };
-
-    checkKakaoMap();
-
-  }, [ambulances, hospitals, selectedAmbulance, center]);
 
   return (
-    <div id="situation-map" ref={mapContainer} style={{ width: '100%', height: '100%' }} />
+    <div className="w-full h-full relative">
+      <InfoPanel
+        firestationInfo={firestationInfo}
+        currentFirestationId={currentFirestationId}
+        showOnlyMyFirestation={showOnlyMyFirestation}
+        statusFilter={statusFilter}
+        filteredAmbulances={ambulances}
+        ambulances={ambulances}
+        isMapInitialized={isMapInitialized}
+      />
+      <MapContainer
+        center={firestationInfo?.latitude && firestationInfo?.longitude ?
+          { lat: firestationInfo.latitude, lng: firestationInfo.longitude } :
+          center
+        }
+        onMapInitialized={setIsMapInitialized}
+        mapRef={map}
+      />
+      <AmbulanceMarkers
+        map={map.current}
+        filteredAmbulances={ambulances}
+        selectedAmbulance={selectedAmbulance}
+        firestationInfo={firestationInfo}
+        infoWindow={infoWindow}
+      />
+      <HospitalMarkers
+        map={map.current}
+        hospitals={hospitals}
+        infoWindow={infoWindow}
+      />
+    </div>
   );
 }

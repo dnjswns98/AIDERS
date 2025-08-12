@@ -58,7 +58,7 @@ public class SecurityConfig {
             "/api/v1/video-call/session/**",
             "/api/v1/patient/required",
             "/api/v1/patient/optional",
-            "/api/v1/ambulance/**",
+            "/api/v1/ambulance/transfer/**",
             "/api/v1/alarm/send",
             "/api/v1/alarm/all/**",
             "/api/v1/match/**",
@@ -77,7 +77,8 @@ public class SecurityConfig {
     //TODO: FIRESTATION 전용 API 경로들
     private static final String[] FIRESTATION_ENDPOINT = {
             "/api/v1/dispatch/**",
-            "/api/v1/firestation/**"
+            "/api/v1/firestation/**",
+            "/api/v1/ambulance/list"
     };
 
     @Bean

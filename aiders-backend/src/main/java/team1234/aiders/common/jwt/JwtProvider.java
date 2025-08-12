@@ -87,6 +87,16 @@ public class JwtProvider {
                         .getBody().getSubject());
     }
 
+    public String getRoleFromToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("role", String.class);
+    }
+
+
     // 1. 임시(비밀번호 재설정) 토큰 발급
     public String generatePasswordResetToken(String userKey) {
         Date now = new Date();

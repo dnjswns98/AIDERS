@@ -1,63 +1,203 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
+import SockJS from "sockjs-client/dist/sockjs";
+import Stomp from "stompjs";
 
 const RealTimeMap = ({ hospitalLocation, className }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const hospitalMarkerRef = useRef(null);
-  const websocketRef = useRef(null);
+  const ambulanceMarkersRef = useRef(new Map()); // 구급차 마커들을 저장
+  const stompClientRef = useRef(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [isMapInitialized, setIsMapInitialized] = useState(false);
+  const [ambulanceLocations, setAmbulanceLocations] = useState(new Map()); // 구급차 위치 정보
   const { user } = useAuthStore();
 
-  // WebSocket 연결 함수
+  // 구급차 마커 생성/업데이트 함수
+  const createOrUpdateAmbulanceMarker = (ambulanceData) => {
+    if (!mapInstanceRef.current || !window.kakao?.maps) return;
+
+    const { ambulanceId, latitude, longitude, status, patientName, ktasLevel } = ambulanceData;
+    const position = new window.kakao.maps.LatLng(latitude, longitude);
+    
+    // 기존 마커가 있으면 위치만 업데이트
+    const existingMarker = ambulanceMarkersRef.current.get(ambulanceId);
+    if (existingMarker) {
+      existingMarker.marker.setPosition(position);
+      console.log(`🚑 [RealTimeMap] 구급차 ${ambulanceId} 위치 업데이트: ${latitude}, ${longitude}`);
+      return;
+    }
+
+    // 새 구급차 마커 생성
+    const markerImageSrc = 'https://maps.google.com/mapfiles/ms/icons/red-dot.png';
+    const markerImageSize = new window.kakao.maps.Size(32, 32);
+    const markerImage = new window.kakao.maps.MarkerImage(markerImageSrc, markerImageSize);
+
+    const marker = new window.kakao.maps.Marker({
+      position: position,
+      image: markerImage,
+      map: mapInstanceRef.current,
+      title: `구급차 ${ambulanceId}`
+    });
+
+    // 정보창 생성
+    const infoWindow = new window.kakao.maps.InfoWindow({
+      content: `
+        <div style="padding: 8px 12px; font-size: 12px; min-width: 150px;">
+          <div style="font-weight: bold; color: #dc2626; margin-bottom: 4px;">
+            🚑 구급차 ${ambulanceId}
+          </div>
+          <div style="color: #6b7280; font-size: 11px; margin-bottom: 2px;">
+            상태: <span style="color: #f59e0b;">통신대기</span>
+          </div>
+          <div style="color: #6b7280; font-size: 11px; margin-bottom: 2px;">
+            환자: ${patientName || '미상'}
+          </div>
+          ${ktasLevel ? `<div style="color: #6b7280; font-size: 11px;">
+            KTAS: <span style="color: #ef4444;">${ktasLevel}</span>
+          </div>` : ''}
+        </div>
+      `,
+      removable: false
+    });
+
+    // 마커 클릭 이벤트
+    window.kakao.maps.event.addListener(marker, 'click', () => {
+      infoWindow.open(mapInstanceRef.current, marker);
+    });
+
+    // 마커 정보 저장
+    ambulanceMarkersRef.current.set(ambulanceId, {
+      marker,
+      infoWindow,
+      lastUpdate: Date.now()
+    });
+
+    console.log(`🚑 [RealTimeMap] 새 구급차 ${ambulanceId} 마커 생성: ${latitude}, ${longitude}`);
+  };
+
+  // 구급차 마커 제거 함수
+  const removeAmbulanceMarker = (ambulanceId) => {
+    const ambulanceMarker = ambulanceMarkersRef.current.get(ambulanceId);
+    if (ambulanceMarker) {
+      ambulanceMarker.marker.setMap(null);
+      ambulanceMarkersRef.current.delete(ambulanceId);
+      console.log(`🚑 [RealTimeMap] 구급차 ${ambulanceId} 마커 제거`);
+    }
+  };
+
+  // 모든 구급차 마커 정리 함수
+  const clearAllAmbulanceMarkers = () => {
+    ambulanceMarkersRef.current.forEach((markerInfo, ambulanceId) => {
+      markerInfo.marker.setMap(null);
+      console.log(`🚑 [RealTimeMap] 구급차 ${ambulanceId} 마커 정리`);
+    });
+    ambulanceMarkersRef.current.clear();
+    setAmbulanceLocations(new Map());
+  };
+
+  // STOMP 연결 함수 (구급차와 동일한 방식)
   const connectWebSocket = () => {
     if (!user?.userId) return;
 
+    const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || "ws://localhost:8080/ws";
+    const SOCKET_URL = WS_BASE_URL.replace(/^ws:\/\//, 'http://').replace(/^wss:\/\//, 'https://');
+    
+    console.log('[RealTimeMap] STOMP 연결 시도:', SOCKET_URL);
+
     try {
-      const wsUrl = import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8080/ws';
-      const ws = new WebSocket(`${wsUrl}/location`);
+      const sock = new SockJS(SOCKET_URL);
+      const stomp = Stomp.over(sock);
       
-      ws.onopen = () => {
-        console.log('[RealTimeMap] WebSocket 연결 성공');
-        // 병원 위치 토픽 구독
-        ws.send(JSON.stringify({
-          type: 'SUBSCRIBE',
-          topic: `/topic/location/hospital/${user.userId}`
-        }));
-      };
+      stomp.debug = null;
+      stomp.heartbeat.outgoing = 10000;
+      stomp.heartbeat.incoming = 10000;
 
-      ws.onmessage = (event) => {
-        try {
-          const locationData = JSON.parse(event.data);
-          console.log('[RealTimeMap] 병원 위치 데이터 수신:', locationData);
-          
-          if (locationData.latitude && locationData.longitude && mapInstanceRef.current && hospitalMarkerRef.current) {
-            // 병원 마커 위치 업데이트
-            const newPosition = new window.kakao.maps.LatLng(locationData.latitude, locationData.longitude);
-            hospitalMarkerRef.current.setPosition(newPosition);
+      const onConnect = () => {
+        console.log('[RealTimeMap] STOMP 연결 성공');
+        stompClientRef.current = stomp;
+        
+        const topic = `/topic/location/hospital/${user.userId}`;
+        console.log('[RealTimeMap] 토픽 구독:', topic);
+        
+        stomp.subscribe(topic, (message) => {
+          try {
+            const locationData = JSON.parse(message.body);
+            console.log('🔍 [RealTimeMap] 수신된 데이터 전체 구조:', {
+              원본데이터: locationData,
+              데이터타입: typeof locationData,
+              키목록: Object.keys(locationData),
+              ambulanceId존재: !!locationData.ambulanceId,
+              hospitalId존재: !!locationData.hospitalId,
+              위도경도존재: !!(locationData.latitude && locationData.longitude),
+              타임스탬프: new Date().toLocaleTimeString()
+            });
             
-            // 지도 중심 이동 (부드럽게)
-            mapInstanceRef.current.panTo(newPosition);
+            // 구급차 데이터인지 확인
+            if (locationData.ambulanceId) {
+              console.log('🚑 [RealTimeMap] 구급차 위치 데이터 감지!', {
+                구급차ID: locationData.ambulanceId,
+                위도: locationData.latitude,
+                경도: locationData.longitude,
+                기타정보: {
+                  status: locationData.status,
+                  patientName: locationData.patientName,
+                  ktasLevel: locationData.ktasLevel,
+                  hospitalId: locationData.hospitalId
+                }
+              });
+              
+              // 구급차 위치 상태 업데이트
+              const ambulanceInfo = {
+                ambulanceId: locationData.ambulanceId,
+                latitude: locationData.latitude,
+                longitude: locationData.longitude,
+                status: locationData.status || 'waiting_communication',
+                patientName: locationData.patientName,
+                ktasLevel: locationData.ktasLevel,
+                timestamp: new Date().toISOString()
+              };
+
+              setAmbulanceLocations(prev => {
+                const newMap = new Map(prev);
+                newMap.set(locationData.ambulanceId, ambulanceInfo);
+                return newMap;
+              });
+
+              // 지도에 구급차 마커 생성/업데이트
+              createOrUpdateAmbulanceMarker(ambulanceInfo);
+            }
+            
+            // 병원 데이터인지 확인 (기존 로직)
+            if (locationData.latitude && locationData.longitude && mapInstanceRef.current && hospitalMarkerRef.current) {
+              console.log('🏥 [RealTimeMap] 병원/일반 위치 데이터 처리');
+              const newPosition = new window.kakao.maps.LatLng(locationData.latitude, locationData.longitude);
+              hospitalMarkerRef.current.setPosition(newPosition);
+              mapInstanceRef.current.panTo(newPosition);
+            }
+            
+            // 알 수 없는 데이터 형식
+            if (!locationData.ambulanceId && (!locationData.latitude || !locationData.longitude)) {
+              console.log('❓ [RealTimeMap] 알 수 없는 데이터 형식:', locationData);
+            }
+            
+          } catch (error) {
+            console.error('[RealTimeMap] STOMP 메시지 파싱 오류:', error);
           }
-        } catch (error) {
-          console.error('[RealTimeMap] WebSocket 메시지 파싱 오류:', error);
-        }
+        });
       };
 
-      ws.onclose = () => {
-        console.log('[RealTimeMap] WebSocket 연결 종료');
-        // 3초 후 재연결 시도
+      const onError = (error) => {
+        console.error('[RealTimeMap] STOMP 연결 실패:', error);
+        stompClientRef.current = null;
         setTimeout(connectWebSocket, 3000);
       };
 
-      ws.onerror = (error) => {
-        console.error('[RealTimeMap] WebSocket 오류:', error);
-      };
-
-      websocketRef.current = ws;
+      stomp.connect({}, onConnect, onError);
+      
     } catch (error) {
-      console.error('[RealTimeMap] WebSocket 연결 실패:', error);
-      // 3초 후 재연결 시도
+      console.error('[RealTimeMap] STOMP 생성 실패:', error);
       setTimeout(connectWebSocket, 3000);
     }
   };
@@ -69,21 +209,40 @@ const RealTimeMap = ({ hospitalLocation, className }) => {
       return;
     }
 
+    // hospitalLocation에서 좌표 가져오기 - 없으면 지도 초기화 대기
     if (!hospitalLocation?.latitude || !hospitalLocation?.longitude) {
-      console.warn('[RealTimeMap] 병원 위치 정보가 없습니다');
+      console.warn('[RealTimeMap] 병원 위치 정보가 없음 - 지도 초기화 대기');
       return;
     }
+    
+    const mapLocation = hospitalLocation;
+    console.log('[RealTimeMap] 병원 위치로 지도 초기화:', mapLocation);
 
-    if (mapInstanceRef.current) {
-      console.log('[RealTimeMap] 지도가 이미 초기화되어 있습니다');
+    // 지도가 이미 초기화되었고 mapInstanceRef가 있으면 재초기화하지 않음
+    if (isMapInitialized && mapInstanceRef.current) {
+      console.log('[RealTimeMap] 지도 이미 초기화됨 - 재초기화 스킵');
       return;
+    }
+    
+    // 기존 지도가 있으면 정리
+    if (mapInstanceRef.current) {
+      console.log('[RealTimeMap] 기존 지도 정리 후 재초기화');
+      if (hospitalMarkerRef.current) {
+        hospitalMarkerRef.current.setMap(null);
+        hospitalMarkerRef.current = null;
+      }
+      // 구급차 마커들도 모두 정리
+      clearAllAmbulanceMarkers();
+      mapInstanceRef.current = null;
+      setIsMapLoaded(false);
+      setIsMapInitialized(false);
     }
 
     try {
       // 지도 옵션
       const mapOption = {
-        center: new window.kakao.maps.LatLng(hospitalLocation.latitude, hospitalLocation.longitude),
-        level: 3 // 확대 레벨
+        center: new window.kakao.maps.LatLng(mapLocation.latitude, mapLocation.longitude),
+        level: 5 // 확대 레벨
       };
 
       // 지도 생성
@@ -91,7 +250,7 @@ const RealTimeMap = ({ hospitalLocation, className }) => {
       mapInstanceRef.current = map;
 
       // 병원 마커 생성
-      const markerPosition = new window.kakao.maps.LatLng(hospitalLocation.latitude, hospitalLocation.longitude);
+      const markerPosition = new window.kakao.maps.LatLng(mapLocation.latitude, mapLocation.longitude);
       const marker = new window.kakao.maps.Marker({
         position: markerPosition,
         map: map
@@ -103,10 +262,10 @@ const RealTimeMap = ({ hospitalLocation, className }) => {
         content: `
           <div style="padding: 8px 12px; font-size: 12px; min-width: 120px;">
             <div style="font-weight: bold; color: #1f2937; margin-bottom: 4px;">
-              🏥 ${hospitalLocation.name || '병원'}
+              🏥 ${mapLocation.name || '병원'}
             </div>
             <div style="color: #6b7280; font-size: 11px;">
-              실시간 위치
+              ${hospitalLocation?.latitude && hospitalLocation?.longitude ? '실시간 위치' : '기본 위치 - 실제 데이터 대기 중'}
             </div>
           </div>
         `,
@@ -120,26 +279,30 @@ const RealTimeMap = ({ hospitalLocation, className }) => {
 
       // 지도 로딩 완료
       setIsMapLoaded(true);
+      setIsMapInitialized(true);
       console.log('[RealTimeMap] 카카오맵 초기화 완료');
 
     } catch (error) {
       console.error('[RealTimeMap] 지도 초기화 오류:', error);
     }
-  }, [hospitalLocation]);
+  }, [hospitalLocation]); // hospitalLocation이 있을 때만 지도 초기화
 
-  // WebSocket 연결
+  // WebSocket 연결 (지도와 분리)
   useEffect(() => {
-    if (isMapLoaded && user?.userId) {
+    if (user?.userId) {
       connectWebSocket();
     }
 
     return () => {
-      if (websocketRef.current) {
-        websocketRef.current.close();
-        websocketRef.current = null;
+      if (stompClientRef.current && stompClientRef.current.connected) {
+        console.log('[RealTimeMap] STOMP 연결 해제');
+        stompClientRef.current.disconnect();
+        stompClientRef.current = null;
       }
+      // 컴포넌트 언마운트 시 모든 구급차 마커 정리
+      clearAllAmbulanceMarkers();
     };
-  }, [isMapLoaded, user?.userId]);
+  }, [user?.userId]); // 지도 로딩 상태와 무관하게 WebSocket 연결
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>

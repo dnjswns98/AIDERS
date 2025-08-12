@@ -27,6 +27,10 @@ export default function FireStationDashboard() {
   const { getStatistics } = useEmergencyStore();
   const stats = getStatistics(ambulances);
 
+  
+
+
+
   return (
     <div className="p-8 bg-gray-50 min-h-full">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">종합 현황</h1>

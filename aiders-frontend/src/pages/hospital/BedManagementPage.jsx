@@ -331,14 +331,12 @@ export default function BedManagementPage() {
                 </div>
               )}
               <div style={{
-                maxHeight: 'calc(100vh - 400px)',
-                overflowY: 'auto',
                 paddingRight: '8px',
                 marginTop: '24px'
               }}>
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
                   gap: '16px'
                 }}>
                   {beds.map((bed) => (

@@ -1,176 +1,263 @@
-import React, { useState, useEffect } from "react";
-import { useAppContext } from "../../../hooks/useAppContext";
-import useEmergencyStore from "../../../store/useEmergencyStore";
-import useBedStore from "../../../store/useBedStore";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import useFireStationStore from "../../../store/useFireStationStore";
 import AddressSearchModal from "./AddressSearchModal";
+import { getStatusText } from "../../../utils/statusUtils";
 
-const DispatchFormModal = ({ report, onClose }) => {
-  const { ambulances, updateReport } = useAppContext();
-  const { getHospitals } = useBedStore();
-  const { updateAmbulanceStatus, getAvailableAmbulances } = useEmergencyStore();
-  const { dispatchAmbulance } = useFireStationStore();
+const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo }) => {
+    const {
+        ambulances,
+        dispatchAmbulance,
+        isAmbulanceDispatching,
+        fetchFirestationAmbulances,
+        error: storeError,
+        clearError,
+        isLoading: storeLoading,
+    } = useFireStationStore();
 
-  const [isMapModalOpen, setMapModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    ambulanceId: "",
-    location: "",
-    reportContent: "",
-    hospitalId: "",
-  });
+    const [formData, setFormData] = useState({
+        ambulanceIds: [], // userKey(문자열)를 담을 배열
+        priority: "normal",
+        condition: "",
+        notes: "",
+    });
 
-  useEffect(() => {
-    if (report) {
-      setFormData((prev) => ({
-        ...prev,
-        location: report.location,
-        reportContent: report.content,
-      }));
-    }
-  }, [report]);
+    const [locationData, setLocationData] = useState({
+        address: "",
+        latitude: null,
+        longitude: null,
+        landmark: ""
+    });
 
-  const handleDispatchSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.ambulanceId || !formData.hospitalId) {
-      alert("출동할 구급차와 이송할 병원을 모두 선택해주세요.");
-      return;
-    }
-    const dispatchData = {
-      ambulanceIds: [parseInt(formData.ambulanceId, 10)],
-      latitude: report.latitude,
-      longitude: report.longitude,
-      address: formData.location,
-      condition: formData.content,
-      hospitalId: parseInt(formData.hospitalId, 10),
-    };
+    const [isMapModalOpen, setMapModalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [validationErrors, setValidationErrors] = useState({});
+    const [localError, setLocalError] = useState(null);
 
-    try {
-      await dispatchAmbulance(dispatchData);
+    const availableAmbulances = useMemo(() => {
+        if (!ambulances) return [];
+        return ambulances.filter(ambulance => {
+            const status = (ambulance.status || '').toUpperCase();
+            const isAvailable = status === 'WAIT';
+            console.log(ambulance)
+            // isAmbulanceDispatching 함수가 userKey를 사용하도록 수정
+            const isNotDispatching = !isAmbulanceDispatching(ambulance.userKey);
+            return isAvailable && isNotDispatching;
+        });
+    }, [ambulances, isAmbulanceDispatching]);
 
-      updateAmbulanceStatus(
-        parseInt(formData.ambulanceId, 10),
-        "dispatched"
-      );
-      updateReport({
-        ...report,
-        isDispatched: true,
-        ambulanceId: parseInt(formData.ambulanceId, 10),
-      });
-      onClose();
-    } catch (error) {
-      console.error("Dispatch failed:", error);
-      alert("배차 중 오류가 발생했습니다.");
-    }
-  };
+    const handleInputChange = useCallback((e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (validationErrors[name]) setValidationErrors(prev => ({ ...prev, [name]: "" }));
+    }, [validationErrors]);
 
-  const handleAddressSelect = (address) => {
-    setFormData((prev) => ({ ...prev, location: address }));
-  };
+    // 체크박스 핸들러: userKey(문자열)를 받아서 처리
+    const handleCheckboxChange = useCallback((userKey) => {
+        setFormData(prev => {
+            const currentKeys = prev.ambulanceIds;
 
-  if (!report) return null;
+            if (currentKeys.includes(userKey)) {
+                return { ...prev, ambulanceIds: currentKeys.filter(key => key !== userKey) };
+            } else {
+                return { ...prev, ambulanceIds: [...currentKeys, userKey] };
+            }
+        });
+        if (validationErrors.ambulanceIds) setValidationErrors(prev => ({ ...prev, ambulanceIds: "" }));
+    }, [validationErrors]);
 
-  return (
-    <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-xl p-6 w-full max-w-full sm:max-w-md mx-4">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">
-              배차 신청 (신고번호: {report.reportNumber})
-            </h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <i className="fas fa-times text-xl"></i>
-            </button>
-          </div>
-          <form onSubmit={handleDispatchSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                출동 가능 구급차
-              </label>
-              <select
-                value={formData.ambulanceId}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    ambulanceId: e.target.value,
-                  }))
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              >
-                <option value="">구급차를 선택하세요</option>
-                {getAvailableAmbulances(ambulances).map((ambulance) => (
-                  <option key={ambulance.id} value={ambulance.id}>
-                    {ambulance.number}
-                  </option>
-                ))}
-              </select>
+    const handleLocationChange = useCallback((e) => {
+        const { name, value } = e.target;
+        setLocationData(prev => ({ ...prev, [name]: value }));
+    }, []);
+
+    const handleAddressSelect = useCallback((selectedAddress) => {
+        setLocationData({
+            address: selectedAddress.roadAddress || selectedAddress.jibunAddress,
+            latitude: selectedAddress.latitude,
+            longitude: selectedAddress.longitude,
+            landmark: ""
+        });
+        setMapModalOpen(false);
+        if (validationErrors.address) setValidationErrors(prev => ({ ...prev, address: "" }));
+    }, [validationErrors]);
+
+    const validateForm = useCallback(() => {
+        const errors = {};
+        if (formData.ambulanceIds.length === 0) errors.ambulanceIds = "출동할 구급차를 한 대 이상 선택해주세요.";
+        if (!locationData.address) errors.address = "지도에서 출동 위치를 지정해주세요.";
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
+    }, [formData, locationData]);
+
+    const handleClose = useCallback(() => {
+        setFormData({ ambulanceIds: [], priority: "normal", condition: "", notes: "" });
+        setLocationData({ address: "", latitude: null, longitude: null, landmark: "" });
+        setValidationErrors({});
+        setLocalError(null);
+        clearError();
+        onClose();
+    }, [onClose, clearError]);
+
+    const handleDispatchSubmit = useCallback(async (e) => {
+        e.preventDefault();
+        if (!validateForm()) {
+            setLocalError("필수 입력 항목을 모두 채워주세요.");
+            return;
+        }
+        setIsSubmitting(true);
+        setLocalError(null);
+        try {
+            // 수정된 부분: userKey를 사용하여 ambulances 배열에서 id를 찾습니다.
+            const numericAmbulanceIds = formData.ambulanceIds.map(userKey => {
+                const ambulance = ambulances.find(a => a.userKey === userKey);
+                return ambulance ? ambulance.ambulanceId : null;
+            }).filter(id => id !== null);
+
+            console.log("전송할 구급차 ID:", numericAmbulanceIds); // 디버깅용 로그
+
+            const dispatchData = {
+                ambulanceIds: numericAmbulanceIds, // 수정된 숫자 ID 배열을 전송
+                latitude: locationData.latitude,
+                longitude: locationData.longitude,
+                address: locationData.address,
+                condition: formData.condition || "상태 미입력",
+            };
+
+            await dispatchAmbulance(dispatchData);
+            await fetchFirestationAmbulances(firestationInfo.id);
+            if (onDispatchSuccess) onDispatchSuccess();
+            alert(`✅ 배차 완료!\n구급차: ${formData.ambulanceIds.join(", ")}\n출동지: ${locationData.address}`);
+            handleClose();
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || error.message || '배차 신청 중 오류가 발생했습니다.';
+            setLocalError(errorMessage);
+            alert(`❌ 배차 실패\n${errorMessage}`);
+        } finally {
+            setIsSubmitting(false);
+        }
+    }, [
+        validateForm, formData, locationData, ambulances,
+        dispatchAmbulance, onDispatchSuccess, handleClose, fetchFirestationAmbulances, firestationInfo
+    ]);
+
+    if (!isOpen) return null;
+
+    return (
+        <>
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[95vh] flex flex-col">
+                    <div className="p-6 border-b border-gray-200">
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-xl font-bold text-gray-900">신규 배차 신청</h2>
+                            <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 text-2xl" disabled={isSubmitting}>×</button>
+                        </div>
+                    </div>
+                    {(storeError || localError) && (
+                        <div className="p-4 bg-red-50 border-b border-red-200 text-sm text-red-700">
+                            <strong>오류:</strong> {storeError || localError}
+                        </div>
+                    )}
+                    <form id="dispatch-form" onSubmit={handleDispatchSubmit} className="p-6 space-y-4 overflow-y-auto">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">출동 위치 *</label>
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    type="text"
+                                    value={locationData.address}
+                                    readOnly
+                                    placeholder="지도에서 위치를 선택해주세요."
+                                    className={`flex-1 p-3 border rounded-lg bg-gray-50 ${validationErrors.address ? 'border-red-300' : 'border-gray-300'}`}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setMapModalOpen(true)}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                >
+                                    🗺️ 지도에서 선택
+                                </button>
+                            </div>
+                            {validationErrors.address && <p className="mt-1 text-sm text-red-600">{validationErrors.address}</p>}
+                        </div>
+                        
+                        <div>
+                            <label htmlFor="landmark" className="block text-sm font-medium text-gray-700 mb-2">주변 주요 건물 (Landmark)</label>
+                            <input
+                                id="landmark"
+                                name="landmark"
+                                type="text"
+                                value={locationData.landmark}
+                                onChange={handleLocationChange}
+                                placeholder="예: 홈플러스 뒷쪽, 강남역 2번 출구 앞"
+                                className="w-full p-3 border border-gray-300 rounded-lg"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">출동 구급차 *</label>
+                            <div className={`p-3 border rounded-lg ${validationErrors.ambulanceIds ? 'border-red-300' : 'border-gray-300'}`}>
+                                {availableAmbulances.length > 0 ? (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {availableAmbulances.map(ambulance => (
+                                            <label key={ambulance.userKey} className="flex items-center space-x-2">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.ambulanceIds.includes(ambulance.userKey)}
+                                                    onChange={() => handleCheckboxChange(ambulance.userKey)}
+                                                    className="form-checkbox h-5 w-5 text-blue-600"
+                                                />
+                                                <span className="text-sm text-gray-900">{ambulance.userKey} ({getStatusText(ambulance.status)})</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="mt-1 text-sm text-yellow-600">사용 가능한 구급차가 없습니다.</p>
+                                )}
+                            </div>
+                            {validationErrors.ambulanceIds && <p className="mt-1 text-sm text-red-600">{validationErrors.ambulanceIds}</p>}
+                        </div>
+
+                        <div>
+                            <label htmlFor="condition" className="block text-sm font-medium text-gray-700 mb-2">환자 상태</label>
+                            <textarea
+                                id="condition"
+                                name="condition"
+                                value={formData.condition}
+                                onChange={handleInputChange}
+                                rows={3}
+                                placeholder="환자의 주요 증상, 상태 등을 입력하세요. (예: 60대 남성, 흉통 호소)"
+                                className={`w-full p-3 border rounded-lg ${validationErrors.condition ? 'border-red-300' : 'border-gray-300'}`}
+                            />
+                            {validationErrors.condition && <p className="mt-1 text-sm text-red-600">{validationErrors.condition}</p>}
+                        </div>
+                    </form>
+                    <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+                        <button
+                            type="button"
+                            onClick={handleClose}
+                            className="px-6 py-3 text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 rounded-lg"
+                            disabled={isSubmitting}
+                        >
+                            취소
+                        </button>
+                        <button
+                            type="submit"
+                            form="dispatch-form"
+                            className="px-6 py-3 bg-red-600 text-white hover:bg-red-700 rounded-lg disabled:bg-red-300 flex items-center"
+                            disabled={isSubmitting || storeLoading || formData.ambulanceIds.length === 0}
+                        >
+                            배차 신청
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                환자 위치
-              </label>
-              <input
-                type="text"
-                value={formData.location}
-                readOnly
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm w-full"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                신고 내용
-              </label>
-              <textarea
-                value={formData.reportContent}
-                readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm"
-                rows={3}
-              ></textarea>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                이송 병원
-              </label>
-              <select
-                value={formData.hospitalId}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    hospitalId: e.target.value,
-                  }))
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              >
-                <option value="">병원을 선택하세요</option>
-                {getHospitals().map((hospital) => (
-                  <option key={hospital.id} value={hospital.id}>
-                    {hospital.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex space-x-3 pt-4">
-              <button
-                type="submit"
-                className="flex-1 bg-red-600 text-white py-2 rounded-md hover:bg-red-700 transition-colors !rounded-button whitespace-nowrap"
-              >
-                배차 확정
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-400 transition-colors !rounded-button whitespace-nowrap"
-              >
-                취소
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </>
-  );
+            <AddressSearchModal
+                isOpen={isMapModalOpen}
+                onClose={() => setMapModalOpen(false)}
+                onAddressSelect={handleAddressSelect}
+                center={firestationInfo ? { lat: firestationInfo.latitude, lng: firestationInfo.longitude } : null}
+            />
+        </>
+    );
 };
 
 export default DispatchFormModal;
