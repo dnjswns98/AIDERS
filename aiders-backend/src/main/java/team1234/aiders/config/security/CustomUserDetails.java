@@ -1,16 +1,12 @@
 package team1234.aiders.config.security;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import team1234.aiders.application.user.entity.User;
-import team1234.aiders.application.user.repository.UserRepository;
-import team1234.aiders.application.user.repository.UserRepository.LoginProjection;
+import team1234.aiders.application.auth.repository.AuthRepository.LoginProjection;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 @Getter
 public class CustomUserDetails implements UserDetails {
