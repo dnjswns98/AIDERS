@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team1234.aiders.application.ambulance.dto.AmbulanceResponseDto;
+import team1234.aiders.application.ambulance.dto.AmbulanceStatusResponseDto;
 import team1234.aiders.application.ambulance.entity.AmbCurrentStatus;
 import team1234.aiders.application.ambulance.entity.Ambulance;
 import team1234.aiders.application.ambulance.repository.AmbulanceRepository;
@@ -19,12 +20,19 @@ public class AmbulanceService {
 
     private final AmbulanceRepository ambulanceRepository;
 
+    @Transactional(readOnly = true)
     public List<AmbulanceResponseDto> getAmbulances(CustomUserDetails user) {
         List<Ambulance> ambulances = ambulanceRepository.findAllByFirestationId(user.getId());
 
         return ambulances.stream()
                 .map(AmbulanceResponseDto::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public AmbulanceStatusResponseDto getAmbulanceStatus(CustomUserDetails user) {
+        Ambulance ambulance = findAmbulanceUser(user);
+        return AmbulanceStatusResponseDto.fromEntity(ambulance);
     }
 
     public void transferToWait(CustomUserDetails user) {
