@@ -77,7 +77,8 @@ public class SecurityConfig {
     //TODO: FIRESTATION 전용 API 경로들
     private static final String[] FIRESTATION_ENDPOINT = {
             "/api/v1/dispatch/**",
-            "/api/v1/firestation/**"
+            "/api/v1/firestation/**",
+            "/api/v1/ambulance/list"
     };
 
     @Bean
