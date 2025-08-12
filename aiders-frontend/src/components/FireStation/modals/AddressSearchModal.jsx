@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const AddressSearchModal = ({ isOpen, onClose, onAddressSelect }) => {
+// 🔽 center prop을 추가로 받습니다.
+const AddressSearchModal = ({ isOpen, onClose, onAddressSelect, center }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const marker = useRef(null);
@@ -13,8 +14,13 @@ const AddressSearchModal = ({ isOpen, onClose, onAddressSelect }) => {
       const checkKakaoMap = () => {
         if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
           if (!map.current) {
+            // 🔽 center prop이 있으면 해당 위치를, 없으면 기본 위치(구미)를 사용합니다.
+            const initialCenter = center && center.lat && center.lng 
+                ? new window.kakao.maps.LatLng(center.lat, center.lng) 
+                : new window.kakao.maps.LatLng(36.145, 128.39);
+
             const options = {
-              center: new window.kakao.maps.LatLng(36.145, 128.39), // 구미시청 근처
+              center: initialCenter,
               level: 3,
             };
             map.current = new window.kakao.maps.Map(mapContainer.current, options);
@@ -31,7 +37,14 @@ const AddressSearchModal = ({ isOpen, onClose, onAddressSelect }) => {
                 if (status === window.kakao.maps.services.Status.OK) {
                   const roadAddr = result[0].road_address ? result[0].road_address.address_name : '';
                   const jibunAddr = result[0].address.address_name;
-                  setSelectedAddress({ roadAddress: roadAddr, jibunAddress: jibunAddr });
+                  
+                  // 🔽 좌표 정보도 함께 저장합니다.
+                  setSelectedAddress({ 
+                      roadAddress: roadAddr, 
+                      jibunAddress: jibunAddr,
+                      latitude: latlng.getLat(),
+                      longitude: latlng.getLng()
+                  });
                 }
               });
             });
@@ -42,14 +55,14 @@ const AddressSearchModal = ({ isOpen, onClose, onAddressSelect }) => {
       };
       checkKakaoMap();
     }
-  }, [isOpen]);
+  }, [isOpen, center]); // 🔽 의존성 배열에 center 추가
 
   const searchAddrFromCoords = (coords, callback) => {
     geocoder.current.coord2Address(coords.getLng(), coords.getLat(), callback);
   };
 
   const handleConfirm = () => {
-    onAddressSelect(selectedAddress.roadAddress || selectedAddress.jibunAddress);
+    onAddressSelect(selectedAddress); // 🔽 주소와 좌표가 담긴 전체 객체를 전달합니다.
     onClose();
   };
 

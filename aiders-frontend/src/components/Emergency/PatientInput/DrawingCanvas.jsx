@@ -1,5 +1,5 @@
 import React from 'react';
-import { useCanvasDrawing } from '../../../hooks/useCanvasDrawing'; 
+import useCanvasDrawing from '../../../hooks/useCanvasDrawing'; 
 import DrawingTools from './DrawingTools';
 
 const DrawingCanvas = ({ drawingMode, setDrawingMode, value, onChange, name }) => {
