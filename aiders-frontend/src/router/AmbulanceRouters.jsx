@@ -9,18 +9,24 @@ import AmbulancePatientInputPage from '../pages/Emergency/AmbulancePatientInputP
 import AmbulanceMapPage from '../pages/Emergency/AmbulanceMapPage';
 import AmbulancePatientInfoPage from '../pages/Emergency/AmbulancePatientInfoPage';
 import AmbulanceDispatchWaitingPage from '../pages/Emergency/AmbulanceDispatchWaitingPage';
+import { useState } from 'react';
+import AmbulanceDispatchInProgressPage from '../pages/Emergency/AmbulanceDispatchInProgressPage';
 
 const AmbulanceRouters = () => {
     const { selectedAmbulance, selectMyAmbulance } = useEmergencyStore();
     const { user } = useAuthStore();
     const navigate = useNavigate();
 
-    // 로그인 시 자신의 구급차 정보를 선택합니다.
+    const [isAmbulanceDataReady, setIsAmbulanceDataReady] = useState(false); // New state
+
+    // 로그인 시 자신의 구급차 정보를 선택하고, 데이터 준비 상태를 설정합니다.
     useEffect(() => {
         if (!selectedAmbulance && user?.userId) {
             selectMyAmbulance();
+        } else if (selectedAmbulance && !isAmbulanceDataReady) { // If selectedAmbulance is loaded but not ready
+            setIsAmbulanceDataReady(true);
         }
-    }, [user, selectedAmbulance, selectMyAmbulance]);
+    }, [user, selectedAmbulance, selectMyAmbulance, isAmbulanceDataReady]); // Add isAmbulanceDataReady to dependencies
 
     // === 추가된 상태 폴링 로직 ===
     useEffect(() => {
@@ -39,7 +45,7 @@ const AmbulanceRouters = () => {
     // =============================
 
     const renderAmbulanceContent = () => {
-        if (!selectedAmbulance) {
+        if (!isAmbulanceDataReady) { // Check new state
             return (
                 <div className="flex items-center justify-center min-h-screen">
                     <div className="text-center">
@@ -48,19 +54,26 @@ const AmbulanceRouters = () => {
                 </div>
             );
         }
+        // selectedAmbulance is guaranteed to be available here
 
         const status = selectedAmbulance?.status?.toLowerCase();
         
         console.log(`[AmbulanceRouters] 현재 구급차 상태: ${status}`);
+        console.log("[AmbulanceRouters] selectedAmbulance:", selectedAmbulance); // Added log
 
         if (status === 'wait' || status === 'standby') {
             return <AmbulanceDispatchWaitingPage />;
         }
         
-        if (status === 'dispatched' || status === 'transfer') {
-            return <AmbulanceMapPage />;
+        if (status === 'dispatch') { // ✅ '출동 중'일 때는 환자 정보 입력 페이지로 이동합니다.
+            console.log("[AmbulanceRouters] Routing to AmbulanceDispatchInProgressPage. Status:", status); // Added log
+            return  <AmbulanceDispatchInProgressPage />;
         }
         
+        if (status === 'transfer') { // ✅ '이송 중'일 때만 지도 페이지로 이동합니다.
+            return <AmbulanceMapPage />;
+        }
+        console.log("[AmbulanceRouters] Fallback to AmbulanceDashboardPage. Status:", status, "Selected Ambulance:", selectedAmbulance); // Added log
         return <AmbulanceDashboardPage />;
     };
 

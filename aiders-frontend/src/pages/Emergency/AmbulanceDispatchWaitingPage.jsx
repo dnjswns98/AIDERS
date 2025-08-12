@@ -100,7 +100,7 @@ export default function AmbulanceDispatchWaitingPage() {
             <h1 className="text-3xl font-bold text-gray-800 mt-4 mb-2">
               {ambulanceStatus === 'dispatched' && '출동 중'}
               {ambulanceStatus === 'transfer' && '이송 중'}
-              {ambulanceStatus === 'standby' && '배차 대기 중'}
+              {ambulanceStatus === 'wait' && '배차 대기 중'}
               {ambulanceStatus === 'completed' && '이송 완료'}
               {!ambulanceStatus && '상태를 불러오는 중...'}
             </h1>
@@ -108,7 +108,7 @@ export default function AmbulanceDispatchWaitingPage() {
             <p className="text-gray-600">
               {ambulanceStatus === 'dispatched' && '환자에게 이동 중입니다.'}
               {ambulanceStatus === 'transfer' && '환자를 태우고 병원으로 이동 중입니다.'}
-              {ambulanceStatus === 'standby' && '소방서의 출동 지시를 기다리고 있습니다.'}
+              {ambulanceStatus === 'wait' && '소방서의 출동 지시를 기다리고 있습니다.'}
               {ambulanceStatus === 'completed' && '임무가 완료되었습니다. 대시보드로 돌아갑니다.'}
             </p>
           </div>
@@ -146,7 +146,7 @@ export default function AmbulanceDispatchWaitingPage() {
             </div>
           )}
           
-          {ambulanceStatus === 'standby' && (
+          {ambulanceStatus === 'wait' && (
             <div className="text-center mt-8">
                 <button
                     onClick={handleLogout}

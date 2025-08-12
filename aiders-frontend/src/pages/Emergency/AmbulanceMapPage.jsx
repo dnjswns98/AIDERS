@@ -92,11 +92,7 @@ export default function AmbulanceMapPage() {
     }
   }, [ambulanceId]);
 
-  useEffect(() => {
-    if (ambulanceId) {
-      fetchDirectHospitalInfo();
-    }
-  }, [ambulanceId, fetchDirectHospitalInfo]);
+  
 
   const safeHospital = useMemo(() => {
     if (directHospitalInfo) {
@@ -210,11 +206,7 @@ export default function AmbulanceMapPage() {
     }
   }, [ambulanceId, selectedAmbulance?.patientDetails, ambulanceLocation, navigate, checkHospitalMatchingStatus]);
 
-  useEffect(() => {
-    if (ambulanceId && matchedHospitals.length === 0) {
-      checkHospitalMatchingStatus(ambulanceId).catch(console.warn);
-    }
-  }, [ambulanceId, matchedHospitals.length, checkHospitalMatchingStatus]);
+  
 
   // 🔥 추가: 이송 완료 핸들러
   const handleCompleteTransport = useCallback(async () => {
@@ -229,7 +221,32 @@ export default function AmbulanceMapPage() {
     }
   }, [completeTransport, navigate]);
 
-  if (!finalMatchedHospital && !directHospitalInfo) {
+  const currentAmbulanceStatus = selectedAmbulance?.status?.toLowerCase();
+
+  if (currentAmbulanceStatus === 'dispatch') {
+    // '출동 중' 상태일 때는 지도와 기본 컨트롤을 표시합니다.
+    // 병원 매칭 정보는 아직 필요하지 않습니다.
+  } else if (isLoadingDirectHospital) {
+    return (
+      <AmbulanceLayout>
+        <div className="bg-white p-8 rounded-lg shadow-md text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h1 className="text-xl font-bold mb-2">병원 정보 조회 중...</h1>
+          <p className="text-gray-600 mb-2">
+            구급차 대시보드와 동일한 방식으로 실제 좌표 정보를 가져오고 있습니다.
+          </p>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+            <p className="text-xs text-blue-700">
+              📞 getMatchedHospital API 직접 호출 중...<br/>
+              🔍 대시보드 방식으로 실제 병원 좌표 조회
+            </p>
+          </div>
+        </div>
+      </AmbulanceLayout>
+    );
+  } else if (currentAmbulanceStatus === 'transfer' && !finalMatchedHospital && !directHospitalInfo) {
+    // '이송 중' 상태인데 병원이 매칭되지 않았을 때만 이 메시지를 표시합니다.
     return (
       <AmbulanceLayout>
         <div className="bg-white p-8 rounded-lg shadow-md text-center">
@@ -271,27 +288,6 @@ export default function AmbulanceMapPage() {
             >
               🔄 병원 매칭 재시도 (대시보드 방식)
             </button>
-          </div>
-        </div>
-      </AmbulanceLayout>
-    );
-  }
-
-  if (isLoadingDirectHospital) {
-    return (
-      <AmbulanceLayout>
-        <div className="bg-white p-8 rounded-lg shadow-md text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h1 className="text-xl font-bold mb-2">병원 정보 조회 중...</h1>
-          <p className="text-gray-600 mb-2">
-            구급차 대시보드와 동일한 방식으로 실제 좌표 정보를 가져오고 있습니다.
-          </p>
-          
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-            <p className="text-xs text-blue-700">
-              📞 getMatchedHospital API 직접 호출 중...<br/>
-              🔍 대시보드 방식으로 실제 병원 좌표 조회
-            </p>
           </div>
         </div>
       </AmbulanceLayout>

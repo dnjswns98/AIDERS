@@ -1,7 +1,6 @@
 import { create } from "zustand";
-import { 
+import {
   getAmbulances,
-  getAmbulanceDetail,
   updateAmbulanceStatus,
   getAmbulanceLocation,
   saveRequiredPatientInfo,
@@ -10,10 +9,11 @@ import {
   requestHospitalMatching,
   getMatchedHospital,
   getHospitals,
-  getDispatchHistory,
   geocodeAddress,
   reverseGeocode,
-  calculateDistance
+  calculateDistance,
+  getMyAmbulanceStatus,
+  getMyAmbulancePatientInfo
 } from "../api/api";
 import { useAuthStore } from "./useAuthStore";
 
@@ -101,7 +101,7 @@ const validatePatientData = (patientData) => {
             const values = Object.values(parsed).filter(v => v && v.trim);
             value = values.length > 0 ? values[0] : '';
           }
-        } catch (e) {}
+        } catch (e) { }
       }
       if (typeof value === 'string' && value.trim()) {
         const fieldMap = { chiefComplaint: 'medicalRecord', medications: 'medicine' };
@@ -177,10 +177,6 @@ const useEmergencyStore = create((set, get) => ({
   // 🚑 구급차 관련 액션들
   // ======================================================================
 
-  /**
-   * 🔥 [수정됨] 현재 로그인한 구급차 정보로 상태를 설정하는 핵심 액션
-   * 하드코딩된 상태 대신 서버에서 최신 상태를 가져오도록 수정
-   */
   selectMyAmbulance: async () => {
     const { user } = useAuthStore.getState();
     if (!user || (user.role !== 'ambulance' && user.userType !== 'ambulance')) {
@@ -191,41 +187,35 @@ const useEmergencyStore = create((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-        const dispatchHistory = await getDispatchHistory();
-        const myDispatches = dispatchHistory.filter(d => d.ambulanceNumber === user.userKey);
+        const ambulanceStatusResponse = await getMyAmbulanceStatus();
+        const myAmbulanceStatus = ambulanceStatusResponse.ambCurrentStatus || 'wait';
 
-        let myAmbulanceStatus = 'wait'; // 기본 상태
-        if (myDispatches.length > 0) {
-            const latestDispatch = myDispatches.sort((a, b) => new Date(b.dispatchTime) - new Date(a.dispatchTime))[0];
-            if (latestDispatch.status !== 'completed') {
-                myAmbulanceStatus = latestDispatch.status;
-            }
-        }
-
-        const patientInfo = await getPatientInfo();
+        // 'getMyAmbulancePatientInfo' API를 호출하여 현재 구급차의 출동 정보를 직접 가져옵니다.
+        const dispatchInfoResponse = await getMyAmbulancePatientInfo();
 
         const updatedAmbulance = {
             id: user.userId,
             userKey: user.userKey,
             carNumber: user.userKey,
             currentStatus: myAmbulanceStatus.toUpperCase(),
-            status: myAmbulanceStatus,
-            patientInfo: patientInfo || get().patientInfo,
-            patientDetails: patientInfo || get().patientDetails,
+            status: myAmbulanceStatus.toLowerCase(), // 상태를 소문자로 통일
+            // ✅ API 응답(출동 정보)을 올바른 키로 매핑하여 최상위 레벨에 추가합니다.
+            pAddress: dispatchInfoResponse?.address,
+            pCondition: dispatchInfoResponse?.condition,
+            pLatitude: dispatchInfoResponse?.latitude,
+            pLongitude: dispatchInfoResponse?.longitude,
+            // ✅ 기존 환자 정보는 유지합니다.
+            patientInfo: get().patientInfo,
+            patientDetails: get().patientDetails,
         };
 
         set({ selectedAmbulance: updatedAmbulance, ambulances: [updatedAmbulance], isLoading: false, error: null });
-
     } catch (error) {
         console.error("[useEmergencyStore] 내 구급차 정보 조회 실패:", error);
         set({ isLoading: false, error: error.message || '내 구급차 정보 조회 실패' });
     }
-},
+  },
 
-  /**
-   * 🔥 [유지] 소방서에서 전체 구급차 목록을 조회하기 위한 함수
-   * 이 함수는 구급차 페이지에서는 호출되지 않아야 합니다.
-   */
   fetchAmbulances: async () => {
     console.log('[Emergency Store] fetchAmbulances 호출됨 (소방서용)');
     set({ isLoading: true, error: null });
@@ -239,9 +229,6 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  /**
-   * 구급차 상태 업데이트 (소방서 배차와 연동)
-   */
   updateAmbulanceStatus: async (ambulanceId, status) => {
     console.log(`[Emergency Store] 구급차 ${ambulanceId} 상태 변경: ${status}`);
 
@@ -289,9 +276,6 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  /**
-   * 구급차 상세 정보 조회
-   */
   fetchAmbulanceDetail: async (ambulanceId) => {
     console.log(`[Emergency Store] 구급차 ${ambulanceId} 상세 정보 조회`);
 
@@ -318,9 +302,6 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  /**
-   * 구급차 위치 조회
-   */
   fetchAmbulanceLocation: async (ambulanceId) => {
     try {
       const locationData = await getAmbulanceLocation(ambulanceId);
@@ -341,13 +322,7 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  // ======================================================================
-  // 📍 위치 관련 액션들
-  // ======================================================================
-
-  /**
-   * 현재 위치 조회 (GPS)
-   */
+  // ... (이하 나머지 코드는 이전과 동일)
   getCurrentLocation: async () => {
     console.log('[Emergency Store] GPS 위치 조회 시작');
     set({ isLocationLoading: true, locationError: null });
@@ -376,9 +351,6 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  /**
-   * 주소를 좌표로 변환
-   */
   geocodeAddress: async (address) => {
     try {
       console.log('[Emergency Store] 주소 좌표 변환:', address);
@@ -394,13 +366,6 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  // ======================================================================
-  // 👨‍⚕️ 환자 정보 관련 액션들
-  // ======================================================================
-
-  /**
-   * 환자 기본 정보 업데이트
-   */
   updatePatientInfo: (patientInfo) => {
     console.log('[Emergency Store] 환자 기본 정보 업데이트:', patientInfo);
     
@@ -413,9 +378,6 @@ const useEmergencyStore = create((set, get) => ({
     }));
   },
 
-  /**
-   * 환자 상세 정보 업데이트
-   */
   updatePatientDetails: (patientDetails) => {
     console.log('[Emergency Store] 환자 상세 정보 업데이트:', patientDetails);
     
@@ -428,9 +390,6 @@ const useEmergencyStore = create((set, get) => ({
     }));
   },
 
-  /**
-   * 환자 필수 정보 저장 (KTAS, 진료과)
-   */
   saveRequiredPatientInfo: async (requiredData) => {
     console.log('[Emergency Store] 환자 필수 정보 저장 시작:', requiredData);
     set({ isPatientDataSaving: true, patientDataError: null });
@@ -497,9 +456,6 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  /**
-   * 환자 선택 정보 저장
-   */
   saveOptionalPatientInfo: async (optionalData) => {
     console.log('[Emergency Store] 환자 선택 정보 저장 시작:', optionalData);
     set({ isPatientDataSaving: true, patientDataError: null });
@@ -541,9 +497,6 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  /**
-   * 환자 정보 조회
-   */
   fetchPatientInfo: async (ambulanceId = null) => {
     try {
       console.log('[Emergency Store] 환자 정보 조회:', ambulanceId);
@@ -566,13 +519,6 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  // ======================================================================
-  // 🏥 병원 매칭 관련 액션들
-  // ======================================================================
-
-  /**
-   * 병원 자동 매칭 요청
-   */
   triggerHospitalMatching: async (ambulanceId) => {
     console.log(`[Emergency Store] 병원 자동 매칭 시작: ${ambulanceId}`);
     
@@ -668,9 +614,6 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  /**
-   * 기존 병원 매칭 상태 확인
-   */
   checkHospitalMatchingStatus: async (ambulanceId) => {
     if (!ambulanceId) return;
 
@@ -716,7 +659,8 @@ const useEmergencyStore = create((set, get) => ({
       return statusResult;
 
     } catch (error) {
-      if (error.response?.status === 404) {
+      // Check for 404 or the specific 500 error message indicating no match
+      if (error.response?.status === 404 || (error.response?.status === 500 && error.response?.data?.message === '아직 병원이 매칭되지 않았습니다.')) {
         set({
           matchedHospitals: [],
           hospitalMatchingStatus: 'idle',
@@ -732,9 +676,6 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  /**
-   * 병원 매칭 취소/리셋
-   */
   resetHospitalMatching: () => {
     console.log('[Emergency Store] 병원 매칭 초기화');
     
@@ -746,13 +687,6 @@ const useEmergencyStore = create((set, get) => ({
     });
   },
 
-  // ======================================================================
-  // 🚨 출동 관련 액션들 (소방서와 연동)
-  // ======================================================================
-
-  /**
-   * 출동 기록 조회
-   */
   fetchDispatchHistory: async () => {
     try {
       console.log('[Emergency Store] 출동 기록 조회');
@@ -773,9 +707,6 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  /**
-   * 소방서 배차 알림 처리 (WebSocket에서 호출)
-   */
   handleDispatchNotification: (dispatchData) => {
     console.log('[Emergency Store] 소방서 배차 알림 수신:', dispatchData);
     
@@ -812,13 +743,6 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  // ======================================================================
-  // 📊 통계 및 유틸리티
-  // ======================================================================
-
-  /**
-   * 구급차 통계 조회
-   */
   getStatistics: () => {
     const ambulances = get().ambulances;
     const dispatched = ambulances.filter(amb => 
@@ -838,41 +762,26 @@ const useEmergencyStore = create((set, get) => ({
     };
   },
 
-  /**
-   * 구급차 ID로 조회
-   */
   getAmbulanceById: (ambulanceId) => {
     return get().ambulances.find(amb => amb.id === ambulanceId);
   },
 
-  /**
-   * 출동 중인 구급차 목록
-   */
   getDispatchedAmbulances: () => {
     return get().ambulances.filter(amb => 
       ['DISPATCH', 'dispatched', 'transporting'].includes(amb.currentStatus || amb.status)
     );
   },
 
-  /**
-   * 대기 중인 구급차 목록
-   */
   getAvailableAmbulances: () => {
     return get().ambulances.filter(amb => 
       ['WAIT', 'standby', 'completed'].includes(amb.currentStatus || amb.status)
     );
   },
 
-  /**
-   * 에러 클리어
-   */
   clearError: () => {
     set({ error: null, patientDataError: null, locationError: null, hospitalMatchingError: null });
   },
 
-  /**
-   * 전체 상태 초기화
-   */
   reset: () => {
     console.log('[Emergency Store] 전체 상태 초기화');
     
@@ -913,13 +822,6 @@ const useEmergencyStore = create((set, get) => ({
     });
   },
 
-  // ======================================================================
-  // 🔧 디버깅 및 테스트 함수들
-  // ======================================================================
-
-  /**
-   * 현재 상태 디버깅
-   */
   debugCurrentState: () => {
     const state = get();
     const authState = useAuthStore.getState();
@@ -937,9 +839,6 @@ const useEmergencyStore = create((set, get) => ({
     return { emergencyState: state, authState };
   },
 
-  /**
-   * 병원 매칭 테스트
-   */
   testHospitalMatching: async (testData) => {
     try {
       console.log('[Test] 병원 매칭 테스트:', testData);
@@ -955,9 +854,6 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  /**
-   * 환자 데이터 검증 테스트
-   */
   testPatientDataValidation: (testData) => {
     const validation = validatePatientData(testData);
     
@@ -965,13 +861,6 @@ const useEmergencyStore = create((set, get) => ({
     return validation;
   },
 
-  // ======================================================================
-  // 🔥 추가된 액션들
-  // ======================================================================
-  
-  /**
-   * 환자 탑승 후 '이송 중'으로 상태 변경
-   */
   transferToHospital: async () => {
     const { selectedAmbulance } = get();
     if (!selectedAmbulance) {
@@ -1005,9 +894,6 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
   
-  /**
-   * 이송 완료 후 '대기 중' 상태로 복귀 및 정보 초기화
-   */
   completeTransport: async () => {
     const { selectedAmbulance } = get();
     if (!selectedAmbulance) {

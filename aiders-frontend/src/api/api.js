@@ -266,6 +266,24 @@ export const getAmbulanceLocation = withErrorHandling(async (ambulanceId) => {
 
 
 /**
+ * 현재 로그인된 구급차의 상태 조회
+ */
+export const getMyAmbulanceStatus = withErrorHandling(async () => {
+  const response = await apiClient.get('/api/v1/ambulance/status');
+  return response.data;
+}, 'getMyAmbulanceStatus');
+
+
+/**
+ * 현재 로그인된 구급차의 출동 환자 정보 조회
+ */
+export const getMyAmbulancePatientInfo = withErrorHandling(async () => {
+  const response = await apiClient.get('/api/v1/ambulance/patient-info');
+  return response.data;
+}, 'getMyAmbulancePatientInfo');
+
+
+/**
  * 여러 구급차 위치 일괄 조회
  */
 export const getAmbulancesLocation = withErrorHandling(async (ambulanceIds) => {
