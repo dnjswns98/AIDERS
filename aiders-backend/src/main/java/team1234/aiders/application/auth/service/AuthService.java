@@ -1,7 +1,6 @@
 package team1234.aiders.application.auth.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,8 +8,8 @@ import team1234.aiders.application.auth.dto.token.AccessTokenResponseDto;
 import team1234.aiders.application.auth.dto.login.LoginRequestDto;
 import team1234.aiders.application.auth.dto.login.LoginResponseDto;
 import team1234.aiders.application.auth.dto.token.RefreshRequestDto;
-import team1234.aiders.application.user.entity.User;
-import team1234.aiders.application.user.repository.UserRepository;
+import team1234.aiders.application.auth.repository.AuthRepository;
+import team1234.aiders.application.auth.repository.AuthRepository.ReissueProjection;
 import team1234.aiders.common.jwt.JwtProvider;
 import team1234.aiders.common.jwt.JwtUserDto;
 import team1234.aiders.config.security.CustomUserDetails;
@@ -22,7 +21,7 @@ public class AuthService {
 
     private final CustomUserDetailsService userDetailsService;
     private final JwtProvider jwtProvider;
-    private final UserRepository userRepository;
+    private final AuthRepository authRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -45,7 +44,7 @@ public class AuthService {
         validateRefreshToken(refreshToken);
 
         String userKey = jwtProvider.getUserKeyFromToken(refreshToken);
-        UserRepository.ReissueProjection user = findReissueUser(userKey);
+        ReissueProjection user = findReissueUser(userKey);
         verifyStoredRefreshToken(refreshToken, user.getRefreshToken());
 
         String newAccessToken = jwtProvider.generateToken(
@@ -57,7 +56,7 @@ public class AuthService {
 
     @Transactional
     public void logout(String userKey) {
-        int updated = userRepository.clearRefreshTokenByUserKey(userKey);
+        int updated = authRepository.clearRefreshTokenByUserKey(userKey);
         assertUpdatedCount(updated);
     }
 
@@ -90,11 +89,11 @@ public class AuthService {
     }
 
     private void updateRefreshToken(CustomUserDetails user, String refreshToken) {
-        userRepository.updateRefreshToken(user.getId(), refreshToken);
+        authRepository.updateRefreshToken(user.getId(), refreshToken);
     }
 
-    private UserRepository.ReissueProjection findReissueUser(String userKey) {
-        return userRepository.findReissueByUserKey(userKey)
+    private ReissueProjection findReissueUser(String userKey) {
+        return authRepository.findReissueByUserKey(userKey)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
     }
 
