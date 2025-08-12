@@ -7,8 +7,17 @@ import team1234.aiders.application.report.entity.Report;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface ReportRepository extends JpaRepository<Report, Long> {
+
+    Report findByDispatchId(Long dispatchId);
+
+    Optional<Report> findByIdAndFirestationId(Long id, Long firestationId);
+
+    boolean existsByIdAndFirestationId(Long id, Long firestationId);
+
+    void deleteByIdAndFirestationId(Long id, Long firestationId);
 
     @Query("""
         SELECT r.hospitalName, COUNT(r)

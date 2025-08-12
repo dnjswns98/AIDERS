@@ -1,14 +1,18 @@
+// src/utils/statusUtils.js
 
 export const getStatusColor = (status) => {
-  switch (status) {
+  // ✅ status 값을 소문자로 변환하여 비교합니다.
+  switch (status?.toLowerCase()) {
+    case "wait":
     case "standby":
+    case "completed": // 완료 후 대기 상태로 변경
       return "bg-green-500";
+    case "dispatch":
     case "dispatched":
       return "bg-yellow-500";
+    case "transfer":
     case "transporting":
       return "bg-orange-500";
-    case "completed":
-      return "bg-gray-500";
     case "maintenance":
       return "bg-red-500";
     default:
@@ -17,15 +21,18 @@ export const getStatusColor = (status) => {
 };
 
 export const getStatusText = (status) => {
-  switch (status) {
+  // ✅ status 값을 소문자로 변환하여 비교합니다.
+  switch (status?.toLowerCase()) {
+    case "wait":
     case "standby":
+    case "completed": // 완료 후 대기 상태로 변경
       return "대기중";
+    case "dispatch":
     case "dispatched":
       return "출동중";
+    case "transfer":
     case "transporting":
       return "이송중";
-    case "completed":
-      return "대기중";
     case "maintenance":
       return "정비중";
     default:

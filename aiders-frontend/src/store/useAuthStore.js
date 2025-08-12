@@ -68,6 +68,8 @@ export const useAuthStore = create(
           if (accessToken) {
             const tokenPayload = parseJwtToken(accessToken);
             if (tokenPayload) {
+              console.log("--- Aiders Gemini Debug ---");
+              console.log("Login successful. JWT Token Payload:", tokenPayload);
               normalizedUser = normalizeUserData(user, tokenPayload);
             }
           }

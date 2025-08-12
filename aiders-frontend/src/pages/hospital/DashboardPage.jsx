@@ -1,41 +1,11 @@
 import { useState, useEffect } from "react";
-import HospitalHeader from "../../components/hospital/HospitalHeader";
+// import HospitalHeader from "../../components/hospital/HospitalHeader";
 import { useAuthStore } from "../../store/useAuthStore";
 import useHospitalStore from "../../store/useHospitalStore";
 import useBedStore from "../../store/useBedStore";
 import BedCard from "../../components/hospital/BedCard";
-import TestHospitalCallPage from "./TestHospitalCallPage";
-import WaitingAmbulanceList from '../../components/hospital/WaitingAmbulanceList';
-
-const ambulanceData = [
-  {
-    id: 1,
-    vehicleNumber: "서울응급01호",
-    patientInfo: "남성, 65세",
-    condition: "심근경색 의심",
-    eta: "5분",
-    distance: "2.3km",
-    priority: "응급"
-  },
-  {
-    id: 2,
-    vehicleNumber: "서울응급02호", 
-    patientInfo: "여성, 45세",
-    condition: "교통사고",
-    eta: "12분",
-    distance: "4.1km",
-    priority: "긴급"
-  },
-  {
-    id: 3,
-    vehicleNumber: "서울응급03호",
-    patientInfo: "남성, 28세", 
-    condition: "의식잃음",
-    eta: "8분",
-    distance: "3.2km",
-    priority: "응급"
-  }
-];
+import WaitingAmbulanceList from "../../components/hospital/WaitingAmbulanceList";
+import RealTimeMap from "../../components/hospital/RealTimeMap";
 
 const InitialSetupModal = ({ onSave, onCancel }) => {
   const [generalTotal, setGeneralTotal] = useState(20);
@@ -52,51 +22,68 @@ const InitialSetupModal = ({ onSave, onCancel }) => {
       traumaTotalBed: traumaTotal,
       traumaAvailableBed: traumaTotal,
       neonatalTotalBed: neonatalTotal,
-      neonatalAvailableBed: neonatalTotal
+      neonatalAvailableBed: neonatalTotal,
     };
     onSave(data);
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        padding: '32px',
-        borderRadius: '8px',
-        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-        maxWidth: '400px',
-        width: '90%'
-      }}>
-        <h3 style={{
-          fontSize: '20px',
-          fontWeight: 'bold',
-          marginBottom: '16px',
-          textAlign: 'center',
-          color: '#1f2937'
-        }}>병상 정보 초기 설정</h3>
-        
-        <p style={{
-          color: '#6b7280',
-          marginBottom: '24px',
-          textAlign: 'center',
-          fontSize: '14px'
-        }}>
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          padding: "32px",
+          borderRadius: "8px",
+          boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
+          maxWidth: "400px",
+          width: "90%",
+        }}
+      >
+        <h3
+          style={{
+            fontSize: "20px",
+            fontWeight: "bold",
+            marginBottom: "16px",
+            textAlign: "center",
+            color: "#1f2937",
+          }}
+        >
+          병상 정보 초기 설정
+        </h3>
+
+        <p
+          style={{
+            color: "#6b7280",
+            marginBottom: "24px",
+            textAlign: "center",
+            fontSize: "14px",
+          }}
+        >
           병원의 병상 정보가 없습니다. 초기 병상 수를 설정해주세요.
         </p>
 
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '4px', fontSize: '14px', fontWeight: '500' }}>
+        <div style={{ marginBottom: "16px" }}>
+          <label
+            style={{
+              display: "block",
+              marginBottom: "4px",
+              fontSize: "14px",
+              fontWeight: "500",
+            }}
+          >
             일반병동
           </label>
           <input
@@ -105,17 +92,24 @@ const InitialSetupModal = ({ onSave, onCancel }) => {
             value={generalTotal}
             onChange={(e) => setGeneralTotal(parseInt(e.target.value) || 0)}
             style={{
-              width: '100%',
-              padding: '8px',
-              border: '1px solid #d1d5db',
-              borderRadius: '4px',
-              fontSize: '14px'
+              width: "100%",
+              padding: "8px",
+              border: "1px solid #d1d5db",
+              borderRadius: "4px",
+              fontSize: "14px",
             }}
           />
         </div>
 
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '4px', fontSize: '14px', fontWeight: '500' }}>
+        <div style={{ marginBottom: "16px" }}>
+          <label
+            style={{
+              display: "block",
+              marginBottom: "4px",
+              fontSize: "14px",
+              fontWeight: "500",
+            }}
+          >
             소아병동
           </label>
           <input
@@ -124,17 +118,24 @@ const InitialSetupModal = ({ onSave, onCancel }) => {
             value={pediatricTotal}
             onChange={(e) => setPediatricTotal(parseInt(e.target.value) || 0)}
             style={{
-              width: '100%',
-              padding: '8px',
-              border: '1px solid #d1d5db',
-              borderRadius: '4px',
-              fontSize: '14px'
+              width: "100%",
+              padding: "8px",
+              border: "1px solid #d1d5db",
+              borderRadius: "4px",
+              fontSize: "14px",
             }}
           />
         </div>
 
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '4px', fontSize: '14px', fontWeight: '500' }}>
+        <div style={{ marginBottom: "16px" }}>
+          <label
+            style={{
+              display: "block",
+              marginBottom: "4px",
+              fontSize: "14px",
+              fontWeight: "500",
+            }}
+          >
             외상센터
           </label>
           <input
@@ -143,17 +144,24 @@ const InitialSetupModal = ({ onSave, onCancel }) => {
             value={traumaTotal}
             onChange={(e) => setTraumaTotal(parseInt(e.target.value) || 0)}
             style={{
-              width: '100%',
-              padding: '8px',
-              border: '1px solid #d1d5db',
-              borderRadius: '4px',
-              fontSize: '14px'
+              width: "100%",
+              padding: "8px",
+              border: "1px solid #d1d5db",
+              borderRadius: "4px",
+              fontSize: "14px",
             }}
           />
         </div>
 
-        <div style={{ marginBottom: '24px' }}>
-          <label style={{ display: 'block', marginBottom: '4px', fontSize: '14px', fontWeight: '500' }}>
+        <div style={{ marginBottom: "24px" }}>
+          <label
+            style={{
+              display: "block",
+              marginBottom: "4px",
+              fontSize: "14px",
+              fontWeight: "500",
+            }}
+          >
             신생아실
           </label>
           <input
@@ -162,30 +170,32 @@ const InitialSetupModal = ({ onSave, onCancel }) => {
             value={neonatalTotal}
             onChange={(e) => setNeonatalTotal(parseInt(e.target.value) || 0)}
             style={{
-              width: '100%',
-              padding: '8px',
-              border: '1px solid #d1d5db',
-              borderRadius: '4px',
-              fontSize: '14px'
+              width: "100%",
+              padding: "8px",
+              border: "1px solid #d1d5db",
+              borderRadius: "4px",
+              fontSize: "14px",
             }}
           />
         </div>
 
-        <div style={{
-          display: 'flex',
-          gap: '8px',
-          justifyContent: 'flex-end'
-        }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            justifyContent: "flex-end",
+          }}
+        >
           <button
             onClick={onCancel}
             style={{
-              padding: '8px 16px',
-              backgroundColor: '#f3f4f6',
-              color: '#374151',
-              border: '1px solid #d1d5db',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px'
+              padding: "8px 16px",
+              backgroundColor: "#f3f4f6",
+              color: "#374151",
+              border: "1px solid #d1d5db",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "14px",
             }}
           >
             취소
@@ -193,13 +203,13 @@ const InitialSetupModal = ({ onSave, onCancel }) => {
           <button
             onClick={handleSave}
             style={{
-              padding: '8px 16px',
-              backgroundColor: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px'
+              padding: "8px 16px",
+              backgroundColor: "#3b82f6",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "14px",
             }}
           >
             설정 완료
@@ -210,42 +220,42 @@ const InitialSetupModal = ({ onSave, onCancel }) => {
   );
 };
 
-
 export default function DashboardPage() {
   const { user } = useAuthStore();
-  const { 
-    loading, 
-    error, 
+  const {
+    loading,
+    error,
     hospitalInfo,
     hospitalLocation,
-    bedInfo, 
+    bedInfo,
     fetchHospitalInfo,
     fetchHospitalLocation,
-    fetchBedInfo, 
-    decreaseBedManually, 
+    fetchBedInfo,
+    decreaseBedManually,
     increaseBedManually,
-    updateBedInfo
+    updateBedInfo,
   } = useHospitalStore();
-  
 
   const [beds, setBeds] = useState([]);
   const [isInitialSetup, setIsInitialSetup] = useState(false);
 
+  useEffect(() => {}, [hospitalInfo]);
+
+  useEffect(() => {}, [hospitalLocation]);
+
   useEffect(() => {
     const initializeData = async () => {
-      
       if (user?.userId) {
-        
         try {
           await fetchHospitalInfo();
         } catch (error) {
-          console.error('병원 정보 조회 실패:', error);
+          console.error("병원 정보 조회 실패:", error);
         }
 
         try {
           await fetchHospitalLocation();
         } catch (error) {
-          console.error('병원 위치 조회 실패:', error);
+          console.error("병원 위치 조회 실패:", error);
         }
 
         try {
@@ -254,9 +264,8 @@ export default function DashboardPage() {
             setIsInitialSetup(true);
           }
         } catch (error) {
-          console.error('병상 정보 조회 실패:', error);
+          console.error("병상 정보 조회 실패:", error);
         }
-
       }
     };
 
@@ -264,64 +273,63 @@ export default function DashboardPage() {
   }, [user]);
 
   useEffect(() => {
-  }, [hospitalInfo]);
-
-  useEffect(() => {
-  }, [hospitalLocation]);
-
-
-  useEffect(() => {
-    
     if (bedInfo) {
-      
       const transformedBeds = [
         {
           id: 1,
-          name: '일반병동',
-          category: 'GENERAL',
-          type: 'GENERAL',
+          name: "일반병동",
+          category: "GENERAL",
+          type: "GENERAL",
           totalBeds: bedInfo.generalTotalBed || 0,
-          currentPatients: (bedInfo.generalTotalBed || 0) - (bedInfo.generalAvailableBed || 0),
-          status: bedInfo.generalIsAvailable ? 'available' : 'disabled',
+          currentPatients:
+            (bedInfo.generalTotalBed || 0) - (bedInfo.generalAvailableBed || 0),
+          status: bedInfo.generalIsAvailable ? "available" : "disabled",
           isAvailable: bedInfo.generalIsAvailable,
-          isExist: bedInfo.generalIsExist
+          isExist: bedInfo.generalIsExist,
         },
         {
           id: 2,
-          name: '소아병동',
-          category: 'PEDIATRIC',
-          type: 'PEDIATRIC',
+          name: "소아병동",
+          category: "PEDIATRIC",
+          type: "PEDIATRIC",
           totalBeds: bedInfo.pediatricTotalBed || 0,
-          currentPatients: (bedInfo.pediatricTotalBed || 0) - (bedInfo.pediatricAvailableBed || 0),
-          status: bedInfo.pediatricIsAvailable ? 'available' : 'disabled',
+          currentPatients:
+            (bedInfo.pediatricTotalBed || 0) -
+            (bedInfo.pediatricAvailableBed || 0),
+          status: bedInfo.pediatricIsAvailable ? "available" : "disabled",
           isAvailable: bedInfo.pediatricIsAvailable,
-          isExist: bedInfo.pediatricIsExist
+          isExist: bedInfo.pediatricIsExist,
         },
         {
           id: 3,
-          name: '외상센터',
-          category: 'TRAUMA',
-          type: 'TRAUMA',
+          name: "외상센터",
+          category: "TRAUMA",
+          type: "TRAUMA",
           totalBeds: bedInfo.traumaTotalBed || 0,
-          currentPatients: (bedInfo.traumaTotalBed || 0) - (bedInfo.traumaAvailableBed || 0),
-          status: bedInfo.traumaIsAvailable ? 'available' : 'disabled',
+          currentPatients:
+            (bedInfo.traumaTotalBed || 0) - (bedInfo.traumaAvailableBed || 0),
+          status: bedInfo.traumaIsAvailable ? "available" : "disabled",
           isAvailable: bedInfo.traumaIsAvailable,
-          isExist: bedInfo.traumaIsExist
+          isExist: bedInfo.traumaIsExist,
         },
         {
           id: 4,
-          name: '신생아실',
-          category: 'NEONATAL',
-          type: 'NEONATAL',
+          name: "신생아실",
+          category: "NEONATAL",
+          type: "NEONATAL",
           totalBeds: bedInfo.neonatalTotalBed || 0,
-          currentPatients: (bedInfo.neonatalTotalBed || 0) - (bedInfo.neonatalAvailableBed || 0),
-          status: bedInfo.neonatalIsAvailable ? 'available' : 'disabled',
+          currentPatients:
+            (bedInfo.neonatalTotalBed || 0) -
+            (bedInfo.neonatalAvailableBed || 0),
+          status: bedInfo.neonatalIsAvailable ? "available" : "disabled",
           isAvailable: bedInfo.neonatalIsAvailable,
-          isExist: bedInfo.neonatalIsExist
-        }
+          isExist: bedInfo.neonatalIsExist,
+        },
       ];
-      
-      const visibleBeds = transformedBeds.filter(bed => bed.isExist !== false);
+
+      const visibleBeds = transformedBeds.filter(
+        (bed) => bed.isExist !== false
+      );
       setBeds(visibleBeds);
     } else {
     }
@@ -329,10 +337,9 @@ export default function DashboardPage() {
 
   const handleBedUpdate = async (bedType, updateType, value) => {
     try {
-      if (updateType === 'current') {
-
+      if (updateType === "current") {
         let result = { success: true };
-        
+
         if (value > 0) {
           result = await decreaseBedManually(bedType);
         } else if (value < 0) {
@@ -340,279 +347,358 @@ export default function DashboardPage() {
         }
 
         if (!result?.success) {
-          alert('베드 환자 수 변경에 실패했습니다: ' + (result?.error || '알 수 없는 오류'));
+          alert(
+            "베드 환자 수 변경에 실패했습니다: " +
+              (result?.error || "알 수 없는 오류")
+          );
         }
-      } else if (updateType === 'total') {
+      } else if (updateType === "total") {
         if (value < 0) {
-          alert('베드 수는 0보다 작을 수 없습니다.');
+          alert("베드 수는 0보다 작을 수 없습니다.");
           return;
         }
 
         const updateData = {};
-        const currentBed = beds.find(b => b.type === bedType);
-        
-        if (bedType === 'GENERAL') {
+        const currentBed = beds.find((b) => b.type === bedType);
+
+        if (bedType === "GENERAL") {
           updateData.generalTotalBed = value;
-          updateData.generalAvailableBed = Math.max(0, value - (currentBed?.currentPatients || 0));
-        } else if (bedType === 'PEDIATRIC') {
+          updateData.generalAvailableBed = Math.max(
+            0,
+            value - (currentBed?.currentPatients || 0)
+          );
+        } else if (bedType === "PEDIATRIC") {
           updateData.pediatricTotalBed = value;
-          updateData.pediatricAvailableBed = Math.max(0, value - (currentBed?.currentPatients || 0));
-        } else if (bedType === 'TRAUMA') {
+          updateData.pediatricAvailableBed = Math.max(
+            0,
+            value - (currentBed?.currentPatients || 0)
+          );
+        } else if (bedType === "TRAUMA") {
           updateData.traumaTotalBed = value;
-          updateData.traumaAvailableBed = Math.max(0, value - (currentBed?.currentPatients || 0));
-        } else if (bedType === 'NEONATAL') {
+          updateData.traumaAvailableBed = Math.max(
+            0,
+            value - (currentBed?.currentPatients || 0)
+          );
+        } else if (bedType === "NEONATAL") {
           updateData.neonatalTotalBed = value;
-          updateData.neonatalAvailableBed = Math.max(0, value - (currentBed?.currentPatients || 0));
+          updateData.neonatalAvailableBed = Math.max(
+            0,
+            value - (currentBed?.currentPatients || 0)
+          );
         }
-        
 
         const result = await updateBedInfo(updateData);
         if (!result?.success) {
-          alert('베드 정보 업데이트에 실패했습니다: ' + (result?.error || '알 수 없는 오류'));
+          alert(
+            "베드 정보 업데이트에 실패했습니다: " +
+              (result?.error || "알 수 없는 오류")
+          );
         }
-      } else if (updateType === 'status') {
+      } else if (updateType === "status") {
       }
     } catch (error) {
-      console.error('베드 업데이트 중 오류 발생:', error);
-      alert('베드 업데이트 중 오류가 발생했습니다: ' + error.message);
+      console.error("베드 업데이트 중 오류 발생:", error);
+      alert("베드 업데이트 중 오류가 발생했습니다: " + error.message);
     }
   };
 
-  const handleInitialSetup = async (initialData) => {
-    const convertedData = {
-      generalTotalBed: initialData.generalTotalBed || 0,
-      generalAvailableBed: initialData.generalAvailableBed || 0,
-      pediatricTotalBed: initialData.pediatricTotalBed || 0,
-      pediatricAvailableBed: initialData.pediatricAvailableBed || 0,
-      traumaTotalBed: initialData.traumaTotalBed || 0,
-      traumaAvailableBed: initialData.traumaAvailableBed || 0,
-      neonatalTotalBed: initialData.neonatalTotalBed || 0,
-      neonatalAvailableBed: initialData.neonatalAvailableBed || 0
-    };
-    
-    const result = await updateBedInfo(convertedData);
-    if (result.success) {
-      setIsInitialSetup(false);
-      alert('병상 정보가 설정되었습니다.');
-    } else {
-      alert('병상 정보 설정에 실패했습니다: ' + result.error);
-    }
-  };
+  // const handleInitialSetup = async (initialData) => {
+  //   const convertedData = {
+  //     generalTotalBed: initialData.generalTotalBed || 0,
+  //     generalAvailableBed: initialData.generalAvailableBed || 0,
+  //     pediatricTotalBed: initialData.pediatricTotalBed || 0,
+  //     pediatricAvailableBed: initialData.pediatricAvailableBed || 0,
+  //     traumaTotalBed: initialData.traumaTotalBed || 0,
+  //     traumaAvailableBed: initialData.traumaAvailableBed || 0,
+  //     neonatalTotalBed: initialData.neonatalTotalBed || 0,
+  //     neonatalAvailableBed: initialData.neonatalAvailableBed || 0
+  //   };
+
+  //   const result = await updateBedInfo(convertedData);
+  //   if (result.success) {
+  //     setIsInitialSetup(false);
+  //     alert('병상 정보가 설정되었습니다.');
+  //   } else {
+  //     alert('병상 정보 설정에 실패했습니다: ' + result.error);
+  //   }
+  // };
 
   const getStatistics = () => {
     const totalBeds = beds.reduce((sum, bed) => sum + bed.totalBeds, 0);
-    const totalPatients = beds.reduce((sum, bed) => sum + bed.currentPatients, 0);
+    const totalPatients = beds.reduce(
+      (sum, bed) => sum + bed.currentPatients,
+      0
+    );
     const availableBeds = totalBeds - totalPatients;
-    
+
     return { totalBeds, totalPatients, availableBeds };
   };
 
   const stats = getStatistics();
 
   return (
-    <>
-      <HospitalHeader />
-      <TestHospitalCallPage />
-      
-      <main style={{ 
-        paddingTop: '0', 
-        height: '100vh',
-        backgroundColor: '#f3f4f6',
-        margin: '0'
-      }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '380px 1fr 400px',
-          gap: '0',
-          height: '100vh',
-          width: '100vw'
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRight: '1px solid #e5e7eb',
-            padding: '20px',
-            paddingTop: '36px',
-            overflow: 'auto'
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: '16px',
-              paddingBottom: '12px',
-              borderBottom: '2px solid #e5e7eb'
-            }}>
-              <div style={{
-                fontSize: '20px',
-                marginRight: '8px'
-              }}>🏥</div>
-              <div>
-                <h3 style={{
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  color: '#1f2937',
-                  margin: 0
-                }}>병상 현황</h3>
-                {hospitalInfo && (
-                  <p style={{
-                    fontSize: '12px',
-                    color: '#6b7280',
-                    margin: '2px 0 0 0'
-                  }}>
-                    {hospitalInfo.name}
-                  </p>
-                )}
-              </div>
+    <main
+      style={{
+        paddingTop: "0",
+        height: "100vh",
+        backgroundColor: "#f3f4f6",
+        margin: "0",
+      }}
+    >
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "300px 1fr 350px",
+          gap: "0",
+          height: "100%",
+          width: "100%",
+          minHeight: "100vh",
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: "white",
+            borderRight: "1px solid #e5e7eb",
+            padding: "16px",
+            overflow: "auto",
+            height: "100vh",
+            minHeight: "100vh",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              marginBottom: "16px",
+              paddingBottom: "12px",
+              borderBottom: "2px solid #e5e7eb",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "20px",
+                marginRight: "8px",
+              }}
+            >
+              🏥
             </div>
-
-            <div style={{
-              padding: '12px',
-              backgroundColor: '#f0f9ff',
-              borderRadius: '8px',
-              border: '1px solid #bfdbfe',
-              marginBottom: '16px'
-            }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '13px',
-                marginBottom: '4px'
-              }}>
-                <span style={{ color: '#0369a1', fontWeight: '600' }}>전체 현황</span>
-              </div>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '12px',
-                color: '#0369a1'
-              }}>
-                <span>총 병상: {stats.totalBeds}</span>
-                <span>총 환자: {stats.totalPatients}</span>
-                <span>여유: {stats.availableBeds}</span>
-              </div>
-            </div>
-            
-            <div style={{ 
-              display: 'flex', 
-              flexDirection: 'column',
-              maxHeight: 'calc(100vh - 280px)',
-              overflowY: 'auto'
-            }}>
-              {loading ? (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
-                  베드 정보를 불러오는 중...
-                </div>
-              ) : error ? (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#ef4444' }}>
-                  오류: {error}
-                </div>
-              ) : beds.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
-                  베드 정보가 없습니다.
-                </div>
-              ) : (
-                beds.map((bed) => (
-                  <BedCard 
-                    key={bed.id} 
-                    bed={bed} 
-                    onUpdate={handleBedUpdate}
-                    compact={true}
-                    readonly={true}
-                  />
-                ))
+            <div>
+              <h3
+                style={{
+                  fontSize: "16px",
+                  fontWeight: "bold",
+                  color: "#1f2937",
+                  margin: 0,
+                }}
+              >
+                병상 현황
+              </h3>
+              {hospitalInfo && (
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#6b7280",
+                    margin: "2px 0 0 0",
+                  }}
+                >
+                  {hospitalInfo.name}
+                </p>
               )}
             </div>
           </div>
 
-          <div style={{
-            backgroundColor: '#f8fafc',
-            padding: '20px',
-            paddingTop: '36px',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: '20px',
-              paddingBottom: '16px',
-              borderBottom: '2px solid #e5e7eb'
-            }}>
-              <div style={{
-                fontSize: '24px',
-                marginRight: '12px'
-              }}>🗺️</div>
-              <div>
-                <h3 style={{
-                  fontSize: '18px',
-                  fontWeight: 'bold',
-                  color: '#1f2937',
-                  margin: 0
-                }}>실시간 위치</h3>
-                {hospitalInfo && (
-                  <p style={{
-                    fontSize: '13px',
-                    color: '#6b7280',
-                    margin: '4px 0 0 0'
-                  }}>
-                    📍 {hospitalInfo.address}
-                  </p>
-                )}
-                {hospitalLocation && (
-                  <p style={{
-                    fontSize: '12px',
-                    color: '#9ca3af',
-                    margin: '2px 0 0 0'
-                  }}>
-                    🌐 위도: {hospitalLocation.latitude}, 경도: {hospitalLocation.longitude}
-                  </p>
-                )}
-              </div>
+          <div
+            style={{
+              padding: "12px",
+              backgroundColor: "#f0f9ff",
+              borderRadius: "8px",
+              border: "1px solid #bfdbfe",
+              marginBottom: "16px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "13px",
+                marginBottom: "4px",
+              }}
+            >
+              <span style={{ color: "#0369a1", fontWeight: "600" }}>
+                전체 현황
+              </span>
             </div>
-            
-            <div style={{
-              flex: 1,
-              backgroundColor: '#f1f5f9',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '2px dashed #cbd5e1',
-              minHeight: '600px'
-            }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  fontSize: '64px',
-                  marginBottom: '16px'
-                }}>🗺️</div>
-                <p style={{
-                  color: '#64748b',
-                  fontSize: '16px',
-                  margin: 0
-                }}>
-                  지도 API 연동 예정
-                </p>
-                <p style={{
-                  color: '#94a3b8',
-                  fontSize: '14px',
-                  marginTop: '8px'
-                }}>
-                  {hospitalInfo ? `${hospitalInfo.name} 중심 실시간 구급차 위치` : '실시간 구급차 위치'}
-                </p>
-              </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "12px",
+                color: "#0369a1",
+              }}
+            >
+              <span>총 병상: {stats.totalBeds}</span>
+              <span>총 환자: {stats.totalPatients}</span>
+              <span>여유: {stats.availableBeds}</span>
             </div>
           </div>
 
-          <div style={{
-            backgroundColor: 'white',
-            borderLeft: '1px solid #e5e7eb',
-            padding: '20px',
-            paddingTop: '36px',
-            overflow: 'auto'
-          }}>
-            <WaitingAmbulanceList />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              flex: 1,
+              overflowY: "auto",
+            }}
+          >
+            {loading ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "20px",
+                  color: "#6b7280",
+                }}
+              >
+                베드 정보를 불러오는 중...
+              </div>
+            ) : error ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "20px",
+                  color: "#ef4444",
+                }}
+              >
+                오류: {error}
+              </div>
+            ) : beds.length === 0 ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "20px",
+                  color: "#6b7280",
+                }}
+              >
+                베드 정보가 없습니다.
+              </div>
+            ) : (
+              beds.map((bed) => (
+                <BedCard
+                  key={bed.id}
+                  bed={bed}
+                  onUpdate={handleBedUpdate}
+                  compact={true}
+                  readonly={true}
+                />
+              ))
+            )}
           </div>
         </div>
-      </main>
-    </>
+
+        <div
+          style={{
+            backgroundColor: "#f8fafc",
+            padding: "16px",
+            display: "flex",
+            flexDirection: "column",
+            height: "100vh",
+            minHeight: "100vh",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              marginBottom: "12px",
+              paddingBottom: "12px",
+              borderBottom: "2px solid #e5e7eb",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "24px",
+                marginRight: "12px",
+              }}
+            >
+              🗺️
+            </div>
+            <div>
+              <h3
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "bold",
+                  color: "#1f2937",
+                  margin: 0,
+                }}
+              >
+                실시간 위치
+              </h3>
+              {hospitalInfo && (
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "#6b7280",
+                    margin: "4px 0 0 0",
+                  }}
+                >
+                  📍 {hospitalInfo.address}
+                </p>
+              )}
+              {hospitalLocation && (
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#9ca3af",
+                    margin: "2px 0 0 0",
+                  }}
+                >
+                  🌐 위도: {hospitalLocation.latitude}, 경도:{" "}
+                  {hospitalLocation.longitude}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div
+            style={{
+              flex: 1,
+              borderRadius: "8px",
+              minHeight: "400px",
+            }}
+          >
+            <RealTimeMap 
+              hospitalLocation={{
+                latitude: hospitalLocation?.latitude,
+                longitude: hospitalLocation?.longitude,
+                name: hospitalInfo?.name
+              }}
+            />
+          </div>
+        </div>
+
+        <div
+          style={{
+            backgroundColor: "#f9fafb",
+            borderLeft: "1px solid #e5e7eb",
+            overflow: "auto",
+            height: "100vh",
+            minHeight: "100vh",
+            display: "flex",
+            flexDirection: "column",
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              borderRadius: "12px",
+              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+              height: "100%",
+            }}
+          >
+            <WaitingAmbulanceList compact={true} showCallButton={false} />
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }

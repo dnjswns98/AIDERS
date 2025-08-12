@@ -5,7 +5,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import AmbulanceLayout from "../../components/Emergency/Layout/AmbulanceLayout";
 import useEmergencyStore from "../../store/useEmergencyStore";
 import { useAuthStore } from "../../store/useAuthStore";
-import PatientDetailInput from "../../components/Emergency/PatientInput/PatientDetailInput";
+import PatientBasicInfoForm from "../../components/Emergency/PatientInput/PatientBasicInfoForm";
+import HandwritingTextInput from "../../components/Emergency/HandwritingTextInput";
 import { useCRNNModel } from "../../hooks/useCRNNModel";
 
 const safeGetValue = (value, fallback = "") => {
@@ -84,11 +85,12 @@ export default function AmbulancePatientInputPage() {
   const { state } = useLocation();
   const isEditMode = state?.isEditMode || false;
 
-  const {
-    selectedAmbulance,
-    updatePatientInfo,
-    fetchAmbulances,
-    debugCurrentState
+  const { 
+    selectedAmbulance, 
+    updatePatientInfo, 
+    selectMyAmbulance, // [!code ++]
+    // fetchAmbulances, // [!code --]
+    debugCurrentState 
   } = useEmergencyStore();
 
   const { user } = useAuthStore();
@@ -111,6 +113,7 @@ export default function AmbulancePatientInputPage() {
     vitalSigns: "",
   });
 
+  const mainContentRef = useRef(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   // KTAS 등급 옵션
@@ -153,201 +156,75 @@ export default function AmbulancePatientInputPage() {
     initializeModel();
   }, [initializeModel]);
 
+  // [!code focus start]
+  // 🔥 핵심 수정: 페이지 로딩 시 전체 목록 대신 내 정보만 선택
   useEffect(() => {
-    debugCurrentState();
+    // selectedAmbulance 상태가 비어있다면,
+    // 로그인 정보를 바탕으로 내 구급차 정보를 설정합니다.
     if (!selectedAmbulance) {
-      fetchAmbulances();
-    } else if (selectedAmbulance.id !== user?.userId) {
-      fetchAmbulances();
+      selectMyAmbulance();
     }
-  }, []);
+  }, [selectedAmbulance, selectMyAmbulance]);
+  // [!code focus end]
 
   useEffect(() => {
     if (isEditMode && selectedAmbulance && !isDataLoaded) {
       const patientInfo = selectedAmbulance.patientInfo || {};
       const patientDetails = selectedAmbulance.patientDetails || {};
-
-      const extractedKtas = safeGetKtasLevel(patientDetails.ktasLevel);
-      const extractedDepartment = safeGetValue(patientDetails.department);
-      const extractedGender = safeGetValue(patientInfo.gender);
-      const extractedAgeRange = safeGetValue(patientDetails.ageRange);
-      const extractedName = safeGetValue(patientInfo.name);
-      const extractedChiefComplaint = safeGetValue(patientDetails.chiefComplaint);
-      const extractedTreatmentDetails = safeGetValue(patientDetails.treatmentDetails);
-      const extractedFamilyHistory = safeGetComplexObject(patientDetails.familyHistory, 'father');
-      const extractedPastHistory = safeGetComplexObject(patientDetails.pastHistory, 'hypertension');
-      const extractedMedications = safeGetMedications(patientDetails.medications);
-      const extractedVitalSigns = safeGetComplexObject(patientDetails.vitalSigns, 'bloodPressure');
-
+      
       const newFormData = {
-        ktasLevel: extractedKtas,
-        department: extractedDepartment,
-        gender: extractedGender,
-        ageRange: extractedAgeRange,
-        name: extractedName,
-        chiefComplaint: extractedChiefComplaint,
-        treatmentDetails: extractedTreatmentDetails,
-        familyHistory: extractedFamilyHistory,
-        pastHistory: extractedPastHistory,
-        medications: extractedMedications,
-        vitalSigns: extractedVitalSigns,
+        ktasLevel: safeGetKtasLevel(patientDetails.ktasLevel),
+        department: safeGetValue(patientDetails.department),
+        gender: safeGetValue(patientInfo.gender),
+        ageRange: safeGetValue(patientDetails.ageRange),
+        name: safeGetValue(patientInfo.name),
+        chiefComplaint: safeGetValue(patientDetails.chiefComplaint),
+        treatmentDetails: safeGetValue(patientDetails.treatmentDetails),
+        familyHistory: safeGetComplexObject(patientDetails.familyHistory, 'father'),
+        pastHistory: safeGetComplexObject(patientDetails.pastHistory, 'hypertension'),
+        medications: safeGetMedications(patientDetails.medications),
+        vitalSigns: safeGetComplexObject(patientDetails.vitalSigns, 'bloodPressure'),
       };
-
-      const hasValidData = Object.values(newFormData).some(value =>
-        value && value.trim && value.trim() !== ""
-      );
-
-      if (hasValidData) {
-        setFormData(newFormData);
-        // 편집 모드일 때는 완료 단계로 이동
-        if (newFormData.ktasLevel && newFormData.department && newFormData.gender && newFormData.ageRange) {
-          setCurrentStep(4);
-        }
-        setIsDataLoaded(true);
-      } else {
-        setFormData({
-          ktasLevel: "",
-          department: "",
-          gender: "",
-          ageRange: "",
-          name: "",
-          chiefComplaint: "",
-          treatmentDetails: "",
-          familyHistory: "",
-          pastHistory: "",
-          medications: "",
-          vitalSigns: "",
-        });
-        setIsDataLoaded(true);
-      }
+      
+      setFormData(newFormData);
+      setIsDataLoaded(true);
+      
     } else if (!isEditMode && !isDataLoaded) {
       setFormData({
-        ktasLevel: "",
-        department: "",
-        gender: "",
-        ageRange: "",
-        name: "",
-        chiefComplaint: "",
-        treatmentDetails: "",
-        familyHistory: "",
-        pastHistory: "",
-        medications: "",
-        vitalSigns: "",
+        ktasLevel: "", department: "", gender: "", ageRange: "", name: "",
+        chiefComplaint: "", treatmentDetails: "", familyHistory: "",
+        pastHistory: "", medications: "", vitalSigns: "",
       });
       setIsDataLoaded(true);
     }
   }, [isEditMode, selectedAmbulance, isDataLoaded]);
 
-  // 단계별 선택 핸들러
-  const handleStepSelection = (step, value) => {
-    const fieldMap = {
-      0: 'ktasLevel',
-      1: 'department', 
-      2: 'gender',
-      3: 'ageRange'
-    };
-
-    setFormData(prev => ({
-      ...prev,
-      [fieldMap[step]]: value
-    }));
-
-    // 다음 단계로 자동 이동
-    if (step < 3) {
-      setTimeout(() => {
-        setCurrentStep(step + 1);
-      }, 300);
-    } else {
-      // 마지막 단계 완료
-      setTimeout(() => {
-        setCurrentStep(4);
-      }, 300);
-    }
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // 단계 클릭으로 해당 단계로 이동
-  const goToStep = (step) => {
-    setCurrentStep(step);
-  };
+  const handleHandwritingInputChange = useCallback((fieldName) => (value) => {
+    setFormData((prev) => ({ ...prev, [fieldName]: value }));
+  }, []);
 
-  // 병원 매칭 (기본 정보만으로)
-  const handleHospitalMatching = async () => {
-    if (!formData.ktasLevel || !formData.department) {
-      alert("KTAS와 진료과목은 필수입니다!");
-      return;
-    }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-    await submitBasicInfo();
-  };
-
-  // 선택사항 입력 후 병원 매칭
-  const handleDetailedInput = () => {
-    // 선택사항 입력 화면으로 이동하면서 병원 매칭도 진행
-    setCurrentStep(5); // 상세 입력 단계
-  };
-
-  const submitBasicInfo = async () => {
     if (!selectedAmbulance || !selectedAmbulance.id) {
-      try {
-        await fetchAmbulances();
-        setTimeout(() => {
-          const currentState = useEmergencyStore.getState();
-          if (!currentState.selectedAmbulance) {
-            alert("구급차 정보를 불러올 수 없습니다. 로그인 상태를 확인하고 다시 시도해주세요.");
-            return;
-          }
-          submitBasicInfo();
-        }, 1000);
-      } catch (error) {
-        console.error("fetchAmbulances 재호출 실패:", error);
-        alert("구급차 정보 조회에 실패했습니다. 페이지를 새로고침 해주세요.");
-      }
+      alert("구급차 정보를 불러올 수 없습니다. 로그인 상태를 확인하고 다시 시도해주세요.");
       return;
     }
 
-    if (selectedAmbulance.id !== user?.userId) {
-      alert("사용자 정보와 구급차 정보가 일치하지 않습니다. 다시 로그인해주세요.");
+    if (
+      !formData.ktasLevel || formData.ktasLevel.includes("선택") ||
+      !formData.department || formData.department.includes("선택")
+    ) {
+      alert("KTAS(중증도)와 진료 과목은 필수 항목입니다.");
       return;
     }
 
-    let updatedInfo;
-    if (isEditMode) {
-      const existingPatientInfo = selectedAmbulance.patientInfo || {};
-      const existingPatientDetails = selectedAmbulance.patientDetails || {};
-
-      updatedInfo = {
-        patientInfo: {
-          ...existingPatientInfo,
-          gender: formData.gender || existingPatientInfo.gender,
-          name: formData.name || existingPatientInfo.name,
-          age: formData.ageRange || existingPatientInfo.age,
-        },
-        patientDetails: {
-          ...existingPatientDetails,
-          ktasLevel: `${formData.ktasLevel}등급`,
-          department: formData.department,
-          ageRange: formData.ageRange || existingPatientDetails.ageRange,
-          chiefComplaint: formData.chiefComplaint || existingPatientDetails.chiefComplaint,
-          treatmentDetails: formData.treatmentDetails || existingPatientDetails.treatmentDetails,
-          familyHistory: {
-            ...(existingPatientDetails.familyHistory || {}),
-            father: formData.familyHistory || safeGetComplexObject(existingPatientDetails.familyHistory, 'father'),
-          },
-          pastHistory: {
-            ...(existingPatientDetails.pastHistory || {}),
-            hypertension: formData.pastHistory || safeGetComplexObject(existingPatientDetails.pastHistory, 'hypertension'),
-          },
-          medications: formData.medications
-            ? formData.medications.split(",").map((name) => ({ name: name.trim(), indication: "" })).filter((m) => m.name)
-            : (existingPatientDetails.medications || []),
-          vitalSigns: {
-            ...(existingPatientDetails.vitalSigns || {}),
-            bloodPressure: formData.vitalSigns || safeGetComplexObject(existingPatientDetails.vitalSigns, 'bloodPressure'),
-          },
-        },
-      };
-    } else {
-      updatedInfo = {
+    const updatedInfo = {
         patientInfo: {
           gender: formData.gender,
           name: formData.name,
@@ -362,305 +239,29 @@ export default function AmbulancePatientInputPage() {
           familyHistory: { father: formData.familyHistory },
           pastHistory: { hypertension: formData.pastHistory },
           medications: formData.medications
-            ? formData.medications.split(",").map((name) => ({ name: name.trim(), indication: "" })).filter((m) => m.name)
-            : [],
+            .split(",").map((name) => ({ name: name.trim(), indication: "" })).filter((m) => m.name),
           vitalSigns: { bloodPressure: formData.vitalSigns },
         },
-      };
-    }
+    };
 
     try {
       await updatePatientInfo(selectedAmbulance.id, updatedInfo);
       navigate("/emergency/", { state: { formData } });
     } catch (error) {
       console.error("[handleSubmit] updatePatientInfo 호출 실패:", error);
-      if (error.message && error.message.includes("인증")) {
-        alert("인증이 만료되었습니다. 다시 로그인해주세요.");
-      } else if (error.message && error.message.includes("네트워크")) {
-        alert("네트워크 문제가 발생했습니다. 인터넷 연결을 확인해주세요.");
-      } else {
-        alert("저장에 실패했습니다. 입력 정보를 확인하고 다시 시도해주세요.");
-      }
+      alert("저장에 실패했습니다. 입력 정보를 확인하고 다시 시도해주세요.");
     }
   };
 
-  const handleDetailSubmit = async (detailData) => {
-    // 상세 정보와 함께 저장하고 병원 매칭
-    setFormData(prev => ({ ...prev, ...detailData }));
-    await submitBasicInfo();
-  };
-
-  // 진행 표시줄 렌더링
-  const renderProgressBar = () => (
-    <div className="mb-6">
-      <div className="flex justify-between items-center mb-4">
-        {steps.map((step, index) => (
-          <div
-            key={index}
-            onClick={() => goToStep(index)}
-            className={`flex-1 text-center cursor-pointer transition-all duration-300 ${
-              index === currentStep 
-                ? 'text-blue-600 font-bold' 
-                : index < currentStep 
-                  ? 'text-green-600 font-medium' 
-                  : 'text-gray-400'
-            }`}
-          >
-            <div className={`w-8 h-8 mx-auto mb-2 rounded-full flex items-center justify-center text-white text-sm font-bold ${
-              index === currentStep 
-                ? 'bg-blue-600' 
-                : index < currentStep 
-                  ? 'bg-green-600' 
-                  : 'bg-gray-300'
-            }`}>
-              {index < currentStep ? '✓' : index + 1}
-            </div>
-            <div className="text-xs">{step}</div>
-          </div>
-        ))}
-      </div>
-      <div className="w-full bg-gray-200 rounded-full h-2">
-        <div 
-          className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-          style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
-        ></div>
-      </div>
-    </div>
-  );
-
-  // KTAS 선택 화면
-  const renderKtasStep = () => (
-    <div className="text-center">
-      <h2 className="text-2xl font-bold mb-2 text-gray-800">중증도 분류 (KTAS)</h2>
-      <p className="text-gray-600 mb-8">환자의 중증도를 선택해주세요</p>
-      
-      <div className="space-y-4">
-        {ktasOptions.map((option) => (
-          <button
-            key={option.level}
-            onClick={() => handleStepSelection(0, option.level)}
-            className={`w-full p-6 rounded-xl border-2 transition-all duration-300 ${
-              formData.ktasLevel === option.level
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:border-gray-300'
-            } ${option.color} text-white hover:shadow-lg transform hover:scale-105`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="text-left">
-                <div className="text-xl font-bold">{option.label}</div>
-                <div className="text-sm opacity-90">{option.description} 이내</div>
-              </div>
-              <div className="text-3xl font-bold">{option.level}</div>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  // 진료과목 선택 화면
-  const renderDepartmentStep = () => (
-    <div className="text-center">
-      <h2 className="text-2xl font-bold mb-2 text-gray-800">진료과목</h2>
-      <p className="text-gray-600 mb-8">해당하는 진료과목을 선택해주세요</p>
-      
-      <div className="grid grid-cols-2 gap-3">
-        {departmentOptions.map((dept) => (
-          <button
-            key={dept}
-            onClick={() => handleStepSelection(1, dept)}
-            className={`p-4 rounded-lg border-2 transition-all duration-300 ${
-              formData.department === dept
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                : 'border-gray-200 hover:border-gray-300 text-gray-700'
-            } hover:shadow-md transform hover:scale-105`}
-          >
-            <div className="font-medium">{dept}</div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  // 성별 선택 화면
-  const renderGenderStep = () => (
-    <div className="text-center">
-      <h2 className="text-2xl font-bold mb-2 text-gray-800">성별</h2>
-      <p className="text-gray-600 mb-8">환자의 성별을 선택해주세요</p>
-      
-      <div className="grid grid-cols-2 gap-6">
-        {genderOptions.map((gender) => (
-          <button
-            key={gender.value}
-            onClick={() => handleStepSelection(2, gender.value)}
-            className={`p-8 rounded-xl border-2 transition-all duration-300 ${
-              formData.gender === gender.value
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                : 'border-gray-200 hover:border-gray-300 text-gray-700'
-            } hover:shadow-lg transform hover:scale-105`}
-          >
-            <div className="text-4xl mb-2">{gender.icon}</div>
-            <div className="text-xl font-medium">{gender.label}</div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  // 연령대 선택 화면
-  const renderAgeRangeStep = () => (
-    <div className="text-center">
-      <h2 className="text-2xl font-bold mb-2 text-gray-800">연령대</h2>
-      <p className="text-gray-600 mb-8">환자의 연령대를 선택해주세요</p>
-      
-      <div className="space-y-3">
-        {ageRangeOptions.map((age) => (
-          <button
-            key={age}
-            onClick={() => handleStepSelection(3, age)}
-            className={`w-full p-4 rounded-lg border-2 transition-all duration-300 ${
-              formData.ageRange === age
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                : 'border-gray-200 hover:border-gray-300 text-gray-700'
-            } hover:shadow-md transform hover:scale-105`}
-          >
-            <div className="font-medium">{age}</div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  // 완료 화면 (선택지 제공)
-  const renderCompletionStep = () => (
-    <div className="text-center">
-      <h2 className="text-2xl font-bold mb-2 text-gray-800">기본 정보 입력 완료</h2>
-      <p className="text-gray-600 mb-8">다음 단계를 선택해주세요</p>
-      
-      {/* 입력된 정보 요약 */}
-      <div className="bg-gray-50 p-6 rounded-lg mb-8">
-        <h3 className="font-bold mb-4">입력된 정보</h3>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="font-medium">KTAS:</span> {formData.ktasLevel}등급
-          </div>
-          <div>
-            <span className="font-medium">진료과목:</span> {formData.department}
-          </div>
-          <div>
-            <span className="font-medium">성별:</span> {formData.gender}
-          </div>
-          <div>
-            <span className="font-medium">연령대:</span> {formData.ageRange}
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <button
-          onClick={handleHospitalMatching}
-          className="w-full p-6 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
-        >
-          🏥 병원 매칭하기
-          <div className="text-sm font-normal opacity-90 mt-1">기본 정보로 바로 병원을 찾습니다</div>
-        </button>
-        
-        <button
-          onClick={handleDetailedInput}
-          className="w-full p-6 bg-green-600 text-white rounded-xl font-bold text-lg hover:bg-green-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
-        >
-          📝 선택사항 입력하기
-          <div className="text-sm font-normal opacity-90 mt-1">추가 정보를 입력한 후 병원을 찾습니다</div>
-        </button>
-      </div>
-    </div>
-  );
-
-  // 상세 입력 화면
-  const renderDetailInputStep = () => (
-    <div>
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold mb-2 text-gray-800">상세 정보 입력 (선택사항)</h2>
-        <p className="text-gray-600">추가 정보를 입력하면 더 정확한 병원 매칭이 가능합니다</p>
-      </div>
-      
-      <PatientDetailInput
-        formData={formData}
-        onInputChange={(field, value) => setFormData(prev => ({ ...prev, [field]: value }))}
-        onSubmit={handleDetailSubmit}
-        isModelLoaded={isModelLoaded}
-        isProcessing={isProcessing}
-      />
-    </div>
-  );
-
-  // 하단 고정 버튼 영역 렌더링
-  const renderBottomActions = () => {
-    // 상세 입력 단계에서는 하단 버튼 숨김
-    if (currentStep === 5) return null;
-    
-    // 완료 단계에서는 하단 버튼 숨김 (이미 위에 버튼들이 있음)
-    if (currentStep === 4) return null;
-
-    return (
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 z-50">
-        <div className="max-w-2xl mx-auto">
-          {/* 필수 정보(KTAS + 진료과목) 입력 완료 시 병원 매칭 버튼 표시 */}
-          {isEssentialDataComplete && (
-            <div className="space-y-3">
-              {/* 입력된 필수 정보 미니 요약 */}
-              <div className="text-center text-sm text-gray-600 mb-3">
-                <span className="font-medium text-blue-600">
-                  KTAS {formData.ktasLevel}등급 • {formData.department}
-                </span>
-                {formData.gender && <span> • {formData.gender}</span>}
-                {formData.ageRange && <span> • {formData.ageRange}</span>}
-              </div>
-              
-              <button
-                onClick={handleHospitalMatching}
-                className="w-full p-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 transition-all duration-300 shadow-lg"
-              >
-                🏥 병원 매칭하기
-                <div className="text-sm font-normal opacity-90">필수 정보로 바로 병원을 찾습니다</div>
-              </button>
-              
-              {/* 모든 기본 정보가 완료되면 상세 입력 버튼도 표시 */}
-              {isAllBasicDataComplete && (
-                <button
-                  onClick={handleDetailedInput}
-                  className="w-full p-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-all duration-300"
-                >
-                  📝 상세 정보 추가 입력
-                </button>
-              )}
-            </div>
-          )}
-          
-          {/* 필수 정보가 아직 미완료인 경우 */}
-          {!isEssentialDataComplete && (
-            <div className="text-center text-gray-500">
-              <div className="text-sm mb-2">병원 매칭을 위해 다음 정보가 필요합니다</div>
-              <div className="flex justify-center space-x-4 text-xs">
-                <span className={formData.ktasLevel ? 'text-green-600' : 'text-red-500'}>
-                  {formData.ktasLevel ? '✓' : '✗'} KTAS
-                </span>
-                <span className={formData.department ? 'text-green-600' : 'text-red-500'}>
-                  {formData.department ? '✓' : '✗'} 진료과목
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <AmbulanceLayout>
-      <div className="max-w-2xl mx-auto p-6 min-h-screen pb-32">
-        {/* 단계가 4(완료) 미만일 때만 진행 표시줄 표시 */}
-        {currentStep < 4 && renderProgressBar()}
+    <AmbulanceLayout ref={mainContentRef}>
+      <div className="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto relative">
+        <h1 className="text-2xl font-bold mb-6 text-gray-800">
+          {isEditMode ? "환자 상세 정보 수정" : "환자 필수 정보 입력"}
+          <span className="ml-2 text-sm text-blue-600 font-normal">
+            🖋️ 필기 인식 지원
+          </span>
+        </h1>
         
         <div className="bg-white rounded-lg shadow-lg p-6">
           {currentStep === 0 && renderKtasStep()}
@@ -683,9 +284,27 @@ export default function AmbulancePatientInputPage() {
           </div>
         )}
       </div>
-
-      {/* 하단 고정 버튼 영역 */}
-      {renderBottomActions()}
+      
+      {!isModelLoaded && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 shadow-xl max-w-md mx-4">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">필기 인식 모델 로딩 중...</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                CRNN 모델을 불러오고 있습니다. 잠시만 기다려주세요.
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                <p className="text-xs text-blue-700">
+                  📂 모델 파일: public/model/<br/>
+                  📂 알파벳: public/alphabet/<br/>
+                  🤖 필기 → 텍스트 자동 변환 준비 중
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </AmbulanceLayout>
   );
 }

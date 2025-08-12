@@ -13,6 +13,8 @@ import team1234.aiders.application.user.entity.User;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static team1234.aiders.application.user.entity.QUser.user;
+
 @RequiredArgsConstructor
 public class CustomUserRepositoryImpl implements CustomUserRepository{
 
@@ -20,7 +22,6 @@ public class CustomUserRepositoryImpl implements CustomUserRepository{
 
     @Override
     public Page<UserResponseDto> searchUsers(Pageable pageable, String search, String role) {
-        QUser user = QUser.user;
 
         List<User> users = queryFactory
                 .selectFrom(user)

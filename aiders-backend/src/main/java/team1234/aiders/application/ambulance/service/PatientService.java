@@ -38,4 +38,13 @@ public class PatientService {
         return ambulanceRepository.findById(ambulanceId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
     }
+
+    @Transactional(readOnly = true)
+    public PatientInfoResponseDto getPatientInfoByAmbulanceId(Long ambulanceId, CustomUserDetails user) {
+        Ambulance amb = ambulanceRepository.findById(ambulanceId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 구급차입니다. id=" + ambulanceId));
+
+        return PatientInfoResponseDto.fromEntity(amb);
+    }
+
 }

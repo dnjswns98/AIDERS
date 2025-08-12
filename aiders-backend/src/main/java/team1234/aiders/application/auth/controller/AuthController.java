@@ -3,6 +3,7 @@ package team1234.aiders.application.auth.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +18,7 @@ import team1234.aiders.config.security.CustomUserDetails;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/auth")
+@Transactional
 public class AuthController {
 
     private final AuthService authService;

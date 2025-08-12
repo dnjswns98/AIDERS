@@ -39,4 +39,12 @@ public class PatientController {
         PatientInfoResponseDto info = patientService.getPatientInfo(user);
         return ResponseEntity.ok().body(info);
     }
+
+    @GetMapping("/{ambulanceId}")
+    public ResponseEntity<PatientInfoResponseDto> getPatientInfoByAmbulanceId(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable Long ambulanceId) {
+        PatientInfoResponseDto info = patientService.getPatientInfoByAmbulanceId(ambulanceId, user);
+        return ResponseEntity.ok(info);
+    }
 }

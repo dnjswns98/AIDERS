@@ -1,141 +1,142 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 
-export const useCanvasDrawing = (drawingMode, inputMode, value, onChange, name) => {
-  const canvasRef = useRef(null);
-  const isDrawingRef = useRef(false);
-  const lastPosRef = useRef({ x: 0, y: 0 });
+const useCanvasDrawing = (canvasRef) => {
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [penColor, setPenColor] = useState("#000000");
+  const [penSize, setPenSize] = useState(5);
 
-  // 캔버스 초기 설정 및 기존 이미지 로드
+  const getCanvasContext = useCallback(() => {
+    return canvasRef.current ? canvasRef.current.getContext("2d") : null;
+  }, [canvasRef]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || inputMode !== 'drawing') return;
+    if (!canvas) return;
+    const context = getCanvasContext();
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.strokeStyle = penColor;
+    context.lineWidth = penSize;
+  }, [canvasRef, getCanvasContext, penColor, penSize]);
 
-    const ctx = canvas.getContext('2d');
-    ctx.lineWidth = drawingMode === 'pen' ? 2 : 50;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = drawingMode === 'pen' ? 'black' : 'white';
-    ctx.globalCompositeOperation = 'source-over';
-
-    const setCanvasSize = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-      if (value && value.startsWith('data:image')) {
-        const img = new Image();
-        img.onload = () => {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        };
-        img.src = value;
-      }
-    };
-
-    setCanvasSize();
-    window.addEventListener('resize', setCanvasSize);
-
-    return () => {
-      window.removeEventListener('resize', setCanvasSize);
-    };
-  }, [inputMode, value, drawingMode]);
-
-  // 캔버스 내용을 이미지로 저장하는 함수
-  const saveCanvasAsImage = useCallback(() => {
+  const saveHistory = useCallback(() => {
     const canvas = canvasRef.current;
-    if (canvas) {
-      const dataURL = canvas.toDataURL('image/png');
-      onChange({ target: { name, value: dataURL } });
-    }
-  }, [name, onChange]);
+    if (!canvas) return;
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(canvas.toDataURL());
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  }, [canvasRef, history, historyIndex]);
 
-  // 캔버스 클리어 함수
+  const getTouchPosition = (nativeEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+
+    const touch = nativeEvent.touches ? nativeEvent.touches[0] : nativeEvent;
+
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    return {
+      x: (touch.clientX - rect.left) * scaleX,
+      y: (touch.clientY - rect.top) * scaleY,
+    };
+  };
+
+  const startDrawing = useCallback(
+    (event) => {
+      const pos = getTouchPosition(event.nativeEvent);
+      if (!pos) return;
+      const { x, y } = pos;
+
+      const context = getCanvasContext();
+      if (!context) return;
+      context.beginPath();
+      context.moveTo(x, y);
+      setIsDrawing(true);
+    },
+    [getCanvasContext]
+  );
+
+  const draw = useCallback(
+    (event) => {
+      if (!isDrawing) return;
+      const pos = getTouchPosition(event.nativeEvent);
+      if (!pos) return;
+      const { x, y } = pos;
+
+      const context = getCanvasContext();
+      if (!context) return;
+      context.lineTo(x, y);
+      context.stroke();
+    },
+    [isDrawing, getCanvasContext]
+  );
+
+  const finishDrawing = useCallback(() => {
+    if (!isDrawing) return;
+    const context = getCanvasContext();
+    if (!context) return;
+    context.closePath();
+    setIsDrawing(false);
+    saveHistory();
+  }, [isDrawing, getCanvasContext, saveHistory]);
+
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      onChange({ target: { name, value: '' } });
-    }
-  }, [name, onChange]);
+    const context = getCanvasContext();
+    if (!canvas || !context) return;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    saveHistory();
+  }, [canvasRef, getCanvasContext, saveHistory]);
 
-  // 포인터 이벤트 처리
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || inputMode !== 'drawing') return;
-
-    const ctx = canvas.getContext('2d');
-
-    const getCoords = (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      return {
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY,
+  const redrawFromHistory = useCallback(
+    (index) => {
+      if (index < 0 || index >= history.length) return;
+      const canvas = canvasRef.current;
+      const context = getCanvasContext();
+      if (!canvas || !context) return;
+      const img = new Image();
+      img.src = history[index];
+      img.onload = () => {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(img, 0, 0);
       };
-    };
+    },
+    [canvasRef, getCanvasContext, history]
+  );
 
-    const startDrawing = (e) => {
-      if (e.pointerType === 'pen') {
-        e.stopPropagation();
-        e.preventDefault(); // 펜 입력은 기본 동작 방지
-        
-        isDrawingRef.current = true;
-        lastPosRef.current = getCoords(e);
+  const undo = useCallback(() => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      redrawFromHistory(newIndex);
+    }
+  }, [historyIndex, redrawFromHistory]);
 
-        ctx.lineWidth = drawingMode === 'pen' ? 2 : 50;
-        ctx.strokeStyle = drawingMode === 'pen' ? 'black' : 'white';
-        ctx.globalCompositeOperation = 'source-over';
-      } else if (e.pointerType === 'touch') {
-        // 손가락 터치는 스크롤을 허용하기 위해 preventDefault를 호출하지 않음
-        isDrawingRef.current = false; // 손가락 터치는 그리기 시작으로 간주하지 않음
-      }
-    };
-
-    const draw = (e) => {
-      if (e.pointerType === 'pen') {
-        if (!isDrawingRef.current) return; // 펜으로 그리는 중이 아니면 무시
-        e.preventDefault(); // 펜 입력은 기본 동작 방지
-        const currentPos = getCoords(e);
-
-        ctx.beginPath();
-        ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y);
-        ctx.lineTo(currentPos.x, currentPos.y);
-        ctx.stroke();
-
-        lastPosRef.current = currentPos;
-      } else if (e.pointerType === 'touch') {
-        // 손가락 터치는 스크롤을 허용하기 위해 preventDefault를 호출하지 않음
-        return; // 손가락 터치는 그리기 동작을 수행하지 않음
-      }
-    };
-
-    const stopDrawing = (e) => {
-      if (e.pointerType === 'pen') {
-        e.preventDefault(); // 펜 입력은 기본 동작 방지
-        isDrawingRef.current = false;
-        saveCanvasAsImage();
-      } else if (e.pointerType === 'touch') {
-        // 손가락 터치는 스크롤을 허용하기 위해 preventDefault를 호출하지 않음
-        isDrawingRef.current = false; // 손가락 터치는 그리기 종료로 간주하지 않음
-      }
-    };
-
-    const eventOptions = { passive: false };
-
-    canvas.addEventListener('pointerdown', startDrawing, eventOptions);
-    canvas.addEventListener('pointermove', draw, eventOptions);
-    canvas.addEventListener('pointerup', stopDrawing, eventOptions);
-    canvas.addEventListener('pointercancel', stopDrawing, eventOptions);
-
-    return () => {
-      canvas.removeEventListener('pointerdown', startDrawing, eventOptions);
-      canvas.removeEventListener('pointermove', draw, eventOptions);
-      canvas.removeEventListener('pointerup', stopDrawing, eventOptions);
-      canvas.removeEventListener('pointercancel', stopDrawing, eventOptions);
-    };
-  }, [inputMode, saveCanvasAsImage, drawingMode]);
+  const redo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      redrawFromHistory(newIndex);
+    }
+  }, [historyIndex, history.length, redrawFromHistory]);
 
   return {
-    canvasRef,
+    isDrawing,
+    startDrawing,
+    draw,
+    finishDrawing,
     clearCanvas,
+    undo,
+    redo,
+    setPenColor,
+    setPenSize,
   };
 };
+
+export default useCanvasDrawing;
+

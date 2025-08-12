@@ -11,4 +11,7 @@ import java.util.List;
 public interface DispatchRepository extends JpaRepository<Dispatch,Long> {
 
     List<Dispatch> findByDispatchHistoryId(Long dispatchHistoryId);
+
+    // 해당 구급차의 가장 최근 배차 1건 (최신 = 현재 이송건)
+    Dispatch findFirstByAmbulanceIdOrderByIdDesc(Long ambulanceId);
 }
