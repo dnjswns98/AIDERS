@@ -1,5 +1,4 @@
-// src/pages/Emergency/AmbulanceDashboardPage.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import AmbulanceLayout from "../../components/Emergency/Layout/AmbulanceLayout";
 import MapDisplay from "../../components/Emergency/MapDisplay";
@@ -8,7 +7,12 @@ import useEmergencyStore from "../../store/useEmergencyStore";
 import HospitalCard from "../../components/Emergency/HospitalCard";
 import { useAuthStore } from "../../store/useAuthStore";
 import useLiveAmbulanceLocation from "../../hooks/useLiveAmbulanceLocation";
-import { requestHospitalMatching, getMatchedHospital } from "../../api/api";
+import { 
+  requestHospitalMatching, 
+  getMatchedHospital, 
+} from "../../api/api";
+import AmbulancePatientInputPage from './AmbulancePatientInputPage';
+import AmbulanceDispatchWaitingPage from './AmbulanceDispatchWaitingPage';
 
 export default function AmbulanceDashboardPage() {
   const navigate = useNavigate();
@@ -21,6 +25,7 @@ export default function AmbulanceDashboardPage() {
     getCurrentLocation,
     currentLocation: storeCurrentLocation,
     locationError: storeLocationError,
+    selectMyAmbulance,
   } = useEmergencyStore();
   
   const { user } = useAuthStore();
@@ -30,6 +35,12 @@ export default function AmbulanceDashboardPage() {
   const [hospitalMatchingStatus, setHospitalMatchingStatus] = useState("idle"); 
   const [hospitalMatchingError, setHospitalMatchingError] = useState(null);
   const [isHospitalMatching, setIsHospitalMatching] = useState(false);
+
+  useEffect(() => {
+    if (!selectedAmbulance) {
+      selectMyAmbulance();
+    }
+  }, [selectedAmbulance, selectMyAmbulance]);
 
   if (!user?.userKey) {
     return (
@@ -65,14 +76,11 @@ export default function AmbulanceDashboardPage() {
   } = useLiveAmbulanceLocation(currentAmbulanceId);
 
   useEffect(() => {
-  }, [currentUserKey, currentAmbulanceId, wsConnected]);
-
-  useEffect(() => {
-    fetchAmbulances();
-  }, [fetchAmbulances]);
+    // 구급차 역할의 사용자는 모든 구급차 목록을 가져올 필요가 없습니다.
+    // 따라서 fetchAmbulances() 호출을 제거합니다.
+  }, []);
 
   const triggerHospitalMatching = async () => {
-
     if (!currentAmbulanceId) {
       console.error("ambulanceId가 없습니다.");
       return;
@@ -159,7 +167,6 @@ export default function AmbulanceDashboardPage() {
   };
 
   const checkHospitalMatchingStatus = async () => {
-
     if (!currentAmbulanceId) return;
 
     try {
@@ -182,14 +189,10 @@ export default function AmbulanceDashboardPage() {
             latitude: statusResult.latitude,
             longitude: statusResult.longitude,
           };
-
-
           setMatchedHospitals([hospitalData]);
           setHospitalMatchingStatus("success");
           setHospitalMatchingError(null);
-
         } else {
-          
           const hospitalData = {
             id: statusResult.hospitalId,
             hospitalId: statusResult.hospitalId,
@@ -199,17 +202,14 @@ export default function AmbulanceDashboardPage() {
             latitude: 37.566826,
             longitude: 126.9786567,
           };
-
           setMatchedHospitals([hospitalData]);
           setHospitalMatchingStatus("success");
           setHospitalMatchingError("병원 위치 정보가 정확하지 않을 수 있습니다.");
-
         }
       } else {
         setMatchedHospitals([]);
         setHospitalMatchingStatus("idle");
       }
-
       return statusResult;
     } catch (error) {
       if (error.response?.status === 404) {
@@ -225,37 +225,11 @@ export default function AmbulanceDashboardPage() {
   };
 
   useEffect(() => {
-    if (currentAmbulanceId) {
-      checkHospitalMatchingStatus();
+    const status = selectedAmbulance?.status?.toLowerCase();
+    if (currentAmbulanceId && (status === 'dispatched' || status === 'transfer')) {
+        checkHospitalMatchingStatus();
     }
-  }, [currentAmbulanceId]);
-
-  useEffect(() => {
-    if (selectedAmbulance?.patientDetails) {
-      const { ktasLevel, department } = selectedAmbulance.patientDetails;
-
-      const hasRequiredInfo = ktasLevel && department && 
-        !ktasLevel.includes("선택") && !department.includes("선택") &&
-        ktasLevel.trim() !== "" && department.trim() !== "";
-
-      const noHospitalMatched = matchedHospitals.length === 0;
-      const notCurrentlyMatching = !isHospitalMatching && hospitalMatchingStatus !== "loading";
-
-      if (hasRequiredInfo && noHospitalMatched && notCurrentlyMatching) {
-
-        setTimeout(() => {
-          triggerHospitalMatching().catch((error) => {
-          });
-        }, 2000);
-      }
-    }
-  }, [
-    selectedAmbulance?.patientDetails?.ktasLevel,
-    selectedAmbulance?.patientDetails?.department,
-    matchedHospitals.length,
-    isHospitalMatching,
-    hospitalMatchingStatus,
-  ]);
+  }, [currentAmbulanceId, selectedAmbulance?.status]);
 
   const patientFromState = state.formData;
   const patient = patientFromState || selectedAmbulance?.patientInfo || {};
@@ -302,22 +276,14 @@ export default function AmbulanceDashboardPage() {
     setHospitalMatchingStatus("idle");
     setHospitalMatchingError(null);
     setIsHospitalMatching(false);
-
   };
-
-  if (!selectedAmbulance && !patientFromState) {
-    return (
-      <AmbulanceLayout>
-        <div className="bg-white p-8 rounded-lg shadow-md text-center">
-          <h1 className="text-2xl font-bold mb-4">선택된 구급차 정보가 없습니다.</h1>
-          <p>소방서 대시보드에서 구급차를 선택해주세요.</p>
-        </div>
-      </AmbulanceLayout>
-    );
-  }
 
   const currentLocation = ambulanceLocation || storeCurrentLocation;
 
+  const hasRequiredInfo = selectedAmbulance?.patientDetails?.ktasLevel && selectedAmbulance?.patientDetails?.department && 
+    !selectedAmbulance.patientDetails.ktasLevel.includes("선택") && !selectedAmbulance.patientDetails.department.includes("선택") &&
+    selectedAmbulance.patientDetails.ktasLevel.trim() !== "" && selectedAmbulance.patientDetails.department.trim() !== "";
+  
   return (
     <AmbulanceLayout>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -332,7 +298,6 @@ export default function AmbulanceDashboardPage() {
                 수정
               </button>
             </div>
-            
             <div className="grid grid-cols-2 gap-4 text-gray-600 mb-4">
               <p><strong>이름:</strong> {patient.name || "-"}</p>
               <p><strong>성별:</strong> {patient.gender || "-"}</p>
@@ -352,7 +317,6 @@ export default function AmbulanceDashboardPage() {
                   <span className="text-xs">{wsConnected ? '연결됨' : '연결 끊어짐'}</span>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4 text-xs">
                 <div>
                   <p><strong>현재 위치:</strong></p>
@@ -368,7 +332,6 @@ export default function AmbulanceDashboardPage() {
                     </p>
                   )}
                 </div>
-                
                 <div>
                   <p><strong>병원까지 거리:</strong></p>
                   <p className="text-green-600">
@@ -384,14 +347,12 @@ export default function AmbulanceDashboardPage() {
                   )}
                 </div>
               </div>
-
               {wsError && (
                 <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
                   <strong>연결 오류:</strong> {wsError}
                   <button onClick={wsReconnect} className="ml-2 text-blue-600 underline">재연결</button>
                 </div>
               )}
-
               <div className="mt-3 flex items-center gap-2">
                 <span className="font-bold text-sm">🏥 병원 매칭:</span>
                 {isHospitalMatching ? (
@@ -416,9 +377,8 @@ export default function AmbulanceDashboardPage() {
                   <span className="text-gray-600 text-sm">⭕ 매칭 대기 중</span>
                 )}
               </div>
-
               <div className="mt-3 flex gap-2 flex-wrap">
-                {!isHospitalMatching && (
+                {!isHospitalMatching && hasRequiredInfo && (
                   <button
                     onClick={handleRetryHospitalMatching}
                     className="px-3 py-1.5 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 transition-colors"
@@ -426,7 +386,6 @@ export default function AmbulanceDashboardPage() {
                     🔄 병원 {matchedHospitals.length > 0 ? "재매칭" : "매칭"}
                   </button>
                 )}
-
                 {matchedHospitals.length > 0 && !isHospitalMatching && (
                   <button
                     onClick={handleCancelHospitalMatching}
@@ -438,8 +397,7 @@ export default function AmbulanceDashboardPage() {
               </div>
             </div>
           </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-md flex-grow flex flex-col">
+          <div className="bg-white p-6 rounded-lg shadow-md flex-grow flex-col">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-800">실시간 추적 지도</h2>
               <div className="text-xs text-gray-500 flex flex-col items-end">
@@ -466,12 +424,9 @@ export default function AmbulanceDashboardPage() {
                     showControls={true}
                     zoom={4}
                   />
-                  
-                  {matchedHospitals[0].latitude && matchedHospitals[0].longitude && (
-                    <div className="absolute top-2 right-2 bg-green-100 border border-green-300 rounded px-2 py-1 text-xs text-green-700">
-                      ✅ 실제 병원 위치
-                    </div>
-                  )}
+                  <div className="absolute top-2 right-2 bg-green-100 border border-green-300 rounded px-2 py-1 text-xs text-green-700">
+                    ✅ 실제 병원 위치
+                  </div>
                 </div>
               ) : isHospitalMatching ? (
                 <div className="flex flex-col items-center justify-center h-full">
@@ -482,26 +437,37 @@ export default function AmbulanceDashboardPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center h-full">
                   <div className="text-center mb-4">
-                    <p className="text-gray-500 mb-2">매칭된 병원이 없습니다.</p>
+                    <p className="text-gray-500 mb-2">매칭된 병원 정보가 없습니다.</p>
+                    {hospitalMatchingError && (
+                      <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm text-red-700">
+                          <strong>오류:</strong> {hospitalMatchingError}
+                        </p>
+                      </div>
+                    )}
                     <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-                      환자 정보(KTAS + 진료과목)를 입력하면 자동으로 병원이 매칭되고<br/>
-                      실제 병원 위치가 지도에 표시됩니다.
+                      환자 정보(KTAS + 진료과목)를 입력하고 저장하면<br />
+                      자동으로 최적의 병원이 매칭되고<br/>
+                      <span className="text-blue-500">실제 병원 위치가 지도에 표시됩니다.</span>
                     </p>
+                    <div className="space-y-2">
+                      {hasRequiredInfo && (
+                        <button
+                          onClick={handleRetryHospitalMatching}
+                          className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                        >
+                          ♻️ 병원 매칭 시도
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <button
-                    onClick={handleRetryHospitalMatching}
-                    className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                  >
-                    🔄 병원 매칭 시도
-                  </button>
                 </div>
               )}
             </div>
           </div>
         </div>
-
         <div className="flex flex-col gap-6">
-          <div className="bg-white p-6 rounded-lg shadow-md flex-grow flex flex-col">
+          <div className="bg-white p-6 rounded-lg shadow-md flex-grow flex-col">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-800">매칭된 병원</h2>
               <div className="text-xs text-gray-500">
@@ -517,7 +483,6 @@ export default function AmbulanceDashboardPage() {
                 )}
               </div>
             </div>
-
             {isHospitalMatching ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
@@ -539,16 +504,12 @@ export default function AmbulanceDashboardPage() {
                     환자 상태(KTAS: {details.ktasLevel}, 진료과: {details.department})에 
                     최적화된 병원이 매칭되었습니다.
                   </p>
-                  
-                  {matchedHospitals[0].latitude && matchedHospitals[0].longitude && (
-                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
-                      <p className="text-xs text-blue-700">
-                        <strong>📍 병원 실제 위치:</strong> {matchedHospitals[0].latitude.toFixed(6)}, {matchedHospitals[0].longitude.toFixed(6)}
-                      </p>
-                      <p className="text-xs text-blue-600">HospitalLocationResponseDto에서 조회됨</p>
-                    </div>
-                  )}
-                  
+                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                    <p className="text-xs text-blue-700">
+                      <strong>📍 병원 실제 위치:</strong> {matchedHospitals[0].latitude.toFixed(6)}, {matchedHospitals[0].longitude.toFixed(6)}
+                    </p>
+                    <p className="text-xs text-blue-600">HospitalLocationResponseDto에서 조회됨</p>
+                  </div>
                   {hospitalDistanceInfo && (
                     <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded">
                       <p className="text-sm text-purple-700">
@@ -560,7 +521,6 @@ export default function AmbulanceDashboardPage() {
                     </div>
                   )}
                 </div>
-
                 <div className="grid grid-cols-1 gap-4">
                   {matchedHospitals.map((hospital) => (
                     <HospitalCard
@@ -583,24 +543,17 @@ export default function AmbulanceDashboardPage() {
                     </div>
                   )}
                   <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-                    환자 정보를 입력하고 저장하면<br />
+                    환자 정보(KTAS + 진료과목)를 입력하고 저장하면<br />
                     자동으로 최적의 병원이 매칭되고<br/>
                     <span className="text-blue-500">실제 병원 위치가 지도에 표시됩니다.</span>
                   </p>
                   <div className="space-y-2">
-                    <button
-                      onClick={handleRetryHospitalMatching}
-                      className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors w-full"
-                    >
-                      ♻️ 병원 매칭 시도
-                    </button>
-                    {(!selectedAmbulance?.patientDetails?.ktasLevel || 
-                      !selectedAmbulance?.patientDetails?.department) && (
+                    {hasRequiredInfo && (
                       <button
-                        onClick={() => navigate("/emergency/patient-input")}
-                        className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors w-full"
+                        onClick={handleRetryHospitalMatching}
+                        className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
                       >
-                        📝 환자 정보 입력하기
+                        ♻️ 병원 매칭 시도
                       </button>
                     )}
                   </div>
@@ -608,8 +561,7 @@ export default function AmbulanceDashboardPage() {
               </div>
             )}
           </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-md flex-grow flex flex-col">
+          <div className="bg-white p-6 rounded-lg shadow-md flex-grow flex-col">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-800">화상 통화</h2>
               {!isCalling && matchedHospitals.length > 0 && (
@@ -621,7 +573,6 @@ export default function AmbulanceDashboardPage() {
                 </button>
               )}
             </div>
-            
             <div className="flex-grow bg-gray-200 rounded-lg flex items-center justify-center min-h-[300px]">
               {isCalling ? (
                 <WebRtcCall
@@ -632,7 +583,7 @@ export default function AmbulanceDashboardPage() {
                   ktas={details.ktasLevel || ""}
                   hospitalId={
                     matchedHospitals.length > 0 ? 
-                    (matchedHospitals[0].id || matchedHospitals[0].hospitalId || "241").toString() : 
+                    matchedHospitals[0].hospitalId || matchedHospitals[0].id || "241" : 
                     "241"
                   }
                 />
@@ -640,16 +591,12 @@ export default function AmbulanceDashboardPage() {
                 <div className="text-center">
                   <p className="text-gray-600 mb-3">매칭된 병원과 화상 통화를 시작하세요.</p>
                   <p className="text-sm text-gray-500 mb-4">병원: {matchedHospitals[0].name}</p>
-                  
                   <div className="mb-4 space-y-2">
-                    {matchedHospitals[0].latitude && matchedHospitals[0].longitude && (
-                      <div className="p-2 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-xs text-green-700">
-                          📍 병원 위치: {matchedHospitals[0].latitude.toFixed(4)}, {matchedHospitals[0].longitude.toFixed(4)}
-                        </p>
-                      </div>
-                    )}
-                    
+                    <div className="p-2 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-xs text-green-700">
+                        📍 병원 위치: {matchedHospitals[0].latitude.toFixed(6)}, {matchedHospitals[0].longitude.toFixed(6)}
+                      </p>
+                    </div>
                     {hospitalDistanceInfo && (
                       <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg">
                         <p className="text-sm text-blue-700">
@@ -658,7 +605,6 @@ export default function AmbulanceDashboardPage() {
                       </div>
                     )}
                   </div>
-                  
                   <button
                     onClick={handleCallStart}
                     className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
@@ -678,8 +624,6 @@ export default function AmbulanceDashboardPage() {
           </div>
         </div>
       </div>
-
-     
     </AmbulanceLayout>
   );
 }

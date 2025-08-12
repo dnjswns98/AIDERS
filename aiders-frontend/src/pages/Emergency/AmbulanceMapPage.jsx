@@ -34,6 +34,8 @@ export default function AmbulanceMapPage() {
     hospitalMatchingStatus,
     isHospitalMatching,
     checkHospitalMatchingStatus,
+    completeTransport, // 🔥 추가: 이송 완료 함수
+    transferToHospital,
   } = useEmergencyStore();
 
   const [isCalling, setIsCalling] = useState(false);
@@ -153,6 +155,13 @@ export default function AmbulanceMapPage() {
     await fetchDirectHospitalInfo();
   }, [ambulanceId, fetchDirectHospitalInfo]);
 
+  const handlePatientTransfer = async () => {
+    if (window.confirm("환자 탑승 및 정보 입력을 시작하시겠습니까? 구급차 상태가 '이송중'으로 변경됩니다.")) {
+      await transferToHospital();
+      navigate('/emergency/patient-input', { state: { isEditMode: false } });
+    }
+  };
+
   const handleRetryHospitalMatching = useCallback(async () => {
     if (!ambulanceId) return;
     
@@ -206,6 +215,19 @@ export default function AmbulanceMapPage() {
       checkHospitalMatchingStatus(ambulanceId).catch(console.warn);
     }
   }, [ambulanceId, matchedHospitals.length, checkHospitalMatchingStatus]);
+
+  // 🔥 추가: 이송 완료 핸들러
+  const handleCompleteTransport = useCallback(async () => {
+    if (window.confirm("환자 인계가 완료되었습니까? 이송이 종료되고 대기 상태로 돌아갑니다.")) {
+      try {
+        await completeTransport();
+        await navigate('/emergency');
+      } catch (error) {
+        console.error('이송 완료 실패:', error);
+        alert('이송 완료 처리 중 오류가 발생했습니다.');
+      }
+    }
+  }, [completeTransport, navigate]);
 
   if (!finalMatchedHospital && !directHospitalInfo) {
     return (
@@ -330,7 +352,7 @@ export default function AmbulanceMapPage() {
                   )}
                   
                   <span className={`text-xs px-2 py-1 rounded-full ${
-                    wsConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    wsConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-800'
                   }`}>
                     WebSocket: {wsConnected ? '연결됨' : '끊어짐'}
                   </span>
@@ -476,7 +498,7 @@ export default function AmbulanceMapPage() {
                     <div className="flex justify-between items-center">
                       <span className="font-medium">WebSocket 연결:</span>
                       <span className={`px-2 py-1 rounded text-xs ${
-                        wsConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        wsConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-800'
                       }`}>
                         {wsConnected ? '연결됨' : '끊어짐'}
                       </span>
@@ -596,29 +618,29 @@ export default function AmbulanceMapPage() {
                       </div>
                     )}
                   </div>
-                  
-                  <div className="mt-3 space-y-2">
-                    <button
-                      onClick={handleRetryHospitalMatching}
-                      className="w-full bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors"
-                      disabled={isLoadingDirectHospital}
-                    >
-                      🔄 병원 재매칭 (대시보드 방식)
-                    </button>
-                    
-                    {!directHospitalInfo && (
-                      <button
-                        onClick={handleRefreshHospitalInfo}
-                        className="w-full bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors"
-                        disabled={isLoadingDirectHospital}
-                      >
-                        🔍 병원 정보 직접 조회
-                      </button>
-                    )}
-                  </div>
                 </div>
 
-                <div className="p-4">
+                <div className="p-4 border-b border-gray-100">
+                  <h3 className="text-md font-semibold text-gray-800 mb-3">🚑 환자 탑승</h3>
+                  <button
+                    onClick={handlePatientTransfer}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200"
+                  >
+                    환자 정보 입력 시작
+                  </button>
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    환자 탑승 후 이 버튼을 눌러 정보 입력을 시작하고 상태를 '이송중'으로 변경하세요.
+                  </p>
+                </div>
+
+                <div className="p-4 border-t border-gray-100 flex flex-col gap-2">
+                   {/* 🔥 추가: 이송 완료 버튼 */}
+                  <button
+                    onClick={handleCompleteTransport}
+                    className="w-full bg-green-600 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+                  >
+                    🏥 이송 완료
+                  </button>
                   <h3 className="text-md font-semibold text-gray-800 mb-3">📞 화상 통화</h3>
                   
                   {isCalling ? (
@@ -670,53 +692,6 @@ export default function AmbulanceMapPage() {
             </div>
           )}
         </div>
-
-        {/* {import.meta.env.DEV && (
-          <div className="fixed bottom-4 left-4 bg-black bg-opacity-90 text-white p-3 rounded-lg text-xs max-w-sm z-30">
-            <div className="font-bold text-yellow-300 mb-2">🔧 지도 페이지 디버깅 (대시보드 방식)</div>
-            <div className="space-y-1">
-              <p><strong>🏥 병원 정보 조회:</strong></p>
-              <p>  스토어 병원: {finalMatchedHospital ? '✅' : '❌'} ({finalMatchedHospital?.name || 'N/A'})</p>
-              <p>  직접 조회: {directHospitalInfo ? '✅' : '❌'} ({directHospitalInfo?.name || 'N/A'})</p>
-              <p>  조회 진행 중: {isLoadingDirectHospital ? '✅' : '❌'}</p>
-              <p>  실제 좌표 사용: {hasRealCoordinates ? '✅' : '❌'}</p>
-              <p>  최종 좌표: {safeHospital.latitude.toFixed(4)}, {safeHospital.longitude.toFixed(4)}</p>
-              
-              <p><strong>🚑 구급차 추적:</strong></p>
-              <p>  WebSocket: {wsConnected ? '✅' : '❌'}</p>
-              <p>  구급차 위치: {ambulanceLocation ? '✅' : '❌'}</p>
-              <p>  병원 거리: {hospitalDistanceInfo ? `${(hospitalDistanceInfo.distance / 1000).toFixed(2)}km` : '❌'}</p>
-            </div>
-            
-            <div className="mt-3 space-y-1">
-              <button
-                onClick={() => {}}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs w-full"
-              >
-                🔍 대시보드 방식 상태 분석
-              </button>
-              
-              <button
-                onClick={handleRefreshHospitalInfo}
-                className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs w-full"
-                disabled={!ambulanceId || isLoadingDirectHospital}
-              >
-                🔄 병원 정보 직접 조회
-              </button>
-              
-              {isLoadingDirectHospital && (
-                <button
-                  onClick={() => {
-                    setIsLoadingDirectHospital(false);
-                  }}
-                  className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs w-full"
-                >
-                  🚨 로딩 강제 해제
-                </button>
-              )}
-            </div>
-          </div>
-        )} */}
       </div>
     </AmbulanceLayout>
   );

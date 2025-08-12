@@ -2,10 +2,20 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAppContext } from '../../hooks/useAppContext';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useNavigate } from 'react-router-dom';
+
+
+
+
 
 const AmbulanceHeader = () => {
     const { currentTime, notifications, setNotifications } = useAppContext();
     const [showNotifications, setShowNotifications] = useState(false);
+
+    const { logout } = useAuthStore();
+    const navigate = useNavigate();
+
 
     const unreadCount = notifications.filter(n => n.status === 'unread').length;
 
@@ -13,10 +23,21 @@ const AmbulanceHeader = () => {
         setNotifications(notifications.map(n => ({ ...n, status: 'read' })));
     };
 
+    const handleLogout = () => {
+        logout();
+        navigate('/');
+    };
+
+
     return (
         <header className="bg-blue-800 text-white shadow-lg">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
+                    {/* <div className="flex items-center space-x-4">
+                        <button onClick={handleLogout} className="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 transition-colors">
+                            로그아웃
+                        </button>
+                    </div> */}
                     <div className="flex items-center space-x-4">
                         <i className="fas fa-ambulance text-green-400 text-2xl"></i>
                         <NavLink to="/emergency">

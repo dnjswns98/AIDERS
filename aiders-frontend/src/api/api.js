@@ -532,8 +532,8 @@ export const saveOptionalPatientInfo = withErrorHandling(async (patientDetails) 
  * 환자 정보 조회
  */
 export const getPatientInfo = withErrorHandling(async (ambulanceId = null) => {
-  const params = ambulanceId ? { ambulanceId } : {};
-  const response = await apiClient.get('/api/v1/patient/', { params });
+  const url = ambulanceId ? `/api/v1/patient/${ambulanceId}` : '/api/v1/patient/';
+  const response = await apiClient.get(url);
   return response.data;
 }, 'getPatientInfo');
 
