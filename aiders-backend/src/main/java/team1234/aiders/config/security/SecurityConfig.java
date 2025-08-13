@@ -59,6 +59,8 @@ public class SecurityConfig {
             "/api/v1/patient/required",
             "/api/v1/patient/optional",
             "/api/v1/ambulance/transfer/**",
+            "/api/v1/ambulance/status",
+            "/api/v1/ambulance/patient-info",
             "/api/v1/alarm/send",
             "/api/v1/alarm/all/**",
             "/api/v1/match/**",

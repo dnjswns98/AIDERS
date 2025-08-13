@@ -15,7 +15,7 @@ export async function preprocessImage(base64string, targetHeight = 48, targetWid
   canvas.width = targetWidth;
   canvas.height = targetHeight;
 
-  ctx.fillStyle = 'black';
+  ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, targetWidth, targetHeight);
   ctx.drawImage(image, 0, 0, newWidth, targetHeight);
 
