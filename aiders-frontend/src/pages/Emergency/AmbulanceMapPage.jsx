@@ -3,12 +3,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import MapDisplay from '../../components/Emergency/MapDisplay';
-import WebRtcCall from '../../components/webRTC/WebRtcCall';
 import AmbulanceLayout from '../../components/Emergency/Layout/AmbulanceLayout';
 import useEmergencyStore from '../../store/useEmergencyStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import useLiveAmbulanceLocation from '../../hooks/useLiveAmbulanceLocation';
 import { getMatchedHospital } from '../../api/api';
+import useWebRtcStore from '../../store/useWebRtcStore';
 
 export default function AmbulanceMapPage() {
   const location = useLocation();
@@ -16,36 +16,28 @@ export default function AmbulanceMapPage() {
 
   const { user } = useAuthStore();
   const ambulanceId = user?.userId;
-  const ambulanceNumber = user?.userKey;
 
-  // 🔥 수정: 필요한 상태와 함수를 개별적으로 선택하여 가져옵니다.
-  const selectedAmbulance = useEmergencyStore(state => state.selectedAmbulance);
-  const matchedHospitals = useEmergencyStore(state => state.matchedHospitals);
-  const completeTransport = useEmergencyStore(state => state.completeTransport);
+  const { selectedAmbulance, matchedHospitals, completeTransport } = useEmergencyStore();
+  const { setPipMode } = useWebRtcStore();
 
-  const [isCalling, setIsCalling] = useState(true);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [directHospitalInfo, setDirectHospitalInfo] = useState(null);
   const [isLoadingDirectHospital, setIsLoadingDirectHospital] = useState(false);
+
+  useEffect(() => {
+    setPipMode(true);
+    return () => setPipMode(false);
+  }, [setPipMode]);
 
   const {
     ambulanceLocation,
     hospitalDistanceInfo,
   } = useLiveAmbulanceLocation(ambulanceId);
 
-  const { matchedHospital: urlMatchedHospital, patientInfo: urlPatientInfo } = location.state || {};
+  const { matchedHospital: urlMatchedHospital } = location.state || {};
 
   const finalMatchedHospital = useMemo(() => {
     return urlMatchedHospital || directHospitalInfo || matchedHospitals[0] || null;
   }, [urlMatchedHospital, directHospitalInfo, matchedHospitals]);
-
-  const finalPatientInfo = useMemo(() => {
-    return selectedAmbulance?.patientInfo || urlPatientInfo || {};
-  }, [selectedAmbulance?.patientInfo, urlPatientInfo]);
-
-  const finalPatientDetails = useMemo(() => {
-    return selectedAmbulance?.patientDetails || {};
-  }, [selectedAmbulance?.patientDetails]);
 
   const fetchDirectHospitalInfo = useCallback(async () => {
     if (!ambulanceId) return;
@@ -84,18 +76,9 @@ export default function AmbulanceMapPage() {
     };
   }, [finalMatchedHospital]);
 
-  const handleEndCall = useCallback(() => setIsCalling(false), []);
-  const handleModifyPatientInfo = useCallback(() => navigate('/emergency/patient-input', { state: { isEditMode: true } }), [navigate]);
-  
   const handleCompleteTransport = useCallback(async () => {
     if (window.confirm("환자 인계가 완료되었습니까? 이송이 종료되고 대기 상태로 돌아갑니다.")) {
-        try {
-            await completeTransport();
-            navigate('/emergency/waiting', { replace: true });
-        } catch (error) {
-            console.error('이송 완료 실패:', error);
-            alert('이송 완료 처리 중 오류가 발생했습니다.');
-        }
+        await completeTransport(navigate);
     }
   }, [completeTransport, navigate]);
 
@@ -131,7 +114,7 @@ export default function AmbulanceMapPage() {
   return (
     <AmbulanceLayout>
         <div className="relative h-screen flex bg-gray-100 overflow-hidden">
-            <div className={`flex-1 relative transition-all duration-300 ${sidebarCollapsed ? 'mr-0' : 'mr-96'}`}>
+            <div className="flex-1 relative">
                 <div className="h-full w-full">
                     <MapDisplay 
                         hospital={safeHospital}
@@ -139,54 +122,6 @@ export default function AmbulanceMapPage() {
                         distanceInfo={hospitalDistanceInfo}
                         isFullScreen={true}
                     />
-                </div>
-            </div>
-
-            <div className={`fixed top-0 right-0 h-full bg-white shadow-xl border-l border-gray-200 w-96 transition-transform duration-300 z-20 ${sidebarCollapsed ? 'translate-x-full' : 'translate-x-0'}`}>
-                <div className="h-full flex flex-col">
-                    <div className="p-4 border-b">
-                        <h2 className="text-lg font-bold">실시간 정보</h2>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                        <div>
-                            <h3 className="font-semibold mb-2">👤 환자 정보</h3>
-                            <div className="text-sm space-y-1 p-2 bg-gray-50 rounded">
-                                <p><strong>이름:</strong> {finalPatientInfo.name || "-"}</p>
-                                <p><strong>KTAS:</strong> {finalPatientDetails.ktasLevel || "-"}</p>
-                                <p><strong>진료과:</strong> {finalPatientDetails.department || "-"}</p>
-                            </div>
-                            <button onClick={handleModifyPatientInfo} className="text-xs text-blue-600 mt-1">수정</button>
-                        </div>
-                        
-                        <div>
-                            <h3 className="font-semibold mb-2">📞 화상 통화</h3>
-                            <div className="h-48 bg-gray-200 rounded flex items-center justify-center">
-                                {isCalling ? (
-                                    <WebRtcCall
-                                        sessionId={ambulanceId.toString()}
-                                        ambulanceNumber={ambulanceNumber}
-                                        onLeave={handleEndCall}
-                                        patientName={finalPatientInfo.name || ""}
-                                        ktas={finalPatientDetails.ktasLevel || ""}
-                                        hospitalId={safeHospital.id || safeHospital.hospitalId}
-                                    />
-                                ) : (
-                                    <div className="text-center">
-                                        <p className="text-gray-600">통화가 종료되었습니다.</p>
-                                        <button onClick={() => setIsCalling(true)} className="mt-2 text-blue-600">다시 연결</button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                    <div className="p-4 border-t">
-                        <button
-                            onClick={handleCompleteTransport}
-                            className="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700"
-                        >
-                            🏥 이송 완료
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>

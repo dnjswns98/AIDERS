@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import AmbulanceLayout from "../../components/Emergency/Layout/AmbulanceLayout";
 import useEmergencyStore from "../../store/useEmergencyStore";
 import { useAuthStore } from "../../store/useAuthStore";
+import useWebRtcStore from "../../store/useWebRtcStore"; // 🔥 WebRTC 스토어 import 추가
 import HandwritingTextInput from "../../components/Emergency/HandwritingTextInput";
 import { useCRNNModel } from "../../hooks/useCRNNModel";
 import Stomp from "stompjs";
@@ -87,6 +88,7 @@ export default function AmbulancePatientInputPage() {
     } = useEmergencyStore();
 
     const { user } = useAuthStore();
+    const { startCall } = useWebRtcStore(); // 🔥 WebRTC 스토어의 startCall 함수 가져오기
     const { isModelLoaded, initializeModel } = useCRNNModel();
 
     const [currentStep, setCurrentStep] = useState(0);
@@ -162,6 +164,7 @@ export default function AmbulancePatientInputPage() {
         setFormData((prev) => ({ ...prev, [fieldName]: value }));
     }, []);
 
+    // 🔥 --- 수정된 로직: 병원 매칭 성공 시 자동 통화 시작 및 페이지 이동 ---
     useEffect(() => {
         if (hospitalMatchingStatus === 'success' && matchedHospitals.length > 0) {
             const executePostMatchingTasks = async () => {
@@ -169,25 +172,36 @@ export default function AmbulancePatientInputPage() {
                     await sendWebSocketAlarms();
                     console.log("✅ 병원에 WebSocket 알림 전송 완료.");
 
-                    alert(`${matchedHospitals[0].name}(으)로 이송을 시작합니다.`);
-                    navigate('/emergency/map', {
-                        state: {
-                            matchedHospital: matchedHospitals[0],
-                            patientInfo: formData
-                        }
-                    });
+                    // 1. 통화에 필요한 정보 준비
+                    const callInfo = {
+                        sessionId: user.userId,
+                        ambulanceNumber: user.userKey,
+                        hospitalId: matchedHospitals[0].id || matchedHospitals[0].hospitalId,
+                        patientName: formData.name || "환자",
+                        ktas: formData.ktasLevel || "미분류"
+                    };
+
+                    // 2. 전역 스토어를 통해 화상 통화 시작
+                    startCall(callInfo);
+                    console.log("📞 화상 통화 시작:", callInfo);
+
+                    // 3. 사용자에게 알림 후 대시보드로 이동
+                    alert(`${matchedHospitals[0].name}(으)로 이송 및 화상 통화를 시작합니다.`);
+                    navigate('/emergency/dashboard'); // 대시보드 페이지로 이동
+
                 } catch (error) {
                     alert(`오류가 발생했습니다: ${error.message}`);
                 }
             };
             executePostMatchingTasks();
         }
-    }, [hospitalMatchingStatus, matchedHospitals, navigate, formData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hospitalMatchingStatus, matchedHospitals]); // 의존성 배열 간소화
+    // --- 로직 수정 끝 ---
 
 
     const sendWebSocketAlarms = () => {
         return new Promise((resolve, reject) => {
-            // 🔥 'ws://' 주소를 'http://'로 변환
             const WS_BASE_URL = (import.meta.env.VITE_WS_BASE_URL || "ws://localhost:8080/ws")
                 .replace(/^ws:\/\//, 'http://')
                 .replace(/^wss:\/\//, 'https://');

@@ -8,33 +8,30 @@ import { useAuthStore } from '../../store/useAuthStore';
 
 export default function AmbulanceDispatchWaitingPage() {
   const navigate = useNavigate();
-  // 🔥 selectMyAmbulance 함수를 스토어에서 가져옵니다.
   const { selectedAmbulance, transferToHospital, completeTransport, resetHospitalMatching, selectMyAmbulance } = useEmergencyStore();
   const { logout } = useAuthStore();
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const ambulanceStatus = selectedAmbulance?.status?.toLowerCase();
   
-  // 🔥 --- 신규 추가된 로직 --- 🔥
-  // 이 페이지에 머무는 동안 3초마다 구급차의 최신 상태를 서버에 요청합니다.
   useEffect(() => {
     console.log("[AmbulanceDispatchWaitingPage] 상태 폴링을 시작합니다.");
-
-    // 3초 간격으로 selectMyAmbulance 함수를 실행
     const pollingInterval = setInterval(() => {
         console.log("[Polling] 서버에 최신 구급차 상태를 요청합니다...");
         selectMyAmbulance(); 
-    }, 3000); // 3000ms = 3초
-
-    // 이 페이지를 벗어나면(컴포넌트가 언마운트되면) 폴링을 중지합니다.
-    // 이렇게 해야 불필요한 요청을 막고 메모리 누수를 방지할 수 있습니다.
+    }, 3000);
     return () => {
         console.log("[AmbulanceDispatchWaitingPage] 상태 폴링을 중지합니다.");
         clearInterval(pollingInterval);
     };
-  }, [selectMyAmbulance]); // selectMyAmbulance 함수가 변경될 때만 이 effect를 재실행합니다.
-  // 🔥 --- 로직 추가 끝 --- 🔥
+  }, [selectMyAmbulance]);
 
+  useEffect(() => {
+    if (ambulanceStatus === 'dispatch' || ambulanceStatus === 'dispatched') {
+      console.log(`[상태 변경 감지] 상태가 '${ambulanceStatus}'로 변경되어 출동 페이지로 이동합니다.`);
+      navigate('/emergency/dispatch-in-progress', { replace: true });
+    }
+  }, [ambulanceStatus, navigate]);
 
   const handlePatientTransfer = async () => {
     if (window.confirm("환자 탑승이 완료되었습니까? 이송 중 상태로 변경됩니다.")) {
@@ -45,20 +42,14 @@ export default function AmbulanceDispatchWaitingPage() {
   
   const handleCompleteTransport = async () => {
     if (window.confirm("환자 인계가 완료되었습니까? 이송이 종료됩니다.")) {
-      await completeTransport();
-      await resetHospitalMatching();
+      await completeTransport(navigate);
+      await resetHospitalMatching(); 
     }
   };
 
   const handleCancelDispatch = async () => {
     try {
-      await completeTransport();
-      await resetHospitalMatching();
-      
-      setTimeout(() => {
-        navigate('/emergency');
-      }, 2000);
-      
+      await completeTransport(navigate); 
     } catch (error) {
       console.error('배차 취소 오류:', error);
       alert('배차 취소 중 오류가 발생했습니다.');
@@ -72,7 +63,6 @@ export default function AmbulanceDispatchWaitingPage() {
 
   const renderCancelDialog = () => {
     if (!showCancelDialog) return null;
-
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white p-6 rounded-xl max-w-sm mx-4 animate-fadeInUp">
@@ -81,7 +71,6 @@ export default function AmbulanceDispatchWaitingPage() {
             정말 배차 요청을 취소하시겠습니까?<br/>
             취소 후에는 다시 처음부터 요청해야 합니다.
           </p>
-          
           <div className="flex space-x-3">
             <button
               onClick={() => setShowCancelDialog(false)}

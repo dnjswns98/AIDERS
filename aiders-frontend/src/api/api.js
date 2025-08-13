@@ -173,10 +173,21 @@ const withErrorHandling = (apiFunction, functionName) => {
 };
 
 // ======================================================================
+// 📝 보고서 관련 API (신규 추가)
+// ======================================================================
+/**
+ * AI 기반 소방서 보고서 생성
+ * @returns {Promise<object>} 생성된 보고서 정보
+ */
+export const generateReport = withErrorHandling(async () => {
+    logger.info('AI 보고서 생성 요청');
+    const response = await apiClient.post('/api/v1/report/');
+    return response.data;
+}, 'generateReport');
+
+// ======================================================================
 // 🚑 구급차 관련 API (기존과 동일)
 // ======================================================================
-
-
 /**
  * 구급차 상태 업데이트
  */
@@ -838,8 +849,6 @@ export const getFirestationInfo = withErrorHandling(async () => {
   }
   
   // firestation_id 찾기 (간단하게)
-
-
   let firestationId = userInfo.userKey || userInfo.firestation_id || userInfo.firestationId;
   
   if (!firestationId) {
@@ -855,7 +864,6 @@ export const getFirestationInfo = withErrorHandling(async () => {
   if (firestationId) {
     try {
       console.log(`[API] firestation 테이블에서 직접 조회: firestation_id=${firestationId}`);
-      // response = await apiClient.get(`/api/v1/firestation/${firestationId}`);
       response = await apiClient.get(`/api/v1/firestation/me`);
       console.log('[API] ✅ firestation_id 기반 조회 성공');
     } catch (error) {

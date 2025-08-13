@@ -34,7 +34,9 @@ export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, pat
   
   const { isFullScreen, toggleFullScreen } = useFullScreen();
 
-  // 🔥 수정: 컴포넌트 생명주기와 세션 참여/종료 로직을 명확하게 연결합니다.
+  // 🔥 수정된 부분: useEffect의 의존성 배열을 빈 배열([])로 변경
+  // 이렇게 하면 컴포넌트가 처음 마운트될 때 joinSession이 딱 한 번만 호출되고,
+  // 언마운트될 때 return문의 leaveSession이 딱 한 번만 호출됩니다.
   useEffect(() => {
     joinSession();
 
@@ -43,12 +45,12 @@ export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, pat
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
 
-    // 컴포넌트가 언마운트될 때 세션을 확실하게 종료합니다.
     return () => {
         window.removeEventListener("beforeunload", handleBeforeUnload);
         leaveSession();
     };
-  }, [joinSession, leaveSession]); // 🔥 수정: 의존성 배열에 joinSession과 leaveSession을 추가
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // <-- 이 부분을 빈 배열로 수정했습니다!
 
   useEffect(() => {
     if (togglePipMode) {

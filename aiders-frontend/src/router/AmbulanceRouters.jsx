@@ -29,7 +29,7 @@ const AmbulanceRouteGuard = () => {
             targetPath = '/emergency/dispatch-in-progress';
             break;
         case 'transfer':
-            targetPath = '/emergency/map';
+            targetPath = '/emergency/dashboard';
             break;
         case 'wait':
         case 'standby':
