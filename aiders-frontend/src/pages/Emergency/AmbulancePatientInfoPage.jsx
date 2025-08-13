@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react"; // useEffect import
 import { useNavigate } from "react-router-dom";
 import AmbulanceLayout from "../../components/Emergency/Layout/AmbulanceLayout";
 import useEmergencyStore from "../../store/useEmergencyStore";
+import useWebRtcStore from "../../store/useWebRtcStore"; // 🔥 WebRtcStore import
 
+// ... (safeParseJSON, safeRenderObject, safeRenderMedications 함수는 이전과 동일)
 const safeParseJSON = (data, fallback = {}) => {
   try {
     if (typeof data === 'string') {
@@ -48,7 +50,7 @@ const safeRenderObject = (data, emptyText = '-') => {
           typeof item === 'object' ? Object.entries(item).map(([k, v]) => `${k}: ${v}`).join(', ') : item
         ).join(' | ');
       } else {
-        return Object.entries(data).map(([key, value]) => `${key}: ${value}`).join(', ');
+        return Object.entries(parsed).map(([key, value]) => `${key}: ${value}`).join(', ');
       }
     }
     
@@ -103,13 +105,19 @@ const safeRenderMedications = (medications, emptyText = '-') => {
   }
 };
 
+
 export default function AmbulancePatientInfoPage() {
   const navigate = useNavigate();
-  const { selectedAmbulance, ambulanceDetails } = useEmergencyStore();
+  const { selectedAmbulance, ambulanceDetails, patientInfo, patientDetails } = useEmergencyStore();
+  const { setPipMode } = useWebRtcStore(); // 🔥 setPipMode 함수 가져오기
 
-  // Determine the source of data to display
+  // 🔥 추가: 이 페이지에 들어오면 PIP 모드를 활성화합니다.
+  useEffect(() => {
+    setPipMode(true);
+  }, [setPipMode]);
+
   const dataSource = ambulanceDetails || selectedAmbulance;
-  const isHospitalView = !!ambulanceDetails; // If ambulanceDetails exists, it's a hospital view
+  const isHospitalView = !!ambulanceDetails;
 
   const handleGoToEdit = () => {
     navigate('/emergency/patient-input', { state: { isEditMode: true } });
@@ -126,11 +134,8 @@ export default function AmbulancePatientInfoPage() {
     );
   }
 
-  // The API for getAmbulancePatientDetail might return a flat object.
-  // The existing component expects patientInfo and patientDetails.
-  // We will accommodate both structures.
-  const patientInfo = dataSource.patientInfo || dataSource;
-  const patientDetails = dataSource.patientDetails || dataSource;
+  const displayPatientInfo = isHospitalView ? (dataSource.patientInfo || dataSource) : patientInfo;
+  const displayPatientDetails = isHospitalView ? (dataSource.patientDetails || dataSource) : patientDetails;
 
   return (
     <AmbulanceLayout>
@@ -152,19 +157,19 @@ export default function AmbulancePatientInfoPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-500">KTAS</label>
-              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientDetails?.ktasLevel || patientDetails?.ktas || '-'}</p>
+              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{displayPatientDetails?.ktasLevel || displayPatientDetails?.ktas || '-'}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">진료 과목</label>
-              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientDetails?.department || '-'}</p>
+              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{displayPatientDetails?.department || '-'}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">성별</label>
-              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientInfo?.gender || patientInfo?.sex || '-'}</p>
+              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{displayPatientInfo?.gender || displayPatientInfo?.sex || '-'}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">연령대</label>
-              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientDetails?.ageRange || '-'}</p>
+              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{displayPatientDetails?.ageRange || '-'}</p>
             </div>
           </div>
         </div>
@@ -175,66 +180,66 @@ export default function AmbulancePatientInfoPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-500">이름</label>
-                {patientInfo?.name && patientInfo.name.startsWith('data:image') ? (
-                  <img src={patientInfo.name} alt="이름 필기" className="mt-1 w-full border rounded-md" />
+                {displayPatientInfo?.name && displayPatientInfo.name.startsWith('data:image') ? (
+                  <img src={displayPatientInfo.name} alt="이름 필기" className="mt-1 w-full border rounded-md" />
                 ) : (
-                  <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientInfo?.name || '-'}</p>
+                  <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{displayPatientInfo?.name || '-'}</p>
                 )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">바이탈 사인 (혈압)</label>
-                {patientDetails?.vitalSigns?.bloodPressure && patientDetails.vitalSigns.bloodPressure.startsWith('data:image') ? (
-                  <img src={patientDetails.vitalSigns.bloodPressure} alt="바이탈 사인 필기" className="mt-1 w-full border rounded-md" />
+                {displayPatientDetails?.vitalSigns?.bloodPressure && displayPatientDetails.vitalSigns.bloodPressure.startsWith('data:image') ? (
+                  <img src={displayPatientDetails.vitalSigns.bloodPressure} alt="바이탈 사인 필기" className="mt-1 w-full border rounded-md" />
                 ) : (
-                  <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientDetails?.vitalSigns?.bloodPressure || patientDetails?.vitalSigns || '-'}</p>
+                  <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{displayPatientDetails?.vitalSigns?.bloodPressure || displayPatientDetails?.vitalSigns || '-'}</p>
                 )}
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">주요 증상 (상세)</label>
-              {patientDetails?.chiefComplaint && patientDetails.chiefComplaint.startsWith('data:image') ? (
-                <img src={patientDetails.chiefComplaint} alt="주요 증상 필기" className="mt-1 w-full border rounded-md" />
+              {displayPatientDetails?.chiefComplaint && displayPatientDetails.chiefComplaint.startsWith('data:image') ? (
+                <img src={displayPatientDetails.chiefComplaint} alt="주요 증상 필기" className="mt-1 w-full border rounded-md" />
               ) : (
-                <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientDetails?.chiefComplaint || patientDetails?.medicalRecord || '-'}</p>
+                <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{displayPatientDetails?.chiefComplaint || displayPatientDetails?.medicalRecord || '-'}</p>
               )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">처치 내용</label>
-              {patientDetails?.treatmentDetails && patientDetails.treatmentDetails.startsWith('data:image') ? (
-                <img src={patientDetails.treatmentDetails} alt="처치 내용 필기" className="mt-1 w-full border rounded-md" />
+              {displayPatientDetails?.treatmentDetails && displayPatientDetails.treatmentDetails.startsWith('data:image') ? (
+                <img src={displayPatientDetails.treatmentDetails} alt="처치 내용 필기" className="mt-1 w-full border rounded-md" />
               ) : (
-                <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{patientDetails?.treatmentDetails || '-'}</p>
+                <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{displayPatientDetails?.treatmentDetails || '-'}</p>
               )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-500">과거력</label>
-                {patientDetails?.pastHistory && typeof patientDetails.pastHistory === 'string' && patientDetails.pastHistory.startsWith('data:image') ? (
-                  <img src={patientDetails.pastHistory} alt="과거력 필기" className="mt-1 w-full border rounded-md" />
+                {displayPatientDetails?.pastHistory && typeof displayPatientDetails.pastHistory === 'string' && displayPatientDetails.pastHistory.startsWith('data:image') ? (
+                  <img src={displayPatientDetails.pastHistory} alt="과거력 필기" className="mt-1 w-full border rounded-md" />
                 ) : (
                   <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">
-                    {safeRenderObject(patientDetails?.pastHistory)}
+                    {safeRenderObject(displayPatientDetails?.pastHistory)}
                   </p>
                 )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">가족력</label>
-                {patientDetails?.familyHistory && typeof patientDetails.familyHistory === 'string' && patientDetails.familyHistory.startsWith('data:image') ? (
-                  <img src={patientDetails.familyHistory} alt="가족력 필기" className="mt-1 w-full border rounded-md" />
+                {displayPatientDetails?.familyHistory && typeof displayPatientDetails.familyHistory === 'string' && displayPatientDetails.familyHistory.startsWith('data:image') ? (
+                  <img src={displayPatientDetails.familyHistory} alt="가족력 필기" className="mt-1 w-full border rounded-md" />
                 ) : (
                   <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">
-                    {safeRenderObject(patientDetails?.familyHistory)}
+                    {safeRenderObject(displayPatientDetails?.familyHistory)}
                   </p>
                 )}
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">복용중인 약</label>
-              {patientDetails?.medications && typeof patientDetails.medications === 'string' && patientDetails.medications.startsWith('data:image') ? (
-                <img src={patientDetails.medications} alt="복용중인 약 필기" className="mt-1 w-full border rounded-md" />
+              {displayPatientDetails?.medications && typeof displayPatientDetails.medications === 'string' && displayPatientDetails.medications.startsWith('data:image') ? (
+                <img src={displayPatientDetails.medications} alt="복용중인 약 필기" className="mt-1 w-full border rounded-md" />
               ) : (
                 <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">
-                  {safeRenderMedications(patientDetails?.medications || patientDetails?.medicine)}
+                  {safeRenderMedications(displayPatientDetails?.medications || displayPatientDetails?.medicine)}
                 </p>
               )}
             </div>

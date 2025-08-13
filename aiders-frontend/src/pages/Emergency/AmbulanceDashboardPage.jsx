@@ -9,15 +9,24 @@ import useEmergencyStore from "../../store/useEmergencyStore";
 import { useAuthStore } from "../../store/useAuthStore";
 import useLiveAmbulanceLocation from "../../hooks/useLiveAmbulanceLocation";
 import useWebRtcStore from "../../store/useWebRtcStore";
+import Stomp from "stompjs";
+import SockJS from "sockjs-client";
+import WebRtcCall from "../../components/webRTC/WebRtcCall"; // 🔥 WebRtcCall 컴포넌트를 직접 import 합니다.
 
 export default function AmbulanceDashboardPage() {
     const navigate = useNavigate();
     const { user } = useAuthStore();
 
-    const { selectedAmbulance, selectMyAmbulance, matchedHospitals, completeTransport, resetHospitalMatching } = useEmergencyStore();
-    const { startCall, isCallActive, setPipMode } = useWebRtcStore();
-
-    // 🔥 수정: hospitalDistanceInfo도 함께 가져옵니다.
+    const { 
+        selectedAmbulance, 
+        selectMyAmbulance, 
+        matchedHospitals, 
+        patientInfo,
+        patientDetails 
+    } = useEmergencyStore();
+    
+    // 🔥 WebRtcCall에 필요한 모든 상태를 가져옵니다.
+    const { isCallActive, callInfo, endCall, setPipMode } = useWebRtcStore();
     const { ambulanceLocation, hospitalDistanceInfo } = useLiveAmbulanceLocation(user?.userId);
     
     useEffect(() => {
@@ -30,19 +39,42 @@ export default function AmbulanceDashboardPage() {
         }
     }, [user?.userId, selectedAmbulance, selectMyAmbulance]);
 
-    const handleStartCall = useCallback(() => {
+    const handleRequestCall = useCallback(() => {
         if (!matchedHospitals[0]) {
             alert("매칭된 병원 정보가 없습니다.");
             return;
         }
-        startCall({
-            sessionId: user.userId,
-            ambulanceNumber: user.userKey,
-            hospitalId: matchedHospitals[0].id || matchedHospitals[0].hospitalId,
-            patientName: selectedAmbulance?.patientInfo?.name || "",
-            ktas: selectedAmbulance?.patientDetails?.ktasLevel || ""
+
+        const WS_BASE_URL = (import.meta.env.VITE_WS_BASE_URL || "ws://localhost:8080/ws")
+            .replace(/^ws:\/\//, "http://").replace(/^wss:\/\//, "https://");
+
+        const socket = new SockJS(WS_BASE_URL);
+        const stompClient = Stomp.over(socket);
+        stompClient.debug = null;
+
+        stompClient.connect({}, (frame) => {
+            console.log("📞 전화 요청을 위해 WebSocket 연결 성공");
+            
+            const requestAlarm = {
+                type: "REQUEST",
+                ambulanceKey: user.userKey,
+                message: `구급차(${user.userKey})에서 통화를 요청했습니다.`
+            };
+            
+            stompClient.send("/pub/alarm/send", {}, JSON.stringify(requestAlarm));
+            console.log("📤 전화 요청 알림 전송:", requestAlarm);
+            alert("병원에 통화를 요청했습니다.");
+
+            setTimeout(() => {
+                stompClient.disconnect(() => {
+                    console.log("🔌 전화 요청 후 WebSocket 연결 종료");
+                });
+            }, 500);
+        }, (error) => {
+            console.error("❌ 전화 요청 WebSocket 연결 실패:", error);
+            alert("병원에 통화 요청을 보내는 데 실패했습니다.");
         });
-    }, [user, matchedHospitals, selectedAmbulance, startCall]);
+    }, [user, matchedHospitals]);
 
     const goToPatientInput = () => {
         const status = selectedAmbulance?.status?.toLowerCase();
@@ -51,14 +83,6 @@ export default function AmbulanceDashboardPage() {
             return;
         }
         navigate('/emergency/patient-input');
-    };
-
-    // 🔥 수정: completeTransport 함수에 navigate 객체를 전달합니다.
-    const handleCompleteTransport = async () => {
-        if (window.confirm("환자 인계를 완료하고 대기 상태로 돌아가시겠습니까?")) {
-            await completeTransport(navigate);
-            await resetHospitalMatching();
-        }
     };
 
     const displayLocation = useMemo(() => ambulanceLocation || selectedAmbulance, [ambulanceLocation, selectedAmbulance]);
@@ -80,26 +104,19 @@ export default function AmbulanceDashboardPage() {
                             </button>
                         </div>
                         <div className="text-sm space-y-2">
-                            <p><strong>이름:</strong> {selectedAmbulance.patientInfo?.name || "-"}</p>
-                            <p><strong>KTAS:</strong> {selectedAmbulance.patientDetails?.ktasLevel || "-"}</p>
-                            <p><strong>주요 증상:</strong> {selectedAmbulance.patientDetails?.chiefComplaint || "-"}</p>
+                            <p><strong>이름:</strong> {patientInfo?.name || "-"}</p>
+                            <p><strong>KTAS:</strong> {patientDetails?.ktasLevel || "-"}</p>
+                            <p><strong>주요 증상:</strong> {patientDetails?.chiefComplaint || patientDetails?.medicalRecord || "-"}</p>
                         </div>
                     </div>
                     <div className="bg-white p-6 rounded-lg shadow-md">
                         <h2 className="text-xl font-bold mb-4">병원 매칭</h2>
                         {matchedHospital ? <HospitalCard hospital={matchedHospital} simple /> : <p>매칭 대기 중...</p>}
                     </div>
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <h2 className="text-xl font-bold mb-4">이송 관리</h2>
-                        <button onClick={handleCompleteTransport} className="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700">
-                            🏥 이송 완료 (업무 종료)
-                        </button>
-                    </div>
                 </div>
 
                 <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md h-[400px] lg:h-auto">
                     <h2 className="text-xl font-bold mb-4">실시간 위치</h2>
-                    {/* 🔥 수정: MapDisplay에 distanceInfo prop을 전달합니다. */}
                     <MapDisplay
                         hospital={matchedHospital}
                         ambulanceLocation={displayLocation}
@@ -107,22 +124,31 @@ export default function AmbulanceDashboardPage() {
                     />
                 </div>
 
-                <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md relative">
+                <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md flex flex-col">
                     <h2 className="text-xl font-bold mb-4">화상 통화</h2>
-                    <div className="h-full min-h-[300px] bg-gray-200 rounded-lg flex items-center justify-center">
-                        {!isCallActive && (
+                    {/* 🔥 수정: isCallActive 상태에 따라 화상통화 컴포넌트 또는 요청 버튼을 렌더링합니다. */}
+                    <div className="flex-grow h-full min-h-[300px] bg-gray-200 rounded-lg flex items-center justify-center">
+                        {isCallActive && callInfo ? (
+                            <WebRtcCall
+                                sessionId={String(callInfo.sessionId)}
+                                ambulanceNumber={callInfo.ambulanceNumber}
+                                hospitalId={callInfo.hospitalId}
+                                patientName={callInfo.patientName}
+                                ktas={callInfo.ktas}
+                                onLeave={endCall}
+                            />
+                        ) : (
                             <div className="text-center">
-                                <p className="text-gray-500 mb-4">병원과 화상 통화를 시작하세요.</p>
+                                <p className="text-gray-500 mb-4">병원과 화상 통화가 필요하신가요?</p>
                                 <button
-                                    onClick={handleStartCall}
+                                    onClick={handleRequestCall}
                                     disabled={!matchedHospital}
-                                    className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg disabled:bg-gray-400"
+                                    className="bg-orange-500 text-white font-bold py-3 px-6 rounded-lg disabled:bg-gray-400 hover:bg-orange-600"
                                 >
-                                    📞 통화 시작
+                                    📞 전화 요청 하기
                                 </button>
                             </div>
                         )}
-                        {/* isCallActive가 true가 되면 GlobalCallManager가 통화 화면을 렌더링합니다. */}
                     </div>
                 </div>
             </div>

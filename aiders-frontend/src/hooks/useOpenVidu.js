@@ -19,9 +19,6 @@ export const useOpenVidu = ({
   const [isConnected, setIsConnected] = useState(false);
   const operationLockRef = useRef(false);
 
-  // 🔥 수정: 컴포넌트가 소멸될 때 leaveSession을 호출하는 useEffect 제거.
-  // 이 로직은 WebRtcCall 컴포넌트에서 관리하는 것이 더 명확합니다.
-
   const getToken = useCallback(async () => {
     try {
       const isValidAmbulanceId =
@@ -60,28 +57,24 @@ export const useOpenVidu = ({
       session: null,
       publisher: null,
       subscribers: [],
-      isActive: true, // 세션 컨텍스트의 활성 상태를 추적
+      isActive: true,
       hasEventListeners: false,
 
       cleanup: async function () {
         if (!this.isActive) return;
-        this.isActive = false; // 🔥 cleanup 시작 시 즉시 비활성화
+        this.isActive = false; 
         
         try {
           if (this.session) {
-            // 모든 이벤트 리스너 제거
             this.session.off('streamCreated');
             this.session.off('streamDestroyed');
             this.session.off('exception');
             this.session.off('sessionDisconnected');
-
-            // 연결 해제
             await this.session.disconnect();
           }
         } catch (error) {
           console.error("[cleanup] 세션 disconnect 중 오류:", error);
         } finally {
-          // 모든 참조를 null로 설정
           this.publisher = null;
           this.subscribers = [];
           this.session = null;
@@ -118,7 +111,7 @@ export const useOpenVidu = ({
       if (!sessionContext.session || sessionContext.hasEventListeners) return;
 
       sessionContext.session.on("streamCreated", (event) => {
-        if (!sessionContext.isActive) return; // 비활성화된 컨텍스트의 이벤트는 무시
+        if (!sessionContext.isActive) return;
         
         try {
           const subscriber = sessionContext.session.subscribe(event.stream, 'remote-video-container');
@@ -149,7 +142,7 @@ export const useOpenVidu = ({
 
       sessionContext.session.on("sessionDisconnected", async () => {
         if (sessionContext.isActive) {
-          await sessionContext.cleanup(); // cleanup을 호출하여 모든 리소스 정리
+          await sessionContext.cleanup();
           setIsConnected(false);
           setIsConnecting(false);
           endCall();
@@ -166,7 +159,6 @@ export const useOpenVidu = ({
     operationLockRef.current = true;
     setIsConnecting(true);
     
-    // 이전 세션이 있다면 확실하게 정리
     if (sessionContextRef.current) {
         await sessionContextRef.current.cleanup();
     }
@@ -235,6 +227,14 @@ export const useOpenVidu = ({
       operationLockRef.current = false;
     }
   }, [endCall]);
+  
+  // 🔥 삭제: 페이지 경로에 따라 PiP 모드를 자동으로 제어하던 로직을 제거합니다.
+  // 이제 각 페이지에서 직접 PiP 모드를 설정합니다.
+  // useEffect(() => {
+  //   if (togglePipMode) {
+  //     togglePipMode(location.pathname !== "/emergency/map");
+  //   }
+  // }, [location.pathname, togglePipMode]);
 
   return {
     joinSession,

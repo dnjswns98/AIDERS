@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import useEmergencyStore from '../../store/useEmergencyStore';
+import useFireStationStore from '../../store/useFireStationStore'; // EmergencyStore 대신 FireStationStore를 사용합니다.
 import { useAppContext } from '../../hooks/useAppContext';
 
 const StatCard = ({ title, value, icon, linkTo, linkText }) => (
@@ -24,12 +24,8 @@ const StatCard = ({ title, value, icon, linkTo, linkText }) => (
 
 export default function FireStationDashboard() {
   const { ambulances } = useAppContext();
-  const { getStatistics } = useEmergencyStore();
-  const stats = getStatistics(ambulances);
-
-  
-
-
+  // 🔽 useEmergencyStore 대신 useFireStationStore의 todayStats를 사용합니다.
+  const { todayStats } = useFireStationStore();
 
   return (
     <div className="p-8 bg-gray-50 min-h-full">
@@ -37,7 +33,8 @@ export default function FireStationDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard
           title="실시간 상황판"
-          value={`${stats.dispatched}대 출동중`}
+          // 🔽 todayStats에서 activeDispatches 값을 사용합니다.
+          value={`${todayStats.activeDispatches}대 출동중`}
           icon="fa-map-marked-alt"
           linkTo="/firestation/situation-board"
           linkText="상황판으로 이동"
@@ -51,7 +48,8 @@ export default function FireStationDashboard() {
         />
         <StatCard
           title="배차 관리"
-          value={`${stats.available}대 출동가능`}
+          // 🔽 ambulances 배열에서 대기 중인 구급차 수를 직접 계산합니다.
+          value={`${ambulances.filter(a => a.status?.toLowerCase() === 'wait' || a.status?.toLowerCase() === 'standby').length}대 출동가능`}
           icon="fa-ambulance"
           linkTo="/firestation/dispatch"
           linkText="배차 관리하기"

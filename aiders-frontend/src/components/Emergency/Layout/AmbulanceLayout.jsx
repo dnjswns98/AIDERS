@@ -1,6 +1,5 @@
 import React, { forwardRef } from 'react';
 import AmbulanceHeader from '../AmbulanceHeader';
-import GlobalCallManager from '../GlobalCallManager'; // GlobalCallManager import 추가
 
 const AmbulanceLayout = forwardRef(({ children }, ref) => {
   return (
@@ -10,8 +9,7 @@ const AmbulanceLayout = forwardRef(({ children }, ref) => {
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           {children}
         </div>
-        {/* 🔥 신규 추가: 어떤 페이지든 화상 통화 관리자가 항상 떠 있도록 설정 */}
-        <GlobalCallManager />
+        {/* 🔥 문제를 일으키던 GlobalCallManager를 제거했습니다. */}
       </main>
     </div>
   );

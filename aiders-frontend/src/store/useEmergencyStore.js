@@ -3,8 +3,8 @@ import {
   getAmbulances,
   updateAmbulanceStatus,
   getAmbulanceLocation,
-  saveRequiredPatientInfo,
-  saveOptionalPatientInfo,
+  saveRequiredPatientInfo as saveRequiredPatientInfoApi,
+  saveOptionalPatientInfo as saveOptionalPatientInfoApi,
   getPatientInfo,
   requestHospitalMatching,
   getMatchedHospital,
@@ -22,30 +22,37 @@ import { useAuthStore } from "./useAuthStore";
 const getCurrentLocationFromDashboard = () => {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
-      reject(new Error('이 기기에서는 GPS를 지원하지 않습니다.'));
+      reject(new Error("이 기기에서는 GPS를 지원하지 않습니다."));
       return;
     }
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude, accuracy } = position.coords;
-        const locationData = { latitude, longitude, accuracy, timestamp: new Date().toISOString(), source: 'gps' };
-        console.log('[GPS] 위치 조회 성공:', locationData);
+        const locationData = {
+          latitude,
+          longitude,
+          accuracy,
+          timestamp: new Date().toISOString(),
+          source: "gps",
+        };
+        console.log("[GPS] 위치 조회 성공:", locationData);
         resolve(locationData);
       },
       (error) => {
-        let errorMessage = 'GPS 위치 조회에 실패했습니다.';
+        let errorMessage = "GPS 위치 조회에 실패했습니다.";
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = 'GPS 권한이 거부되었습니다. 설정에서 위치 권한을 허용해주세요.';
+            errorMessage = "GPS 권한이 거부되었습니다. 설정에서 위치 권한을 허용해주세요.";
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMessage = 'GPS 위치를 확인할 수 없습니다. 실외에서 다시 시도해주세요.';
+            errorMessage = "GPS 위치를 확인할 수 없습니다. 실외에서 다시 시도해주세요.";
             break;
           case error.TIMEOUT:
-            errorMessage = 'GPS 위치 조회 시간이 초과되었습니다. 다시 시도해주세요.';
+            errorMessage = "GPS 위치 조회 시간이 초과되었습니다. 다시 시도해주세요.";
             break;
         }
-        console.error('[GPS] 위치 조회 실패:', error);
+        console.error("[GPS] 위치 조회 실패:", error);
         reject(new Error(errorMessage));
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
@@ -53,155 +60,207 @@ const getCurrentLocationFromDashboard = () => {
   });
 };
 
-const validatePatientData = (patientData) => {
-  if (!patientData || typeof patientData !== 'object') {
-    return { isValid: false, errors: ['환자 정보가 유효하지 않습니다.'] };
+const ageRangeMap = {
+  '영아': 'NEWBORN',
+  '유아': 'INFANT',
+  '아동': 'KIDS',
+  '청소년': 'TEENAGER',
+  '청년': 'ADULT',
+  '중년': 'ADULT',
+  '노년': 'ELDERLY'
+};
+
+const convertFormDataForApi = (formData) => {
+  console.log('🔥🔥🔥 [convertFormDataForApi] 입력:', formData);
+  
+  let processedAgeRange = null;
+  if (formData.ageRange) {
+    const ageKey = formData.ageRange.split(' ')[0].replace(/[^가-힣]/g, '');
+    processedAgeRange = ageRangeMap[ageKey] || null;
   }
-  const errors = [];
-  const validated = {};
-  if (patientData.ktasLevel) {
-    const ktas = parseInt(patientData.ktasLevel.replace(/[^0-9]/g, ''), 10);
-    if (ktas >= 1 && ktas <= 5) {
-      validated.ktas = ktas;
-    } else {
-      errors.push('KTAS는 1-5등급 사이여야 합니다.');
-    }
+
+  let processedSex = null;
+  if (formData.gender === '남성') {
+    processedSex = 1;
+  } else if (formData.gender === '여성') {
+    processedSex = 0;
   }
-  if (patientData.department && patientData.department.trim()) {
-    validated.department = patientData.department.trim();
+
+  const apiData = {
+    ktas: formData.ktasLevel ? parseInt(formData.ktasLevel) : null,
+    department: formData.department || null,
+    sex: processedSex,
+    ageRange: processedAgeRange,
+    medicalRecord: formData.chiefComplaint || null,
+    familyHistory: formData.familyHistory || null,
+    pastHistory: formData.pastHistory || null,
+    medicine: formData.medications || null,
+    name: formData.name || null,
+    rrn: formData.rrn || null,
+    nationality: formData.nationality || null,
+    vitalSigns: formData.vitalSigns || null
+  };
+
+  if (formData.treatmentDetails && formData.chiefComplaint) {
+    apiData.medicalRecord = `${formData.chiefComplaint}\n\n[현장처치] ${formData.treatmentDetails}`;
+  } else if (formData.treatmentDetails) {
+    apiData.medicalRecord = `[현장처치] ${formData.treatmentDetails}`;
   }
-  if (patientData.name && patientData.name.trim()) {
-    validated.name = patientData.name.trim();
-  }
-  if (patientData.gender) {
-    const genderMap = { '남': 1, '여': 2, '남성': 1, '여성': 2 };
-    const sex = genderMap[patientData.gender];
-    if (sex) {
-      validated.sex = sex;
-    }
-  }
-  if (patientData.ageRange) {
-    const ageMap = {
-      '신생아': 'NEWBORN', '유아': 'INFANT', '아동': 'KIDS',
-      '청소년': 'TEENAGER', '성인': 'ADULT', '노인': 'ELDERLY'
-    };
-    const mappedAge = ageMap[patientData.ageRange];
-    if (mappedAge) {
-      validated.ageRange = mappedAge;
-    }
-  }
-  ['chiefComplaint', 'familyHistory', 'pastHistory', 'medications', 'vitalSigns'].forEach(field => {
-    if (patientData[field]) {
-      let value = patientData[field];
-      if (typeof value === 'string' && (value.startsWith('{') || value.startsWith('['))) {
-        try {
-          const parsed = JSON.parse(value);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            value = parsed[0].name || parsed[0] || '';
-          } else if (typeof parsed === 'object') {
-            const values = Object.values(parsed).filter(v => v && v.trim);
-            value = values.length > 0 ? values[0] : '';
-          }
-        } catch (e) { }
-      }
-      if (typeof value === 'string' && value.trim()) {
-        const fieldMap = { chiefComplaint: 'medicalRecord', medications: 'medicine' };
-        const backendField = fieldMap[field] || field;
-        validated[backendField] = value.trim();
-      }
-    }
-  });
-  if (patientData.rrn && patientData.rrn.trim()) {
-    validated.rrn = patientData.rrn.trim();
-  }
-  if (patientData.nationality && patientData.nationality.trim()) {
-    validated.nationality = patientData.nationality.trim();
-  }
-  return { isValid: errors.length === 0, errors, data: validated };
+
+  console.log('🔥🔥🔥 [convertFormDataForApi] 최종 데이터:', JSON.stringify(apiData, null, 2));
+  return apiData;
 };
 
 const getAmbulanceStatusText = (status) => {
   const statusMap = {
-    'WAIT': '대기중', 'DISPATCH': '출동중', 'TRANSFER': '이송중',
-    'standby': '대기중', 'dispatched': '출동중', 'transporting': '이송중',
-    'completed': '완료', 'maintenance': '정비중'
+    WAIT: "대기중",
+    DISPATCH: "출동중",
+    TRANSFER: "이송중",
+    standby: "대기중",
+    dispatched: "출동중",
+    transporting: "이송중",
+    completed: "완료",
+    maintenance: "정비중",
   };
-  return statusMap[status] || '알 수 없음';
+  return statusMap[status] || "알 수 없음";
 };
 
 // === 메인 스토어 ===
 const useEmergencyStore = create((set, get) => ({
-  // === 기본 상태 ===
   selectedAmbulance: null,
   ambulances: [],
   isLoading: false,
   error: null,
   lastUpdated: null,
-
-  // === 위치 관련 ===
   currentLocation: null,
   locationError: null,
   isLocationLoading: false,
-
-  // === 병원 매칭 관련 ===
   matchedHospitals: [],
-  hospitalMatchingStatus: 'idle', // idle, loading, success, error
+  hospitalMatchingStatus: "idle",
   hospitalMatchingError: null,
   isHospitalMatching: false,
-
-  // === 환자 정보 관련 ===
+  
+  // 🔥 신규 추가: 수정 모드 플래그
+  isEditMode: false,
+  setEditMode: (isEdit) => {
+    console.log(`🔥 [setEditMode] 수정 모드 설정: ${isEdit}`);
+    set({ isEditMode: isEdit });
+  },
+  
   patientInfo: {
-    name: '',
-    gender: '',
-    ageRange: '',
-    ktasLevel: '',
-    department: ''
+    name: "",
+    gender: "",
+    ageRange: "",
   },
   patientDetails: {
-    medicalRecord: '',
-    familyHistory: '',
-    pastHistory: '',
-    medicine: '',
-    vitalSigns: '',
-    rrn: '',
-    nationality: ''
+    ktasLevel: "",
+    department: "",
+    medicalRecord: "",
+    familyHistory: "",
+    pastHistory: "",
+    medicine: "",
+    vitalSigns: "",
+    rrn: "",
+    nationality: "",
   },
   isPatientDataSaving: false,
   patientDataError: null,
-
-  // === 실시간 업데이트 관련 ===
   lastDispatchNotification: null,
   dispatchHistory: [],
-  realtimeUpdates: new Map(), // ambulanceId -> updateData
+  realtimeUpdates: new Map(),
 
-  selectMyAmbulance: async () => {
-    const { user } = useAuthStore.getState();
-    if (!user || (user.role !== 'ambulance' && user.userType !== 'ambulance')) {
-        console.warn("[Emergency Store] 구급차 사용자가 아니거나 사용자 정보가 없습니다.");
-        return;
+  _fetchAndSetPatientInfo: async () => {
+    try {
+      const dbPatientInfo = await getPatientInfo();
+      if (dbPatientInfo) {
+        console.log("✅ DB에서 환자 정보 조회 성공:", dbPatientInfo);
+        
+        const ageRangeLabel = Object.entries(ageRangeMap).find(([key, value]) => value === dbPatientInfo.ageRange)?.[0] || '';
+        const ageRangeOptions = [ "영아 (0-1세)", "유아 (2-7세)", "아동 (8-13세)", "청소년 (14-19세)", "청년 (20-39세)", "중년 (40-64세)", "노년 (65세 이상)"];
+        const fullAgeRangeLabel = ageRangeOptions.find(opt => opt.startsWith(ageRangeLabel)) || '';
+
+        const patientInfo = {
+          name: dbPatientInfo.name || '',
+          gender: dbPatientInfo.sex === 1 ? '남성' : dbPatientInfo.sex === 0 ? '여성' : '',
+          ageRange: fullAgeRangeLabel,
+        };
+
+        const patientDetails = {
+          ktasLevel: dbPatientInfo.ktas ? String(dbPatientInfo.ktas) : '',
+          department: dbPatientInfo.department || '',
+          chiefComplaint: dbPatientInfo.medicalRecord || '',
+          familyHistory: dbPatientInfo.familyHistory || '',
+          pastHistory: dbPatientInfo.pastHistory || '',
+          medications: dbPatientInfo.medicine || '',
+          vitalSigns: dbPatientInfo.vitalSigns || '',
+          rrn: dbPatientInfo.rrn || '',
+          nationality: dbPatientInfo.nationality || '',
+        };
+
+        set(state => ({
+          patientInfo,
+          patientDetails,
+          selectedAmbulance: state.selectedAmbulance ? {
+            ...state.selectedAmbulance,
+            patientInfo: { ...state.selectedAmbulance.patientInfo, ...patientInfo },
+            patientDetails: { ...state.selectedAmbulance.patientDetails, ...patientDetails },
+          } : null
+        }));
+      }
+    } catch (error) {
+      console.error("⚠️ DB에서 환자 정보 조회 실패:", error);
     }
+  },
+
+  // 🔥 수정: 자동 환자 정보 로드 제어 추가
+  selectMyAmbulance: async (skipPatientInfoLoad = false) => {
+    const { user } = useAuthStore.getState();
+    if (!user || (user.role !== "ambulance" && user.userType !== "ambulance")) {
+      console.warn("[Emergency Store] 구급차 사용자가 아니거나 사용자 정보가 없습니다.");
+      return;
+    }
+
     set({ isLoading: true, error: null });
     try {
-        const ambulanceStatusResponse = await getMyAmbulanceStatus();
-        const myAmbulanceStatus = ambulanceStatusResponse.ambCurrentStatus || 'wait';
-        const dispatchInfoResponse = await getMyAmbulancePatientInfo();
-        const updatedAmbulance = {
-            id: user.userId,
-            userKey: user.userKey,
-            carNumber: user.userKey,
-            currentStatus: myAmbulanceStatus.toUpperCase(),
-            status: myAmbulanceStatus.toLowerCase(),
-            pAddress: dispatchInfoResponse?.address,
-            pCondition: dispatchInfoResponse?.condition,
-            pLatitude: dispatchInfoResponse?.latitude,
-            pLongitude: dispatchInfoResponse?.longitude,
-            patientInfo: get().patientInfo,
-            patientDetails: get().patientDetails,
-        };
-        set({ selectedAmbulance: updatedAmbulance, ambulances: [updatedAmbulance], isLoading: false, error: null });
+      const ambulanceStatusResponse = await getMyAmbulanceStatus();
+      const myAmbulanceStatus = ambulanceStatusResponse.ambCurrentStatus || "wait";
+      const dispatchInfoResponse = await getMyAmbulancePatientInfo();
+
+      const updatedAmbulance = {
+        id: user.userId,
+        userKey: user.userKey,
+        carNumber: user.userKey,
+        currentStatus: myAmbulanceStatus.toUpperCase(),
+        status: myAmbulanceStatus.toLowerCase(),
+        pAddress: dispatchInfoResponse?.address,
+        pCondition: dispatchInfoResponse?.condition,
+        pLatitude: dispatchInfoResponse?.latitude,
+        pLongitude: dispatchInfoResponse?.longitude,
+        patientInfo: get().patientInfo,
+        patientDetails: get().patientDetails,
+      };
+
+      set({
+        selectedAmbulance: updatedAmbulance,
+        ambulances: [updatedAmbulance],
+        isLoading: false,
+        error: null,
+      });
+
+      // 🔥 수정: skipPatientInfoLoad 플래그가 true이거나 수정 모드일 때는 환자 정보 로드 스킵
+      const currentState = get();
+      if (!skipPatientInfoLoad && !currentState.isEditMode) {
+        await get()._fetchAndSetPatientInfo();
+      } else {
+        console.log("🔥 [selectMyAmbulance] 환자 정보 로드 스킵됨 (수정 모드 또는 명시적 스킵)");
+      }
+      
     } catch (error) {
-        console.error("[useEmergencyStore] 내 구급차 정보 조회 실패:", error);
-        set({ isLoading: false, error: error.message || '내 구급차 정보 조회 실패' });
+      console.error("[useEmergencyStore] 내 구급차 정보 조회 실패:", error);
+      set({
+        isLoading: false,
+        error: error.message || "내 구급차 정보 조회 실패",
+      });
     }
   },
 
@@ -220,25 +279,38 @@ const useEmergencyStore = create((set, get) => ({
   updateAmbulanceStatus: async (ambulanceId, status) => {
     try {
       await updateAmbulanceStatus(ambulanceId, status);
-      set(state => {
-        const updatedAmbulances = state.ambulances.map(amb =>
-          amb.id === ambulanceId 
-            ? { ...amb, currentStatus: status.toUpperCase(), status: status.toLowerCase(), statusText: getAmbulanceStatusText(status), lastUpdate: new Date().toISOString() }
+      set((state) => {
+        const updatedAmbulances = state.ambulances.map((amb) =>
+          amb.id === ambulanceId
+            ? {
+                ...amb,
+                currentStatus: status.toUpperCase(),
+                status: status.toLowerCase(),
+                statusText: getAmbulanceStatusText(status),
+                lastUpdate: new Date().toISOString(),
+              }
             : amb
         );
-        const updatedSelected = state.selectedAmbulance?.id === ambulanceId
-          ? updatedAmbulances.find(amb => amb.id === ambulanceId)
-          : state.selectedAmbulance;
+
+        const updatedSelected =
+          state.selectedAmbulance?.id === ambulanceId
+            ? updatedAmbulances.find((amb) => amb.id === ambulanceId)
+            : state.selectedAmbulance;
+
         return {
           ambulances: updatedAmbulances,
           selectedAmbulance: updatedSelected,
-          lastUpdated: new Date().toISOString()
+          lastUpdated: new Date().toISOString(),
         };
       });
+
       const statusText = getAmbulanceStatusText(status);
       console.log(`[Emergency Store] 구급차 상태 변경 성공: ${statusText}`);
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || '구급차 상태 변경에 실패했습니다.';
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "구급차 상태 변경에 실패했습니다.";
       set({ error: errorMessage });
       alert(`❌ 구급차 상태 변경 실패\n${errorMessage}`);
       throw error;
@@ -249,14 +321,20 @@ const useEmergencyStore = create((set, get) => ({
     try {
       const ambulanceDetail = await getAmbulanceDetail(ambulanceId);
       if (ambulanceDetail.patientInfo) {
-        set(state => ({
+        set((state) => ({
           patientInfo: { ...state.patientInfo, ...ambulanceDetail.patientInfo },
-          patientDetails: { ...state.patientDetails, ...ambulanceDetail.patientDetails }
+          patientDetails: {
+            ...state.patientDetails,
+            ...ambulanceDetail.patientDetails,
+          },
         }));
       }
       return ambulanceDetail;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || '구급차 상세 정보 조회에 실패했습니다.';
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "구급차 상세 정보 조회에 실패했습니다.";
       set({ error: errorMessage });
       throw error;
     }
@@ -266,10 +344,16 @@ const useEmergencyStore = create((set, get) => ({
     try {
       const locationData = await getAmbulanceLocation(ambulanceId);
       try {
-        const addressInfo = await reverseGeocode(locationData.latitude, locationData.longitude);
+        const addressInfo = await reverseGeocode(
+          locationData.latitude,
+          locationData.longitude
+        );
         locationData.address = addressInfo.address;
       } catch (geocodeError) {
-        console.warn('[Emergency Store] 주소 변환 실패, 좌표만 사용:', geocodeError.message);
+        console.warn(
+          "[Emergency Store] 주소 변환 실패, 좌표만 사용:",
+          geocodeError.message
+        );
       }
       return locationData;
     } catch (error) {
@@ -281,7 +365,11 @@ const useEmergencyStore = create((set, get) => ({
     set({ isLocationLoading: true, locationError: null });
     try {
       const locationData = await getCurrentLocationFromDashboard();
-      set({ currentLocation: locationData, locationError: null, isLocationLoading: false });
+      set({
+        currentLocation: locationData,
+        locationError: null,
+        isLocationLoading: false,
+      });
       return locationData;
     } catch (error) {
       set({ locationError: error.message, isLocationLoading: false });
@@ -296,74 +384,229 @@ const useEmergencyStore = create((set, get) => ({
       throw error;
     }
   },
-  
+
   updatePatientInfo: (patientInfo) => {
-    set(state => ({
+    console.log("📝 [updatePatientInfo] 환자 기본 정보 업데이트:", patientInfo);
+    set((state) => ({
       patientInfo: { ...state.patientInfo, ...patientInfo },
-      selectedAmbulance: state.selectedAmbulance ? { ...state.selectedAmbulance, patientInfo: { ...state.selectedAmbulance.patientInfo, ...patientInfo } } : null
+      selectedAmbulance: state.selectedAmbulance
+        ? {
+            ...state.selectedAmbulance,
+            patientInfo: {
+              ...state.selectedAmbulance.patientInfo,
+              ...patientInfo,
+            },
+          }
+        : null,
     }));
   },
-  
+
   updatePatientDetails: (patientDetails) => {
-    set(state => ({
+    console.log(
+      "📝 [updatePatientDetails] 환자 상세 정보 업데이트:",
+      patientDetails
+    );
+    set((state) => ({
       patientDetails: { ...state.patientDetails, ...patientDetails },
-      selectedAmbulance: state.selectedAmbulance ? { ...state.selectedAmbulance, patientDetails: { ...state.selectedAmbulance.patientDetails, ...patientDetails } } : null
+      selectedAmbulance: state.selectedAmbulance
+        ? {
+            ...state.selectedAmbulance,
+            patientDetails: {
+              ...state.selectedAmbulance.patientDetails,
+              ...patientDetails,
+            },
+          }
+        : null,
     }));
   },
-  
-  saveRequiredPatientInfo: async (requiredData) => {
-    set({ isPatientDataSaving: true, patientDataError: null });
-    try {
-      const validation = validatePatientData(requiredData);
-      if (!validation.isValid) throw new Error(validation.errors.join(', '));
-      if (!validation.data.ktas || !validation.data.department) throw new Error('KTAS와 진료과는 필수 입력 항목입니다.');
-      const locationData = get().currentLocation || await get().getCurrentLocation();
-      const apiData = { ...validation.data, ...(locationData && { latitude: locationData.latitude, longitude: locationData.longitude }) };
-      await saveRequiredPatientInfo(apiData);
-      get().updatePatientInfo(requiredData);
-      get().updatePatientDetails(requiredData);
-      set({ isPatientDataSaving: false });
-      if (validation.data.ktas && validation.data.department && locationData) {
-        const selectedAmbulance = get().selectedAmbulance;
-        if (selectedAmbulance?.id) await get().triggerHospitalMatching(selectedAmbulance.id);
-      }
-      return apiData;
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || '환자 정보 저장에 실패했습니다.';
-      set({ patientDataError: errorMessage, isPatientDataSaving: false });
-      alert(`❌ 환자 정보 저장 실패\n${errorMessage}`);
-      throw error;
-    }
-  },
-  
+
   saveOptionalPatientInfo: async (optionalData) => {
+    console.log("🔥🔥🔥 [saveOptionalPatientInfo] 함수 시작됨!");
+    console.log(
+      "🔥🔥🔥 [saveOptionalPatientInfo] 입력 데이터:",
+      JSON.stringify(optionalData, null, 2)
+    );
+    
     set({ isPatientDataSaving: true, patientDataError: null });
+    
     try {
-      const validation = validatePatientData(optionalData);
-      if (!validation.isValid) throw new Error(validation.errors.join(', '));
-      if (Object.keys(validation.data).length === 0) {
-        set({ isPatientDataSaving: false });
-        return;
+      console.log("🔥🔥🔥 [saveOptionalPatientInfo] convertFormDataForApi 호출 전");
+      const apiPayload = convertFormDataForApi(optionalData);
+      console.log("🔥🔥🔥 [saveOptionalPatientInfo] convertFormDataForApi 호출 후");
+      
+      console.log("🔥🔥🔥 [saveOptionalPatientInfo] API 호출 시도!");
+      const result = await saveOptionalPatientInfoApi(apiPayload);
+      console.log("🔥🔥🔥 [saveOptionalPatientInfo] API 호출 성공!", result);
+      
+      // 🔥 수정: 수정 모드가 아닐 때만 환자 정보 리로드
+      const currentState = get();
+      if (!currentState.isEditMode) {
+        await get()._fetchAndSetPatientInfo();
+      } else {
+        console.log("🔥 [saveOptionalPatientInfo] 수정 모드에서는 환자 정보 리로드 스킵");
       }
-      await saveOptionalPatientInfo(validation.data);
-      get().updatePatientInfo(optionalData);
-      get().updatePatientDetails(optionalData);
-      set({ isPatientDataSaving: false });
-      return validation.data;
+      
+      set({ isPatientDataSaving: false, patientDataError: null });
+      console.log("✅ [saveOptionalPatientInfo] 선택 정보 저장 및 동기화 완료");
+      return { success: true, data: result };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || '환자 정보 저장에 실패했습니다.';
+      console.error("🔥🔥🔥 [saveOptionalPatientInfo] 에러 발생:", error);
+      console.error("🔥🔥🔥 [saveOptionalPatientInfo] 에러 상세:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        stack: error.stack,
+      });
+      
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "환자 선택 정보 저장에 실패했습니다.";
       set({ patientDataError: errorMessage, isPatientDataSaving: false });
-      throw error;
+      throw new Error(errorMessage);
     }
   },
-  
+
+  saveAllPatientInfoAndMatch: async (allFormData) => {
+    console.log("🔥🔥🔥 [saveAllPatientInfoAndMatch] 함수 시작됨!");
+    console.log(
+      "🔥🔥🔥 [saveAllPatientInfoAndMatch] 입력 데이터:",
+      JSON.stringify(allFormData, null, 2)
+    );
+
+    if (!allFormData.ktasLevel || !allFormData.department) {
+      const errorMsg = "병원 매칭을 위해 KTAS와 진료과는 필수입니다.";
+      alert(errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    set({
+      isHospitalMatching: true,
+      hospitalMatchingStatus: "loading",
+      hospitalMatchingError: null,
+    });
+
+    try {
+      console.log("🔥🔥🔥 [saveAllPatientInfoAndMatch] convertFormDataForApi 호출 전");
+      const apiPayload = convertFormDataForApi(allFormData);
+      console.log("🔥🔥🔥 [saveAllPatientInfoAndMatch] convertFormDataForApi 호출 후");
+
+      console.log("🔥🔥🔥 [saveAllPatientInfoAndMatch] API 호출 시도!");
+      await saveOptionalPatientInfoApi(apiPayload);
+      console.log("🔥🔥🔥 [saveAllPatientInfoAndMatch] API 호출 성공!");
+
+      // 🔥 수정: 수정 모드가 아닐 때만 환자 정보 리로드
+      const currentState = get();
+      if (!currentState.isEditMode) {
+        await get()._fetchAndSetPatientInfo();
+      }
+
+      console.log("✅ [saveAllPatientInfoAndMatch] 모든 환자 정보 저장 및 동기화 완료. 병원 매칭을 시작합니다.");
+
+      const { selectedAmbulance } = get();
+      if (selectedAmbulance?.id) {
+        console.log("🏥 [saveAllPatientInfoAndMatch] 병원 매칭 시작");
+        await get().triggerHospitalMatching(selectedAmbulance.id);
+        console.log("✅ [saveAllPatientInfoAndMatch] 병원 매칭 성공");
+      } else {
+        throw new Error("구급차 정보를 찾을 수 없어 매칭을 시작할 수 없습니다.");
+      }
+    } catch (error) {
+      console.error("🔥🔥🔥 [saveAllPatientInfoAndMatch] 에러 발생:", error);
+      console.error("🔥🔥🔥 [saveAllPatientInfoAndMatch] 에러 상세:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        stack: error.stack,
+      });
+
+      const errorMessage = error.message || "정보 저장 또는 매칭 중 오류 발생";
+      set({
+        isHospitalMatching: false,
+        hospitalMatchingStatus: "error",
+        hospitalMatchingError: errorMessage,
+      });
+      alert(`❌ 오류 발생:\n${errorMessage}`);
+      throw new Error(errorMessage);
+    }
+  },
+
+  quickHospitalMatch: async (ktasLevel, department) => {
+    console.log("🔥🔥🔥 [quickHospitalMatch] === 함수 진입 ===");
+    
+    if (!ktasLevel || !department) {
+      const errorMsg = "병원 매칭을 위해 KTAS와 진료과는 필수입니다.";
+      alert(errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    set({
+      isHospitalMatching: true,
+      hospitalMatchingStatus: "loading",
+      hospitalMatchingError: null,
+    });
+
+    try {
+      const apiPayload = {
+        ktas: parseInt(ktasLevel),
+        department: department,
+        sex: null,
+        ageRange: null,
+        medicalRecord: null,
+        familyHistory: null,
+        pastHistory: null,
+        medicine: null,
+        name: null,
+        rrn: null,
+        nationality: null,
+        vitalSigns: null,
+      };
+
+      console.log("🔥🔥🔥 [quickHospitalMatch] Optional DTO 스펙에 맞춘 페이로드:");
+      console.log("🔥🔥🔥 [quickHospitalMatch]", JSON.stringify(apiPayload, null, 2));
+
+      console.log("🔥🔥🔥 [quickHospitalMatch] saveOptionalPatientInfoApi 호출");
+      const saveResult = await saveOptionalPatientInfoApi(apiPayload);
+      console.log("🔥🔥🔥 [quickHospitalMatch] API 호출 성공:", saveResult);
+
+      // 🔥 수정: 수정 모드가 아닐 때만 환자 정보 리로드
+      const currentState = get();
+      if (!currentState.isEditMode) {
+        await get()._fetchAndSetPatientInfo();
+      }
+
+      const { selectedAmbulance } = get();
+      if (selectedAmbulance?.id) {
+        await get().triggerHospitalMatching(selectedAmbulance.id);
+      } else {
+        throw new Error("구급차 정보를 찾을 수 없어 매칭을 시작할 수 없습니다.");
+      }
+    } catch (error) {
+      console.error("🔥🔥🔥 [quickHospitalMatch] 에러:", error);
+      if (error.response) {
+        console.error("🔥🔥🔥 [quickHospitalMatch] HTTP 에러:");
+        console.error("🔥🔥🔥 [quickHospitalMatch] - status:", error.response.status);
+        console.error("🔥🔥🔥 [quickHospitalMatch] - data:", error.response.data);
+      }
+
+      const errorMessage = error.message || "빠른 매칭 중 오류 발생";
+      set({
+        isHospitalMatching: false,
+        hospitalMatchingStatus: "error",
+        hospitalMatchingError: errorMessage,
+      });
+      alert(`❌ 오류 발생:\n${errorMessage}`);
+      throw new Error(errorMessage);
+    }
+  },
+
   fetchPatientInfo: async (ambulanceId = null) => {
     try {
       const patientData = await getPatientInfo(ambulanceId);
       if (patientData) {
-        set(state => ({
+        set((state) => ({
           patientInfo: { ...state.patientInfo, ...patientData },
-          patientDetails: { ...state.patientDetails, ...patientData }
+          patientDetails: { ...state.patientDetails, ...patientData },
         }));
       }
       return patientData;
@@ -371,128 +614,200 @@ const useEmergencyStore = create((set, get) => ({
       throw error;
     }
   },
-  
+
   triggerHospitalMatching: async (ambulanceId) => {
-    if (!ambulanceId) throw new Error('구급차 ID가 필요합니다.');
-    set({ isHospitalMatching: true, hospitalMatchingStatus: 'loading', hospitalMatchingError: null });
+    if (!ambulanceId) throw new Error("구급차 ID가 필요합니다.");
+
+    set({
+      isHospitalMatching: true,
+      hospitalMatchingStatus: "loading",
+      hospitalMatchingError: null,
+    });
+
     try {
-      const locationData = get().currentLocation || await get().getCurrentLocation();
-      if (!locationData?.latitude || !locationData?.longitude) throw new Error('위치 정보를 확인할 수 없습니다. GPS를 활성화해주세요.');
-      const matchingData = { ambulanceId, latitude: locationData.latitude, longitude: locationData.longitude };
+      const locationData =
+        get().currentLocation || (await get().getCurrentLocation());
+
+      if (!locationData?.latitude || !locationData?.longitude)
+        throw new Error("위치 정보를 확인할 수 없습니다. GPS를 활성화해주세요.");
+
+      const matchingData = {
+        ambulanceId,
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+      };
+
       const matchingResult = await requestHospitalMatching(matchingData);
-      if (!matchingResult?.hospitalId) throw new Error('매칭 가능한 병원이 없습니다.');
-      
+
+      if (!matchingResult?.hospitalId)
+        throw new Error("매칭 가능한 병원이 없습니다.");
+
       let distance = null;
       if (matchingResult.latitude && matchingResult.longitude) {
         try {
-          const distanceResult = await calculateDistance({ latitude: locationData.latitude, longitude: locationData.longitude }, { latitude: matchingResult.latitude, longitude: matchingResult.longitude });
+          const distanceResult = await calculateDistance(
+            {
+              latitude: locationData.latitude,
+              longitude: locationData.longitude,
+            },
+            {
+              latitude: matchingResult.latitude,
+              longitude: matchingResult.longitude,
+            }
+          );
           distance = distanceResult.distance;
         } catch (distanceError) {
-          console.warn('[Emergency Store] 거리 계산 실패:', distanceError.message);
+          console.warn("[Emergency Store] 거리 계산 실패:", distanceError.message);
         }
       }
-      
+
       const hospitalData = {
         id: matchingResult.hospitalId,
         hospitalId: matchingResult.hospitalId,
-        name: matchingResult.name || '매칭된 병원',
-        address: matchingResult.address || '주소 확인 중',
-        distance: distance ? `${(distance / 1000).toFixed(1)}km` : '거리 계산 중',
-        eta: distance ? `약 ${Math.ceil(distance / 1000 * 2)}분` : '소요시간 계산 중',
-        departments: [get().patientDetails.department || '응급의학과'],
-        availableBeds: '확인 중',
-        emergencyLevel: 'Level1',
+        name: matchingResult.name || "매칭된 병원",
+        address: matchingResult.address || "주소 확인 중",
+        distance: distance
+          ? `${(distance / 1000).toFixed(1)}km`
+          : "거리 계산 중",
+        eta: distance
+          ? `약 ${Math.ceil((distance / 1000) * 2)}분`
+          : "소요시간 계산 중",
+        departments: [get().patientDetails.department || "응급의학과"],
+        availableBeds: "확인 중",
+        emergencyLevel: "Level1",
         isAvailable: true,
         latitude: matchingResult.latitude || 37.5799,
         longitude: matchingResult.longitude || 126.9988,
-        matchedAt: new Date().toISOString()
+        matchedAt: new Date().toISOString(),
       };
-      
-      set({ matchedHospitals: [hospitalData], hospitalMatchingStatus: 'success', hospitalMatchingError: null, isHospitalMatching: false });
-      alert(`✅ 병원 매칭 성공!\n${hospitalData.name}\n거리: ${hospitalData.distance}`);
+
+      set({
+        matchedHospitals: [hospitalData],
+        hospitalMatchingStatus: "success",
+        hospitalMatchingError: null,
+        isHospitalMatching: false,
+      });
+
       return matchingResult;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || '병원 매칭에 실패했습니다.';
-      set({ hospitalMatchingStatus: 'error', hospitalMatchingError: errorMessage, isHospitalMatching: false, matchedHospitals: [] });
-      alert(`❌ 병원 매칭 실패\n${errorMessage}`);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "병원 매칭에 실패했습니다.";
+
+      set({
+        hospitalMatchingStatus: "error",
+        hospitalMatchingError: errorMessage,
+        isHospitalMatching: false,
+        matchedHospitals: [],
+      });
+
       throw error;
     }
   },
-  
+
   resetHospitalMatching: () => {
-    set({ matchedHospitals: [], hospitalMatchingStatus: 'idle', hospitalMatchingError: null, isHospitalMatching: false });
+    set({
+      matchedHospitals: [],
+      hospitalMatchingStatus: "idle",
+      hospitalMatchingError: null,
+      isHospitalMatching: false,
+    });
   },
-  
-  /**
-   * 🔥 수정된 이송 완료 함수
-   * 페이지 이동을 먼저 처리하고, API 통신을 백그라운드에서 수행합니다.
-   * @param {function | null} navigate - React Router의 navigate 함수 (선택 사항)
-   */
+
   completeTransport: async (navigate = null) => {
     const { selectedAmbulance } = get();
     if (!selectedAmbulance) {
-      alert('구급차 정보가 없습니다.');
+      alert("구급차 정보가 없습니다.");
       return;
     }
 
-    // 1. 사용자 경험을 위해 즉시 상태를 변경하고 페이지를 이동시킴
-    alert('✅ 이송 완료 처리되었습니다. 잠시 후 대기 상태로 전환됩니다.');
-    set(state => ({
+    alert("✅ 이송 완료 처리되었습니다. 잠시 후 대기 상태로 전환됩니다.");
+
+    const initialPatientInfo = {
+      name: "",
+      gender: "",
+      ageRange: "",
+    };
+
+    const initialPatientDetails = {
+      ktasLevel: "",
+      department: "",
+      medicalRecord: "",
+      familyHistory: "",
+      pastHistory: "",
+      medicine: "",
+      vitalSigns: "",
+      rrn: "",
+      nationality: "",
+    };
+
+    set((state) => ({
       selectedAmbulance: {
         ...state.selectedAmbulance,
-        currentStatus: 'WAIT',
-        status: 'wait',
-        patientInfo: { name: '', gender: '', ageRange: '', ktasLevel: '', department: '' },
-        patientDetails: { medicalRecord: '', familyHistory: '', pastHistory: '', medicine: '', vitalSigns: '', rrn: '', nationality: '' },
+        currentStatus: "WAIT",
+        status: "wait",
+        patientInfo: initialPatientInfo,
+        patientDetails: initialPatientDetails,
       },
+      patientInfo: initialPatientInfo,
+      patientDetails: initialPatientDetails,
       matchedHospitals: [],
-      hospitalMatchingStatus: 'idle',
+      hospitalMatchingStatus: "idle",
+      isEditMode: false, // 🔥 추가: 완료 시 수정 모드 해제
     }));
 
     if (navigate) {
-      navigate('/emergency/waiting', { replace: true });
+      navigate("/emergency/waiting", { replace: true });
     }
 
-    // 2. 백그라운드에서 API 통신 시도
     try {
       try {
-        console.log('📝 AI 보고서 생성을 시작합니다...');
+        console.log("📝 AI 보고서 생성을 시작합니다...");
         const report = await generateReport();
         console.log(`✅ 보고서 생성 완료: ${report.reportId}`);
       } catch (reportError) {
-        console.error('⚠️ 보고서 생성 실패:', reportError);
+        console.error("⚠️ 보고서 생성 실패:", reportError);
         alert(`⚠️ 보고서 생성에 실패했습니다: ${reportError.message}`);
       }
-      
-      await updateAmbulanceStatus(selectedAmbulance.id, 'wait');
-      console.log('✅ 구급차 상태가 서버에 "대기"로 업데이트되었습니다.');
 
+      await updateAmbulanceStatus(selectedAmbulance.id, "wait");
+      console.log('✅ 구급차 상태가 서버에 "대기"로 업데이트되었습니다.');
     } catch (error) {
-      console.error('❌ 이송 완료 백그라운드 처리 실패:', error);
-      alert('❌ 서버에 이송 완료 상태를 저장하는 데 실패했습니다: ' + error.message);
+      console.error("❌ 이송 완료 백그라운드 처리 실패:", error);
+      alert("❌ 서버에 이송 완료 상태를 저장하는 데 실패했습니다: " + error.message);
     }
   },
-  
+
   transferToHospital: async () => {
     const { selectedAmbulance } = get();
     if (!selectedAmbulance) {
-      alert('구급차 정보가 없습니다.');
+      alert("구급차 정보가 없습니다.");
       return;
     }
-    const currentStatus = (selectedAmbulance.currentStatus || selectedAmbulance.status)?.toLowerCase();
-    if (currentStatus !== 'dispatch' && currentStatus !== 'dispatched') {
-      alert('환자를 태우기 전에는 상태를 변경할 수 없습니다.');
+
+    const currentStatus = (
+      selectedAmbulance.currentStatus || selectedAmbulance.status
+    )?.toLowerCase();
+
+    if (currentStatus !== "dispatch" && currentStatus !== "dispatched") {
+      alert("환자를 태우기 전에는 상태를 변경할 수 없습니다.");
       return;
     }
+
     try {
-      await updateAmbulanceStatus(selectedAmbulance.id, 'transfer');
-      set(state => ({
-        selectedAmbulance: { ...state.selectedAmbulance, currentStatus: 'TRANSFER', status: 'transfer' }
+      await updateAmbulanceStatus(selectedAmbulance.id, "transfer");
+      set((state) => ({
+        selectedAmbulance: {
+          ...state.selectedAmbulance,
+          currentStatus: "TRANSFER",
+          status: "transfer",
+        },
       }));
-      alert('✅ 환자를 태우고 병원으로 이송을 시작합니다.');
+      alert("✅ 환자를 태우고 병원으로 이송을 시작합니다.");
     } catch (error) {
       set({ error: error.message });
-      alert('❌ 이송 상태 변경 실패: ' + error.message);
+      alert("❌ 이송 상태 변경 실패: " + error.message);
     }
   },
 }));
