@@ -109,7 +109,7 @@ export default function LoginForm() {
       const routeMap = {
         admin: "/admin",
         hospital: "/hospital", 
-        ambulance: "/emergency/patient-input",
+        ambulance: "/emergency",
         firestation: "/firestation",
       };
 

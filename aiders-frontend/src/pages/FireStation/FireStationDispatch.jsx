@@ -101,7 +101,7 @@ const Dispatch = () => {
                                 dispatchHistory.map((dispatch, index) => {
                                     const ambulance = ambulances[index] || null;
                                     const ambulanceStatus = ambulance?.status || 'UNKNOWN';
-
+                                    console.log(ambulance)
                                     return (
                                         <tr key={dispatch.id || index} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 text-sm font-medium text-gray-900">

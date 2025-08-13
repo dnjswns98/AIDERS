@@ -15,7 +15,7 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
     } = useFireStationStore();
 
     const [formData, setFormData] = useState({
-        ambulanceIds: [], // userKey(문자열)를 담을 배열
+        ambulanceIds: [], // ambulanceId(숫자)를 담을 배열
         priority: "normal",
         condition: "",
         notes: "",
@@ -38,7 +38,6 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
         return ambulances.filter(ambulance => {
             const status = (ambulance.status || '').toUpperCase();
             const isAvailable = status === 'WAIT';
-            console.log(ambulance)
             // isAmbulanceDispatching 함수가 userKey를 사용하도록 수정
             const isNotDispatching = !isAmbulanceDispatching(ambulance.userKey);
             return isAvailable && isNotDispatching;
@@ -51,15 +50,15 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
         if (validationErrors[name]) setValidationErrors(prev => ({ ...prev, [name]: "" }));
     }, [validationErrors]);
 
-    // 체크박스 핸들러: userKey(문자열)를 받아서 처리
-    const handleCheckboxChange = useCallback((userKey) => {
+    // 체크박스 핸들러: ambulanceId(숫자)를 받아서 처리하도록 수정
+    const handleCheckboxChange = useCallback((ambulanceId) => {
         setFormData(prev => {
-            const currentKeys = prev.ambulanceIds;
+            const currentIds = prev.ambulanceIds;
 
-            if (currentKeys.includes(userKey)) {
-                return { ...prev, ambulanceIds: currentKeys.filter(key => key !== userKey) };
+            if (currentIds.includes(ambulanceId)) {
+                return { ...prev, ambulanceIds: currentIds.filter(id => id !== ambulanceId) };
             } else {
-                return { ...prev, ambulanceIds: [...currentKeys, userKey] };
+                return { ...prev, ambulanceIds: [...currentIds, ambulanceId] };
             }
         });
         if (validationErrors.ambulanceIds) setValidationErrors(prev => ({ ...prev, ambulanceIds: "" }));
@@ -107,16 +106,8 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
         setIsSubmitting(true);
         setLocalError(null);
         try {
-            // 수정된 부분: userKey를 사용하여 ambulances 배열에서 id를 찾습니다.
-            const numericAmbulanceIds = formData.ambulanceIds.map(userKey => {
-                const ambulance = ambulances.find(a => a.userKey === userKey);
-                return ambulance ? ambulance.ambulanceId : null;
-            }).filter(id => id !== null);
-
-            console.log("전송할 구급차 ID:", numericAmbulanceIds); // 디버깅용 로그
-
             const dispatchData = {
-                ambulanceIds: numericAmbulanceIds, // 수정된 숫자 ID 배열을 전송
+                ambulanceIds: formData.ambulanceIds, // 이미 숫자 ID 배열이므로 그대로 전송
                 latitude: locationData.latitude,
                 longitude: locationData.longitude,
                 address: locationData.address,
@@ -126,7 +117,7 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
             await dispatchAmbulance(dispatchData);
             await fetchFirestationAmbulances(firestationInfo.id);
             if (onDispatchSuccess) onDispatchSuccess();
-            alert(`✅ 배차 완료!\n구급차: ${formData.ambulanceIds.join(", ")}\n출동지: ${locationData.address}`);
+            alert(`✅ 배차 완료!\n구급차 ID: ${formData.ambulanceIds.join(", ")}\n출동지: ${locationData.address}`);
             handleClose();
         } catch (error) {
             const errorMessage = error.response?.data?.message || error.message || '배차 신청 중 오류가 발생했습니다.';
@@ -136,8 +127,7 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
             setIsSubmitting(false);
         }
     }, [
-        validateForm, formData, locationData, ambulances,
-        dispatchAmbulance, onDispatchSuccess, handleClose, fetchFirestationAmbulances, firestationInfo
+        validateForm, formData, locationData, dispatchAmbulance, onDispatchSuccess, handleClose, fetchFirestationAmbulances, firestationInfo
     ]);
 
     if (!isOpen) return null;
@@ -201,8 +191,8 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
                                             <label key={ambulance.userKey} className="flex items-center space-x-2">
                                                 <input
                                                     type="checkbox"
-                                                    checked={formData.ambulanceIds.includes(ambulance.userKey)}
-                                                    onChange={() => handleCheckboxChange(ambulance.userKey)}
+                                                    checked={formData.ambulanceIds.includes(ambulance.ambulanceId)}
+                                                    onChange={() => handleCheckboxChange(ambulance.ambulanceId)}
                                                     className="form-checkbox h-5 w-5 text-blue-600"
                                                 />
                                                 <span className="text-sm text-gray-900">{ambulance.userKey} ({getStatusText(ambulance.status)})</span>

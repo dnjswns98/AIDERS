@@ -1,3 +1,5 @@
+// src/components/webRTC/WebRtcCall.jsx
+
 import React, { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useWebRtc } from "../../context/WebRtcContext";
@@ -6,21 +8,21 @@ import { useMediaStream } from "../../hooks/useMediaStream";
 import { useFullScreen } from "../../hooks/useFullScreen";
 import VideoDisplay from "./VideoDisplay";
 import CallControls from "./CallControls";
-import useEmergencyStore from "../../store/useEmergencyStore";
 
 export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, patientName, ktas, onLeave }) {
   const { togglePipMode } = useWebRtc();
   const location = useLocation();
-  const fetchAmbulanceDetails = useEmergencyStore((state) => state.fetchAmbulanceDetails);
   
   const { joinSession, leaveSession } = useOpenVidu({ 
     sessionId, 
     ambulanceNumber,
-    hospitalId, // hospitalId 전달 추가
-    ktas, // KTAS 정보 전달
-    patientName, // 환자명 전달
+    hospitalId,
+    ktas,
+    patientName,
     onError: (error) => {
-      alert(error.message);
+      console.error("WebRTC Hook Error:", error);
+      alert(error.message); // 사용자에게 오류 알림
+      onLeave?.(); // 오류 발생 시 통화 종료 처리
     }
   });
   
@@ -32,22 +34,23 @@ export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, pat
   
   const { isFullScreen, toggleFullScreen } = useFullScreen();
 
+  // 🔥 수정된 부분: useEffect의 의존성 배열을 빈 배열([])로 변경
+  // 이렇게 하면 컴포넌트가 처음 마운트될 때 joinSession이 딱 한 번만 호출되고,
+  // 언마운트될 때 return문의 leaveSession이 딱 한 번만 호출됩니다.
   useEffect(() => {
     joinSession();
-    if (hospitalId && ambulanceNumber) {
-      fetchAmbulanceDetails(hospitalId, ambulanceNumber);
-    }
 
-  const handleBeforeUnload = (event) => {
-    leaveSession();
-  };
-  window.addEventListener("beforeunload", handleBeforeUnload);
+    const handleBeforeUnload = (event) => {
+        leaveSession();
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
-  return () => {
-    window.removeEventListener("beforeunload", handleBeforeUnload);
-    leaveSession();
-  };
-}, []);
+    return () => {
+        window.removeEventListener("beforeunload", handleBeforeUnload);
+        leaveSession();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // <-- 이 부분을 빈 배열로 수정했습니다!
 
   useEffect(() => {
     if (togglePipMode) {

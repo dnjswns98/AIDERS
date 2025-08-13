@@ -43,10 +43,18 @@ const PatientBasicInfoForm = ({ formData, handleInputChange }) => {
           <option>내과</option>
           <option>외과</option>
           <option>흉부외과</option>
+          <option>신경과</option>
           <option>신경외과</option>
           <option>정형외과</option>
           <option>산부인과</option>
           <option>소아과</option>
+          <option>소아청소년과</option>
+          <option>안과</option>
+          <option>이비인후과</option>
+          <option>피부과</option>
+          <option>치과</option>
+          <option>비뇨의학과</option>
+          <option>정신건강의학과</option>
         </select>
       </div>
       <div className="flex flex-col justify-end">

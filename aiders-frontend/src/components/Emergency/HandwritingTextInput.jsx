@@ -47,14 +47,20 @@ const HandwritingTextInput = ({
             const newHasSession = globalModelManager.session !== null;
             setIsModelLoaded(newIsLoaded && newHasSession);
           } catch (initError) {
-            console.error(`❌ [HandwritingTextInput] "${label}" 모델 초기화 실패:`, initError);
+            console.error(
+              `❌ [HandwritingTextInput] "${label}" 모델 초기화 실패:`,
+              initError
+            );
             setModelError(initError.message);
             setIsModelLoaded(false);
             setConversionError("AI 모델 로딩에 실패했습니다.");
           }
         }
       } catch (error) {
-        console.error(`❌ [HandwritingTextInput] "${label}" globalModelManager 상태 확인 실패:`, error);
+        console.error(
+          `❌ [HandwritingTextInput] "${label}" globalModelManager 상태 확인 실패:`,
+          error
+        );
         setModelError(error.message);
         setIsModelLoaded(false);
         setConversionError("AI 모델 연결에 실패했습니다.");
@@ -75,7 +81,10 @@ const HandwritingTextInput = ({
     const newWidth = Math.min(Math.max(containerWidth - 32, 300), 800);
     const newHeight = Math.max(newWidth * 0.25, 150);
     setCanvasSize((prev) => {
-      if (Math.abs(prev.width - newWidth) > 10 || Math.abs(prev.height - newHeight) > 10) {
+      if (
+        Math.abs(prev.width - newWidth) > 10 ||
+        Math.abs(prev.height - newHeight) > 10
+      ) {
         return { width: newWidth, height: newHeight };
       }
       return prev;
@@ -124,17 +133,12 @@ const HandwritingTextInput = ({
     if (!canvas) return { offsetX: 0, offsetY: 0 };
     const rect = canvas.getBoundingClientRect();
 
-    let clientX, clientY;
-    if (event.touches && event.touches[0]) {
-      clientX = event.touches[0].clientX;
-      clientY = event.touches[0].clientY;
-    } else {
-      clientX = event.clientX;
-      clientY = event.clientY;
-    }
-    
-    const offsetX = clientX - rect.left;
-    const offsetY = clientY - rect.top;
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.strokeStyle = "#000000";
+    context.lineWidth = 5;
+    context.imageSmoothingEnabled = true;
+    contextRef.current = context;
 
     return { offsetX, offsetY };
   }, []);
@@ -215,7 +219,10 @@ const HandwritingTextInput = ({
         setConversionError("인식된 텍스트가 없습니다.");
       }
     } catch (error) {
-      console.error(`❌ [HandwritingTextInput] "${label}" globalModelManager 변환 실패:`, error);
+      console.error(
+        `❌ [HandwritingTextInput] "${label}" globalModelManager 변환 실패:`,
+        error
+      );
       setConversionError("필기 인식에 실패했습니다. 다시 시도해주세요.");
       setShowPreview(true);
     } finally {
@@ -309,13 +316,17 @@ const HandwritingTextInput = ({
         <div className="flex items-center space-x-2 text-xs">
           <span
             className={`px-2 py-1 rounded ${
-              isModelLoaded ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+              isModelLoaded
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
             }`}
           >
             {isModelLoaded ? "✅ AI 준비" : "❌ AI 로딩 중"}
           </span>
           {isProcessing && (
-            <span className="px-2 py-1 rounded bg-blue-100 text-blue-800">🔄 변환 중</span>
+            <span className="px-2 py-1 rounded bg-blue-100 text-blue-800">
+              🔄 변환 중
+            </span>
           )}
         </div>
       </div>
@@ -368,7 +379,9 @@ const HandwritingTextInput = ({
             <canvas
               ref={canvasRef}
               className={`border-2 border-dashed border-gray-300 rounded-lg cursor-crosshair ${
-                isInputDisabled ? "opacity-50 cursor-not-allowed" : "hover:border-gray-400"
+                isInputDisabled
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:border-gray-400"
               }`}
               style={{
                 width: `${canvasSize.width}px`,
@@ -387,7 +400,9 @@ const HandwritingTextInput = ({
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="text-gray-400 text-center">
                   <p className="text-lg">🖋️ 마우스나 터치로 글씨를 써주세요</p>
-                  <p className="text-sm mt-1">필기 완료 1초 후 자동으로 텍스트 변환됩니다</p>
+                  <p className="text-sm mt-1">
+                    필기 완료 1초 후 자동으로 텍스트 변환됩니다
+                  </p>
                   {canvasSize && (
                     <p className="text-xs mt-2 opacity-75">
                       캔버스 크기: {canvasSize.width} × {canvasSize.height}px
@@ -400,7 +415,9 @@ const HandwritingTextInput = ({
               <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-sm text-gray-600">🤖 필기를 분석하는 중...</p>
+                  <p className="mt-2 text-sm text-gray-600">
+                    🤖 필기를 분석하는 중...
+                  </p>
                 </div>
               </div>
             )}
@@ -431,7 +448,9 @@ const HandwritingTextInput = ({
           {showPreview && (
             <div className="space-y-3 bg-green-50 border border-green-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-green-800">✅ 필기에서 변환된 텍스트:</h4>
+                <h4 className="text-sm font-medium text-green-800">
+                  ✅ 필기에서 변환된 텍스트:
+                </h4>
                 <button
                   type="button"
                   onClick={() => setShowPreview(false)}
@@ -441,7 +460,9 @@ const HandwritingTextInput = ({
                 </button>
               </div>
               <div className="bg-white border border-green-300 rounded p-2">
-                <p className="text-sm text-gray-700 italic">"{recognizedText}"</p>
+                <p className="text-sm text-gray-700 italic">
+                  "{recognizedText}"
+                </p>
               </div>
               <textarea
                 value={recognizedText}
@@ -451,8 +472,13 @@ const HandwritingTextInput = ({
                 rows={3}
               />
               <div className="flex items-center justify-between">
-                <div className="text-xs text-green-600">💡 변환된 텍스트를 수정할 수 있습니다. (globalModelManager 사용)</div>
-                <div className="text-xs text-gray-500">{recognizedText.length}자</div>
+                <div className="text-xs text-green-600">
+                  💡 변환된 텍스트를 수정할 수 있습니다. (globalModelManager
+                  사용)
+                </div>
+                <div className="text-xs text-gray-500">
+                  {recognizedText.length}자
+                </div>
               </div>
               <button
                 type="button"
@@ -465,7 +491,9 @@ const HandwritingTextInput = ({
           )}
           {typingText && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <h4 className="text-sm font-medium text-blue-800 mb-2">타이핑 모드에서 입력한 내용:</h4>
+              <h4 className="text-sm font-medium text-blue-800 mb-2">
+                타이핑 모드에서 입력한 내용:
+              </h4>
               <div className="bg-white border border-blue-300 rounded p-2">
                 <p className="text-sm text-gray-700 italic">"{typingText}"</p>
               </div>
@@ -476,21 +504,40 @@ const HandwritingTextInput = ({
 
       {process.env.NODE_ENV === "development" && (
         <details className="text-xs bg-gray-100 rounded p-2">
-          <summary className="cursor-pointer font-medium">**🔧 디버깅 정보 (globalModelManager 수정 버전):**</summary>
+          <summary className="cursor-pointer font-medium">
+            **🔧 디버깅 정보 (globalModelManager 수정 버전):**
+          </summary>
           <div className="mt-2 space-y-1">
             <div>**모드:** {mode}</div>
             <div>**모델 로드:** {isModelLoaded ? "✅" : "❌"}</div>
             <div>**변환 중:** {isProcessing ? "✅" : "❌"}</div>
             <div>**비활성화:** {isInputDisabled ? "✅" : "❌"}</div>
             <div>**모델 시스템:** globalModelManager (수정됨)</div>
-            <div>**타이핑 텍스트:** "{typingText}" ({typingText.length}자)</div>
-            <div>**인식 텍스트:** "{recognizedText}" ({recognizedText.length}자)</div>
-            <div>**필기 데이터:** {handwritingBase64 ? "✅ 있음" : "❌ 없음"}</div>
-            <div>**캔버스 크기:** {canvasSize.width}×{canvasSize.height}px</div>
-            <div>**필기 데이터(base64):** {handwritingBase64 ? "✅ 있음" : "❌ 없음"}</div>
+            <div>
+              **타이핑 텍스트:** "{typingText}" ({typingText.length}자)
+            </div>
+            <div>
+              **인식 텍스트:** "{recognizedText}" ({recognizedText.length}자)
+            </div>
+            <div>
+              **필기 데이터:** {handwritingBase64 ? "✅ 있음" : "❌ 없음"}
+            </div>
+            <div>
+              **캔버스 크기:** {canvasSize.width}×{canvasSize.height}px
+            </div>
+            <div>
+              **필기 데이터(base64):**{" "}
+              {handwritingBase64 ? "✅ 있음" : "❌ 없음"}
+            </div>
             <div>**인식된 텍스트:** "{recognizedText}"</div>
-            {modelError && <div className="text-red-600">**모델 오류:** {modelError}</div>}
-            {conversionError && <div className="text-red-600">**변환 오류:** {conversionError}</div>}
+            {modelError && (
+              <div className="text-red-600">**모델 오류:** {modelError}</div>
+            )}
+            {conversionError && (
+              <div className="text-red-600">
+                **변환 오류:** {conversionError}
+              </div>
+            )}
           </div>
         </details>
       )}

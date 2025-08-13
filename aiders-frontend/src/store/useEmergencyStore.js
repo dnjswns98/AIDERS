@@ -1,9 +1,6 @@
-// src/store/useEmergencyStore.js - 구급차/소방서 역할 분리 (최종 버전)
-
 import { create } from "zustand";
-import { 
+import {
   getAmbulances,
-  getAmbulanceDetail,
   updateAmbulanceStatus,
   getAmbulanceLocation,
   saveRequiredPatientInfo,
@@ -12,10 +9,12 @@ import {
   requestHospitalMatching,
   getMatchedHospital,
   getHospitals,
-  getDispatchHistory,
   geocodeAddress,
   reverseGeocode,
-  calculateDistance
+  calculateDistance,
+  getMyAmbulanceStatus,
+  getMyAmbulancePatientInfo,
+  generateReport,
 } from "../api/api";
 import { useAuthStore } from "./useAuthStore";
 
@@ -83,7 +82,7 @@ const validatePatientData = (patientData) => {
   }
   if (patientData.ageRange) {
     const ageMap = {
-      '신생아': 'NEWBORN', '유아': 'INFANT', '어린이': 'KIDS',
+      '신생아': 'NEWBORN', '유아': 'INFANT', '아동': 'KIDS',
       '청소년': 'TEENAGER', '성인': 'ADULT', '노인': 'ELDERLY'
     };
     const mappedAge = ageMap[patientData.ageRange];
@@ -103,7 +102,7 @@ const validatePatientData = (patientData) => {
             const values = Object.values(parsed).filter(v => v && v.trim);
             value = values.length > 0 ? values[0] : '';
           }
-        } catch (e) {}
+        } catch (e) { }
       }
       if (typeof value === 'string' && value.trim()) {
         const fieldMap = { chiefComplaint: 'medicalRecord', medications: 'medicine' };
@@ -175,44 +174,38 @@ const useEmergencyStore = create((set, get) => ({
   dispatchHistory: [],
   realtimeUpdates: new Map(), // ambulanceId -> updateData
 
-  // ======================================================================
-  // 🚑 구급차 관련 액션들
-  // ======================================================================
-
-  /**
-   * 🔥 [추가됨] 현재 로그인한 구급차 정보로 상태를 설정하는 핵심 액션
-   * 구급차 사용자가 로그인했을 때, 이 함수를 호출하여 자신의 정보만 상태에 설정합니다.
-   */
-  selectMyAmbulance: () => {
+  selectMyAmbulance: async () => {
     const { user } = useAuthStore.getState();
-    // 사용자 역할이 'ambulance' 또는 'ambulance' 타입일 때만 실행
-    if (user && (user.role === 'ambulance' || user.userType === 'ambulance')) {
-      const myAmbulance = {
-        id: user.userId,
-        userKey: user.userKey,
-        carNumber: user.userKey, // userKey를 차량 번호로 사용
-        currentStatus: 'WAIT',   // 로그인 직후 기본 상태
-        status: 'standby',
-        patientInfo: get().patientInfo, // 기존 환자 정보 유지
-        patientDetails: get().patientDetails,
-      };
-      
-      // selectedAmbulance와 ambulances 배열을 현재 내 정보로 설정합니다.
-      set({ selectedAmbulance: myAmbulance, ambulances: [myAmbulance], isLoading: false, error: null });
-      
-      // 서버에서 최신 환자 정보를 가져와 동기화 (선택적)
-      get().fetchPatientInfo(user.userId);
-    } else {
+    if (!user || (user.role !== 'ambulance' && user.userType !== 'ambulance')) {
         console.warn("[Emergency Store] 구급차 사용자가 아니거나 사용자 정보가 없습니다.");
+        return;
+    }
+    set({ isLoading: true, error: null });
+    try {
+        const ambulanceStatusResponse = await getMyAmbulanceStatus();
+        const myAmbulanceStatus = ambulanceStatusResponse.ambCurrentStatus || 'wait';
+        const dispatchInfoResponse = await getMyAmbulancePatientInfo();
+        const updatedAmbulance = {
+            id: user.userId,
+            userKey: user.userKey,
+            carNumber: user.userKey,
+            currentStatus: myAmbulanceStatus.toUpperCase(),
+            status: myAmbulanceStatus.toLowerCase(),
+            pAddress: dispatchInfoResponse?.address,
+            pCondition: dispatchInfoResponse?.condition,
+            pLatitude: dispatchInfoResponse?.latitude,
+            pLongitude: dispatchInfoResponse?.longitude,
+            patientInfo: get().patientInfo,
+            patientDetails: get().patientDetails,
+        };
+        set({ selectedAmbulance: updatedAmbulance, ambulances: [updatedAmbulance], isLoading: false, error: null });
+    } catch (error) {
+        console.error("[useEmergencyStore] 내 구급차 정보 조회 실패:", error);
+        set({ isLoading: false, error: error.message || '내 구급차 정보 조회 실패' });
     }
   },
 
-  /**
-   * 🔥 [유지] 소방서에서 전체 구급차 목록을 조회하기 위한 함수
-   * 이 함수는 구급차 페이지에서는 호출되지 않아야 합니다.
-   */
   fetchAmbulances: async () => {
-    console.log('[Emergency Store] fetchAmbulances 호출됨 (소방서용)');
     set({ isLoading: true, error: null });
     try {
       const ambulanceList = await getAmbulances();
@@ -224,410 +217,181 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  /**
-   * 구급차 상태 업데이트 (소방서 배차와 연동)
-   */
   updateAmbulanceStatus: async (ambulanceId, status) => {
-    console.log(`[Emergency Store] 구급차 ${ambulanceId} 상태 변경: ${status}`);
-
     try {
-      // API 호출
       await updateAmbulanceStatus(ambulanceId, status);
-      
-      // 로컬 상태 업데이트
       set(state => {
         const updatedAmbulances = state.ambulances.map(amb =>
           amb.id === ambulanceId 
-            ? { 
-                ...amb, 
-                currentStatus: status.toUpperCase(),
-                status: status.toLowerCase(),
-                statusText: getAmbulanceStatusText(status),
-                lastUpdate: new Date().toISOString()
-              }
+            ? { ...amb, currentStatus: status.toUpperCase(), status: status.toLowerCase(), statusText: getAmbulanceStatusText(status), lastUpdate: new Date().toISOString() }
             : amb
         );
-
         const updatedSelected = state.selectedAmbulance?.id === ambulanceId
           ? updatedAmbulances.find(amb => amb.id === ambulanceId)
           : state.selectedAmbulance;
-
         return {
           ambulances: updatedAmbulances,
           selectedAmbulance: updatedSelected,
           lastUpdated: new Date().toISOString()
         };
       });
-
-      // 성공 알림
       const statusText = getAmbulanceStatusText(status);
-      alert(`✅ 구급차 상태가 '${statusText}'로 변경되었습니다.`);
-      
-      console.log(`[Emergency Store] 구급차 상태 변경 성공: ${status}`);
-
+      console.log(`[Emergency Store] 구급차 상태 변경 성공: ${statusText}`);
     } catch (error) {
-      console.error('[Emergency Store] 구급차 상태 변경 실패:', error);
-      
       const errorMessage = error.response?.data?.message || error.message || '구급차 상태 변경에 실패했습니다.';
-      
       set({ error: errorMessage });
       alert(`❌ 구급차 상태 변경 실패\n${errorMessage}`);
-      
       throw error;
     }
   },
 
-  /**
-   * 구급차 상세 정보 조회
-   */
   fetchAmbulanceDetail: async (ambulanceId) => {
-    console.log(`[Emergency Store] 구급차 ${ambulanceId} 상세 정보 조회`);
-
     try {
       const ambulanceDetail = await getAmbulanceDetail(ambulanceId);
-      
-      // 환자 정보가 있으면 스토어에 반영
       if (ambulanceDetail.patientInfo) {
         set(state => ({
           patientInfo: { ...state.patientInfo, ...ambulanceDetail.patientInfo },
           patientDetails: { ...state.patientDetails, ...ambulanceDetail.patientDetails }
         }));
       }
-
-      console.log('[Emergency Store] 구급차 상세 정보 조회 성공:', ambulanceDetail);
       return ambulanceDetail;
-
     } catch (error) {
-      console.error('[Emergency Store] 구급차 상세 정보 조회 실패:', error);
-      
       const errorMessage = error.response?.data?.message || error.message || '구급차 상세 정보 조회에 실패했습니다.';
       set({ error: errorMessage });
-      
       throw error;
     }
   },
 
-  /**
-   * 구급차 위치 조회
-   */
   fetchAmbulanceLocation: async (ambulanceId) => {
     try {
       const locationData = await getAmbulanceLocation(ambulanceId);
-      
-      // 위치를 주소로 변환 (선택적)
       try {
         const addressInfo = await reverseGeocode(locationData.latitude, locationData.longitude);
         locationData.address = addressInfo.address;
       } catch (geocodeError) {
         console.warn('[Emergency Store] 주소 변환 실패, 좌표만 사용:', geocodeError.message);
       }
-
-      console.log('[Emergency Store] 구급차 위치 조회 성공:', locationData);
       return locationData;
-
     } catch (error) {
-      console.error('[Emergency Store] 구급차 위치 조회 실패:', error);
       throw error;
     }
   },
 
-  // ======================================================================
-  // 📍 위치 관련 액션들
-  // ======================================================================
-
-  /**
-   * 현재 위치 조회 (GPS)
-   */
   getCurrentLocation: async () => {
-    console.log('[Emergency Store] GPS 위치 조회 시작');
     set({ isLocationLoading: true, locationError: null });
-
     try {
       const locationData = await getCurrentLocationFromDashboard();
-      
-      set({
-        currentLocation: locationData,
-        locationError: null,
-        isLocationLoading: false
-      });
-
-      console.log('[Emergency Store] GPS 위치 조회 성공:', locationData);
+      set({ currentLocation: locationData, locationError: null, isLocationLoading: false });
       return locationData;
-
     } catch (error) {
-      console.error('[Emergency Store] GPS 위치 조회 실패:', error);
-      
-      set({
-        locationError: error.message,
-        isLocationLoading: false
-      });
-
+      set({ locationError: error.message, isLocationLoading: false });
       throw error;
     }
   },
 
-  /**
-   * 주소를 좌표로 변환
-   */
   geocodeAddress: async (address) => {
     try {
-      console.log('[Emergency Store] 주소 좌표 변환:', address);
-      
-      const result = await geocodeAddress(address);
-      
-      console.log('[Emergency Store] 주소 변환 성공:', result);
-      return result;
-
+      return await geocodeAddress(address);
     } catch (error) {
-      console.error('[Emergency Store] 주소 변환 실패:', error);
       throw error;
     }
   },
-
-  // ======================================================================
-  // 👨‍⚕️ 환자 정보 관련 액션들
-  // ======================================================================
-
-  /**
-   * 환자 기본 정보 업데이트
-   */
+  
   updatePatientInfo: (patientInfo) => {
-    console.log('[Emergency Store] 환자 기본 정보 업데이트:', patientInfo);
-    
     set(state => ({
       patientInfo: { ...state.patientInfo, ...patientInfo },
-      selectedAmbulance: state.selectedAmbulance ? {
-        ...state.selectedAmbulance,
-        patientInfo: { ...state.selectedAmbulance.patientInfo, ...patientInfo }
-      } : null
+      selectedAmbulance: state.selectedAmbulance ? { ...state.selectedAmbulance, patientInfo: { ...state.selectedAmbulance.patientInfo, ...patientInfo } } : null
     }));
   },
-
-  /**
-   * 환자 상세 정보 업데이트
-   */
+  
   updatePatientDetails: (patientDetails) => {
-    console.log('[Emergency Store] 환자 상세 정보 업데이트:', patientDetails);
-    
     set(state => ({
       patientDetails: { ...state.patientDetails, ...patientDetails },
-      selectedAmbulance: state.selectedAmbulance ? {
-        ...state.selectedAmbulance,
-        patientDetails: { ...state.selectedAmbulance.patientDetails, ...patientDetails }
-      } : null
+      selectedAmbulance: state.selectedAmbulance ? { ...state.selectedAmbulance, patientDetails: { ...state.selectedAmbulance.patientDetails, ...patientDetails } } : null
     }));
   },
-
-  /**
-   * 환자 필수 정보 저장 (KTAS, 진료과)
-   */
+  
   saveRequiredPatientInfo: async (requiredData) => {
-    console.log('[Emergency Store] 환자 필수 정보 저장 시작:', requiredData);
     set({ isPatientDataSaving: true, patientDataError: null });
-
     try {
-      // 데이터 검증
       const validation = validatePatientData(requiredData);
-      if (!validation.isValid) {
-        throw new Error(validation.errors.join(', '));
-      }
-
-      // KTAS와 진료과가 필수
-      if (!validation.data.ktas || !validation.data.department) {
-        throw new Error('KTAS와 진료과는 필수 입력 항목입니다.');
-      }
-
-      // 위치 정보 추가 (병원 매칭용)
-      const currentLocation = get().currentLocation;
-      let locationData = currentLocation;
-      
-      if (!locationData) {
-        try {
-          locationData = await get().getCurrentLocation();
-        } catch (locationError) {
-          console.warn('[Emergency Store] 위치 정보 없이 환자 정보 저장:', locationError.message);
-        }
-      }
-
-      const apiData = {
-        ...validation.data,
-        ...(locationData && {
-          latitude: locationData.latitude,
-          longitude: locationData.longitude
-        })
-      };
-
-      // API 호출
+      if (!validation.isValid) throw new Error(validation.errors.join(', '));
+      if (!validation.data.ktas || !validation.data.department) throw new Error('KTAS와 진료과는 필수 입력 항목입니다.');
+      const locationData = get().currentLocation || await get().getCurrentLocation();
+      const apiData = { ...validation.data, ...(locationData && { latitude: locationData.latitude, longitude: locationData.longitude }) };
       await saveRequiredPatientInfo(apiData);
-
-      // 로컬 상태 업데이트
       get().updatePatientInfo(requiredData);
       get().updatePatientDetails(requiredData);
-
       set({ isPatientDataSaving: false });
-
-      // 병원 자동 매칭 트리거 (KTAS와 진료과가 있을 때)
       if (validation.data.ktas && validation.data.department && locationData) {
         const selectedAmbulance = get().selectedAmbulance;
-        if (selectedAmbulance?.id) {
-          console.log('[Emergency Store] 병원 자동 매칭 트리거');
-          await get().triggerHospitalMatching(selectedAmbulance.id);
-        }
+        if (selectedAmbulance?.id) await get().triggerHospitalMatching(selectedAmbulance.id);
       }
-
-      console.log('[Emergency Store] 환자 필수 정보 저장 성공');
       return apiData;
-
     } catch (error) {
-      console.error('[Emergency Store] 환자 필수 정보 저장 실패:', error);
-      
       const errorMessage = error.response?.data?.message || error.message || '환자 정보 저장에 실패했습니다.';
-      
-      set({
-        patientDataError: errorMessage,
-        isPatientDataSaving: false
-      });
-
+      set({ patientDataError: errorMessage, isPatientDataSaving: false });
       alert(`❌ 환자 정보 저장 실패\n${errorMessage}`);
       throw error;
     }
   },
-
-  /**
-   * 환자 선택 정보 저장
-   */
+  
   saveOptionalPatientInfo: async (optionalData) => {
-    console.log('[Emergency Store] 환자 선택 정보 저장 시작:', optionalData);
     set({ isPatientDataSaving: true, patientDataError: null });
-
     try {
-      // 데이터 검증
       const validation = validatePatientData(optionalData);
-      if (!validation.isValid) {
-        throw new Error(validation.errors.join(', '));
-      }
-
-      // 저장할 데이터가 있는지 확인
+      if (!validation.isValid) throw new Error(validation.errors.join(', '));
       if (Object.keys(validation.data).length === 0) {
-        console.warn('[Emergency Store] 저장할 선택 정보가 없음');
         set({ isPatientDataSaving: false });
         return;
       }
-
-      // API 호출
       await saveOptionalPatientInfo(validation.data);
-
-      // 로컬 상태 업데이트
       get().updatePatientInfo(optionalData);
       get().updatePatientDetails(optionalData);
-
       set({ isPatientDataSaving: false });
-
-      console.log('[Emergency Store] 환자 선택 정보 저장 성공');
       return validation.data;
-
     } catch (error) {
-      console.error('[Emergency Store] 환자 선택 정보 저장 실패:', error);
-      
       const errorMessage = error.response?.data?.message || error.message || '환자 정보 저장에 실패했습니다.';
-      
-      set({
-        patientDataError: errorMessage,
-        isPatientDataSaving: false
-      });
-
-      // 선택 정보는 실패해도 크리티컬하지 않으므로 alert 없이 로그만
-      console.warn(`환자 선택 정보 저장 실패: ${errorMessage}`);
+      set({ patientDataError: errorMessage, isPatientDataSaving: false });
       throw error;
     }
   },
-
-  /**
-   * 환자 정보 조회
-   */
+  
   fetchPatientInfo: async (ambulanceId = null) => {
     try {
-      console.log('[Emergency Store] 환자 정보 조회:', ambulanceId);
-      
       const patientData = await getPatientInfo(ambulanceId);
-      
       if (patientData) {
         set(state => ({
           patientInfo: { ...state.patientInfo, ...patientData },
           patientDetails: { ...state.patientDetails, ...patientData }
         }));
       }
-
-      console.log('[Emergency Store] 환자 정보 조회 성공:', patientData);
       return patientData;
-
     } catch (error) {
-      console.error('[Emergency Store] 환자 정보 조회 실패:', error);
       throw error;
     }
   },
-
-  // ======================================================================
-  // 🏥 병원 매칭 관련 액션들
-  // ======================================================================
-
-  /**
-   * 병원 자동 매칭 요청
-   */
+  
   triggerHospitalMatching: async (ambulanceId) => {
-    console.log(`[Emergency Store] 병원 자동 매칭 시작: ${ambulanceId}`);
-    
-    if (!ambulanceId) {
-      throw new Error('구급차 ID가 필요합니다.');
-    }
-
-    set({
-      isHospitalMatching: true,
-      hospitalMatchingStatus: 'loading',
-      hospitalMatchingError: null
-    });
-
+    if (!ambulanceId) throw new Error('구급차 ID가 필요합니다.');
+    set({ isHospitalMatching: true, hospitalMatchingStatus: 'loading', hospitalMatchingError: null });
     try {
-      // 현재 위치 확인
-      let locationData = get().currentLocation;
-      if (!locationData) {
-        console.log('[Emergency Store] 위치 정보 없음, GPS 조회 시작');
-        locationData = await get().getCurrentLocation();
-      }
-
-      if (!locationData || !locationData.latitude || !locationData.longitude) {
-        throw new Error('위치 정보를 확인할 수 없습니다. GPS를 활성화해주세요.');
-      }
-
-      // 병원 매칭 요청
-      const matchingData = {
-        ambulanceId,
-        latitude: locationData.latitude,
-        longitude: locationData.longitude
-      };
-
-      console.log('[Emergency Store] 병원 매칭 API 호출:', matchingData);
+      const locationData = get().currentLocation || await get().getCurrentLocation();
+      if (!locationData?.latitude || !locationData?.longitude) throw new Error('위치 정보를 확인할 수 없습니다. GPS를 활성화해주세요.');
+      const matchingData = { ambulanceId, latitude: locationData.latitude, longitude: locationData.longitude };
       const matchingResult = await requestHospitalMatching(matchingData);
-
-      if (!matchingResult || !matchingResult.hospitalId) {
-        throw new Error('매칭 가능한 병원이 없습니다.');
-      }
-
-      // 병원과의 거리 계산
+      if (!matchingResult?.hospitalId) throw new Error('매칭 가능한 병원이 없습니다.');
+      
       let distance = null;
       if (matchingResult.latitude && matchingResult.longitude) {
         try {
-          const distanceResult = await calculateDistance(
-            { latitude: locationData.latitude, longitude: locationData.longitude },
-            { latitude: matchingResult.latitude, longitude: matchingResult.longitude }
-          );
+          const distanceResult = await calculateDistance({ latitude: locationData.latitude, longitude: locationData.longitude }, { latitude: matchingResult.latitude, longitude: matchingResult.longitude });
           distance = distanceResult.distance;
         } catch (distanceError) {
           console.warn('[Emergency Store] 거리 계산 실패:', distanceError.message);
         }
       }
-
-      // 매칭된 병원 정보 구성
+      
       const hospitalData = {
         id: matchingResult.hospitalId,
         hospitalId: matchingResult.hospitalId,
@@ -643,336 +407,94 @@ const useEmergencyStore = create((set, get) => ({
         longitude: matchingResult.longitude || 126.9988,
         matchedAt: new Date().toISOString()
       };
-
-      set({
-        matchedHospitals: [hospitalData],
-        hospitalMatchingStatus: 'success',
-        hospitalMatchingError: null,
-        isHospitalMatching: false
-      });
-
-      // 성공 알림
+      
+      set({ matchedHospitals: [hospitalData], hospitalMatchingStatus: 'success', hospitalMatchingError: null, isHospitalMatching: false });
       alert(`✅ 병원 매칭 성공!\n${hospitalData.name}\n거리: ${hospitalData.distance}`);
-
-      console.log('[Emergency Store] 병원 매칭 성공:', hospitalData);
       return matchingResult;
-
     } catch (error) {
-      console.error('[Emergency Store] 병원 매칭 실패:', error);
-      
       const errorMessage = error.response?.data?.message || error.message || '병원 매칭에 실패했습니다.';
-      
-      set({
-        hospitalMatchingStatus: 'error',
-        hospitalMatchingError: errorMessage,
-        isHospitalMatching: false,
-        matchedHospitals: []
-      });
-
+      set({ hospitalMatchingStatus: 'error', hospitalMatchingError: errorMessage, isHospitalMatching: false, matchedHospitals: [] });
       alert(`❌ 병원 매칭 실패\n${errorMessage}`);
       throw error;
     }
   },
-
-  /**
-   * 기존 병원 매칭 상태 확인
-   */
-  checkHospitalMatchingStatus: async (ambulanceId) => {
-    if (!ambulanceId) return;
-
-    try {
-      console.log(`[Emergency Store] 병원 매칭 상태 확인: ${ambulanceId}`);
-      
-      const statusResult = await getMatchedHospital(ambulanceId);
-
-      if (statusResult && statusResult.hospitalId) {
-        const hospitalData = {
-          id: statusResult.hospitalId,
-          hospitalId: statusResult.hospitalId,
-          name: statusResult.name || '기존 매칭 병원',
-          address: statusResult.address || '주소 확인 중',
-          distance: '기존 매칭',
-          eta: '기존 매칭',
-          departments: ['응급의학과'],
-          availableBeds: '확인 중',
-          emergencyLevel: 'Level1',
-          isAvailable: true,
-          latitude: statusResult.latitude || 37.5799,
-          longitude: statusResult.longitude || 126.9988,
-          isExistingMatch: true
-        };
-
-        set({
-          matchedHospitals: [hospitalData],
-          hospitalMatchingStatus: 'success',
-          hospitalMatchingError: null
-        });
-
-        console.log('[Emergency Store] 기존 매칭 병원 확인:', hospitalData);
-      } else {
-        set({
-          matchedHospitals: [],
-          hospitalMatchingStatus: 'idle',
-          hospitalMatchingError: null
-        });
-
-        console.log('[Emergency Store] 기존 매칭 병원 없음');
-      }
-
-      return statusResult;
-
-    } catch (error) {
-      if (error.response?.status === 404) {
-        // 404는 정상 상황 (매칭된 병원 없음)
-        set({
-          matchedHospitals: [],
-          hospitalMatchingStatus: 'idle',
-          hospitalMatchingError: null
-        });
-      } else {
-        console.error('[Emergency Store] 병원 매칭 상태 확인 실패:', error);
-        set({
-          hospitalMatchingStatus: 'error',
-          hospitalMatchingError: '매칭 상태 확인에 실패했습니다.'
-        });
-      }
-    }
-  },
-
-  /**
-   * 병원 매칭 취소/리셋
-   */
+  
   resetHospitalMatching: () => {
-    console.log('[Emergency Store] 병원 매칭 초기화');
-    
-    set({
+    set({ matchedHospitals: [], hospitalMatchingStatus: 'idle', hospitalMatchingError: null, isHospitalMatching: false });
+  },
+  
+  /**
+   * 🔥 수정된 이송 완료 함수
+   * 페이지 이동을 먼저 처리하고, API 통신을 백그라운드에서 수행합니다.
+   * @param {function | null} navigate - React Router의 navigate 함수 (선택 사항)
+   */
+  completeTransport: async (navigate = null) => {
+    const { selectedAmbulance } = get();
+    if (!selectedAmbulance) {
+      alert('구급차 정보가 없습니다.');
+      return;
+    }
+
+    // 1. 사용자 경험을 위해 즉시 상태를 변경하고 페이지를 이동시킴
+    alert('✅ 이송 완료 처리되었습니다. 잠시 후 대기 상태로 전환됩니다.');
+    set(state => ({
+      selectedAmbulance: {
+        ...state.selectedAmbulance,
+        currentStatus: 'WAIT',
+        status: 'wait',
+        patientInfo: { name: '', gender: '', ageRange: '', ktasLevel: '', department: '' },
+        patientDetails: { medicalRecord: '', familyHistory: '', pastHistory: '', medicine: '', vitalSigns: '', rrn: '', nationality: '' },
+      },
       matchedHospitals: [],
       hospitalMatchingStatus: 'idle',
-      hospitalMatchingError: null,
-      isHospitalMatching: false
-    });
-  },
+    }));
 
-  // ======================================================================
-  // 🚨 출동 관련 액션들 (소방서와 연동)
-  // ======================================================================
+    if (navigate) {
+      navigate('/emergency/waiting', { replace: true });
+    }
 
-  /**
-   * 출동 기록 조회
-   */
-  fetchDispatchHistory: async () => {
+    // 2. 백그라운드에서 API 통신 시도
     try {
-      console.log('[Emergency Store] 출동 기록 조회');
+      try {
+        console.log('📝 AI 보고서 생성을 시작합니다...');
+        const report = await generateReport();
+        console.log(`✅ 보고서 생성 완료: ${report.reportId}`);
+      } catch (reportError) {
+        console.error('⚠️ 보고서 생성 실패:', reportError);
+        alert(`⚠️ 보고서 생성에 실패했습니다: ${reportError.message}`);
+      }
       
-      const history = await getDispatchHistory();
-      
-      set({
-        dispatchHistory: history || [],
-        lastUpdated: new Date().toISOString()
-      });
-
-      console.log('[Emergency Store] 출동 기록 조회 성공:', history?.length, '건');
-      return history;
+      await updateAmbulanceStatus(selectedAmbulance.id, 'wait');
+      console.log('✅ 구급차 상태가 서버에 "대기"로 업데이트되었습니다.');
 
     } catch (error) {
-      console.error('[Emergency Store] 출동 기록 조회 실패:', error);
-      throw error;
+      console.error('❌ 이송 완료 백그라운드 처리 실패:', error);
+      alert('❌ 서버에 이송 완료 상태를 저장하는 데 실패했습니다: ' + error.message);
     }
   },
-
-  /**
-   * 소방서 배차 알림 처리 (WebSocket에서 호출)
-   */
-  handleDispatchNotification: (dispatchData) => {
-    console.log('[Emergency Store] 소방서 배차 알림 수신:', dispatchData);
-    
-    const notification = {
-      id: Date.now(),
-      type: 'dispatch',
-      title: '출동 지시',
-      message: `출동 지시가 접수되었습니다.`,
-      address: dispatchData.address,
-      condition: dispatchData.condition,
-      priority: dispatchData.priority || 'normal',
-      hospitalId: dispatchData.hospitalId,
-      timestamp: new Date().toISOString(),
-      isRead: false
-    };
-
-    set({
-      lastDispatchNotification: notification
-    });
-
-    // 구급차 상태 자동 업데이트
-    const selectedAmbulance = get().selectedAmbulance;
-    if (selectedAmbulance?.id && dispatchData.ambulanceIds?.includes(selectedAmbulance.id)) {
-      get().updateAmbulanceStatus(selectedAmbulance.id, 'dispatch');
+  
+  transferToHospital: async () => {
+    const { selectedAmbulance } = get();
+    if (!selectedAmbulance) {
+      alert('구급차 정보가 없습니다.');
+      return;
     }
-
-    // 사용자 알림
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('🚑 출동 지시', {
-        body: `${dispatchData.address}\n${dispatchData.condition}`,
-        icon: '/ambulance-icon.png',
-        badge: '/ambulance-badge.png'
-      });
-    } else {
-      alert(`🚑 출동 지시 접수\n주소: ${dispatchData.address}\n상태: ${dispatchData.condition}`);
+    const currentStatus = (selectedAmbulance.currentStatus || selectedAmbulance.status)?.toLowerCase();
+    if (currentStatus !== 'dispatch' && currentStatus !== 'dispatched') {
+      alert('환자를 태우기 전에는 상태를 변경할 수 없습니다.');
+      return;
     }
-  },
-
-  // ======================================================================
-  // 📊 통계 및 유틸리티
-  // ======================================================================
-
-  /**
-   * 구급차 통계 조회
-   */
-  getStatistics: () => {
-    const ambulances = get().ambulances;
-    const dispatched = ambulances.filter(amb => 
-      ['DISPATCH', 'dispatched', 'transporting'].includes(amb.currentStatus || amb.status)
-    );
-    const available = ambulances.filter(amb => 
-      ['WAIT', 'standby', 'completed'].includes(amb.currentStatus || amb.status)
-    );
-
-    return {
-      total: ambulances.length,
-      dispatched: dispatched.length,
-      available: available.length,
-      emergency: ambulances.filter(amb => amb.priority === '응급').length,
-      urgent: ambulances.filter(amb => amb.priority === '긴급').length,
-      normal: ambulances.filter(amb => amb.priority === '보통').length
-    };
-  },
-
-  /**
-   * 구급차 ID로 조회
-   */
-  getAmbulanceById: (ambulanceId) => {
-    return get().ambulances.find(amb => amb.id === ambulanceId);
-  },
-
-  /**
-   * 출동 중인 구급차 목록
-   */
-  getDispatchedAmbulances: () => {
-    return get().ambulances.filter(amb => 
-      ['DISPATCH', 'dispatched', 'transporting'].includes(amb.currentStatus || amb.status)
-    );
-  },
-
-  /**
-   * 대기 중인 구급차 목록
-   */
-  getAvailableAmbulances: () => {
-    return get().ambulances.filter(amb => 
-      ['WAIT', 'standby', 'completed'].includes(amb.currentStatus || amb.status)
-    );
-  },
-
-  /**
-   * 에러 클리어
-   */
-  clearError: () => {
-    set({ error: null, patientDataError: null, locationError: null, hospitalMatchingError: null });
-  },
-
-  /**
-   * 전체 상태 초기화
-   */
-  reset: () => {
-    console.log('[Emergency Store] 전체 상태 초기화');
-    
-    set({
-      selectedAmbulance: null,
-      ambulances: [],
-      isLoading: false,
-      error: null,
-      lastUpdated: null,
-      currentLocation: null,
-      locationError: null,
-      isLocationLoading: false,
-      matchedHospitals: [],
-      hospitalMatchingStatus: 'idle',
-      hospitalMatchingError: null,
-      isHospitalMatching: false,
-      patientInfo: {
-        name: '',
-        gender: '',
-        ageRange: '',
-        ktasLevel: '',
-        department: ''
-      },
-      patientDetails: {
-        medicalRecord: '',
-        familyHistory: '',
-        pastHistory: '',
-        medicine: '',
-        vitalSigns: '',
-        rrn: '',
-        nationality: ''
-      },
-      isPatientDataSaving: false,
-      patientDataError: null,
-      lastDispatchNotification: null,
-      dispatchHistory: [],
-      realtimeUpdates: new Map()
-    });
-  },
-
-  // ======================================================================
-  // 🔧 디버깅 및 테스트 함수들
-  // ======================================================================
-
-  /**
-   * 현재 상태 디버깅
-   */
-  debugCurrentState: () => {
-    const state = get();
-    const authState = useAuthStore.getState();
-    
-    console.log('=== Emergency Store Debug ===');
-    console.log('Selected Ambulance:', state.selectedAmbulance);
-    console.log('Ambulances:', state.ambulances);
-    console.log('Current Location:', state.currentLocation);
-    console.log('Matched Hospitals:', state.matchedHospitals);
-    console.log('Patient Info:', state.patientInfo);
-    console.log('Patient Details:', state.patientDetails);
-    console.log('Auth State:', authState);
-    console.log('=============================');
-    
-    return { emergencyState: state, authState };
-  },
-
-  /**
-   * 병원 매칭 테스트
-   */
-  testHospitalMatching: async (testData) => {
     try {
-      console.log('[Test] 병원 매칭 테스트:', testData);
-      
-      const result = await requestHospitalMatching(testData);
-      
-      console.log('[Test] 병원 매칭 테스트 성공:', result);
-      return result;
-
+      await updateAmbulanceStatus(selectedAmbulance.id, 'transfer');
+      set(state => ({
+        selectedAmbulance: { ...state.selectedAmbulance, currentStatus: 'TRANSFER', status: 'transfer' }
+      }));
+      alert('✅ 환자를 태우고 병원으로 이송을 시작합니다.');
     } catch (error) {
-      console.error('[Test] 병원 매칭 테스트 실패:', error);
-      throw error;
+      set({ error: error.message });
+      alert('❌ 이송 상태 변경 실패: ' + error.message);
     }
   },
-
-  /**
-   * 환자 데이터 검증 테스트
-   */
-  testPatientDataValidation: (testData) => {
-    const validation = validatePatientData(testData);
-    
-    console.log('[Test] 환자 데이터 검증 결과:', validation);
-    return validation;
-  }
 }));
 
 export default useEmergencyStore;
