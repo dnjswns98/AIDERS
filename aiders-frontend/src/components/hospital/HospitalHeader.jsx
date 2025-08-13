@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 import useHospitalStore from "../../store/useHospitalStore";
-import useNotificationStore from "../../store/useNotificationStore";
 import NotificationModal from "./NotificationModal";
 import styles from './HospitalHeader.module.css';
 
@@ -11,19 +10,15 @@ export default function HospitalHeader() {
   const location = useLocation();
   const { user, logout } = useAuthStore();
   const { hospitalInfo } = useHospitalStore();
-  const { getUnreadCount } = useNotificationStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
   const dropdownRef = useRef(null);
-  
-  const unreadCount = getUnreadCount();
 
   const menuItems = [
     { label: "상황판", icon: "📊", path: "/hospital/dashboard" },
     { label: "구급환자", icon: "🚑", path: "/hospital/emergency" },
     { label: "병상관리", icon: "🏥", path: "/hospital/beds" },
-    { label: "화상통화 테스트", icon: "📹", path: "/hospital/webrtc-test" },
-    { label: "알림", icon: "🔔", path: "/hospital/notifications" }
+    { label: "화상통화 테스트", icon: "📹", path: "/hospital/webrtc-test" }
   ];
 
   const getCurrentMenu = () => {
@@ -34,18 +29,23 @@ export default function HospitalHeader() {
   const activeMenu = getCurrentMenu();
 
   useEffect(() => {
-  }, [hospitalInfo]);
-
-  useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
       }
     };
 
+    // 토스트 클릭 시 NotificationModal 열기
+    const handleOpenNotificationModal = () => {
+      setNotificationModalOpen(true);
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('openNotificationModal', handleOpenNotificationModal);
+    
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('openNotificationModal', handleOpenNotificationModal);
     };
   }, []);
 
@@ -91,9 +91,7 @@ export default function HospitalHeader() {
                   <button
                     key={item.label}
                     onClick={() => {
-                      if (item.label === "알림") {
-                        setNotificationModalOpen(true);
-                      } else if (item.label === "상황판") {
+                      if (item.label === "상황판") {
                         window.open(item.path, '_blank', 'width=1200,height=800');
                       } else {
                         navigate(item.path);
@@ -104,27 +102,27 @@ export default function HospitalHeader() {
                   >
                     <span>{item.icon}</span>
                     <span>{item.label}</span>
-                    {item.label === "알림" && unreadCount > 0 && (
-                      <span className={styles.notificationBadge}>
-                        {unreadCount}
-                      </span>
-                    )}
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-            <span className={styles.userInfo}>
-              담당의: {user?.username || '이국종'}
-            </span>
-            <button
-              onClick={handleLogout}
-              className={styles.logoutButton}
-            >
-              로그아웃
-            </button>
-          </div>
+          <button
+            onClick={() => setNotificationModalOpen(true)}
+            className={styles.alarmButton}
+            title="알림 보기"
+          >
+            🔔
+          </button>
+          
+          <button
+            onClick={handleLogout}
+            className={styles.logoutButton}
+          >
+            로그아웃
+          </button>
+        </div>
       </div>
       
       <NotificationModal 
