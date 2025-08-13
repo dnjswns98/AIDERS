@@ -1050,12 +1050,14 @@ export const getSystemConfig = withErrorHandling(async (category = null) => {
 }, 'getSystemConfig');
 
 
+
+
 // ======================================================================
 // 📤 내보내기
 // ======================================================================
 
 
-export { apiClient, logger, getAccessToken, clearAllTokens, getCurrentUserInfo };
+export { apiClient, logger, getAccessToken, clearAllTokens, getCurrentUserInfo, withErrorHandling };
 
 
 // ======================================================================
@@ -1063,23 +1065,23 @@ export { apiClient, logger, getAccessToken, clearAllTokens, getCurrentUserInfo }
 // ======================================================================
 
 
-if (ENABLE_API_LOGGING) {
-  console.log(`
-🔥 소방서 시스템 API 클라이언트 로드 완료 (단순화된 firestation 조회)
-📡 서버: ${API_BASE_URL}
-⏱️ 타임아웃: ${API_TIMEOUT}ms
+// if (ENABLE_API_LOGGING) {
+//   console.log(`
+// 🔥 소방서 시스템 API 클라이언트 로드 완료 (단순화된 firestation 조회)
+// 📡 서버: ${API_BASE_URL}
+// ⏱️ 타임아웃: ${API_TIMEOUT}ms
 
-✨ 핵심 단순화:
-  🎯 구급차 조회와 동일한 방식
-  📋 사용자 firestation_id → firestation 테이블 직접 조회
-  🏷️ firestation.name 필드 바로 사용
-  🚀 복잡한 localStorage 탐색 제거
-  📊 DB 테이블 구조 그대로 활용
+// ✨ 핵심 단순화:
+//   🎯 구급차 조회와 동일한 방식
+//   📋 사용자 firestation_id → firestation 테이블 직접 조회
+//   🏷️ firestation.name 필드 바로 사용
+//   🚀 복잡한 localStorage 탐색 제거
+//   📊 DB 테이블 구조 그대로 활용
 
-🔗 실제 백엔드 연동:
-  - firestation 테이블 직접 조회 ✅
-  - firestation.name 필드 바로 사용 ✅
-  - 단순화된 에러 처리 ✅
-  - Spring Boot FirestationController 연동 ✅
-  `);
-}
+// 🔗 실제 백엔드 연동:
+//   - firestation 테이블 직접 조회 ✅
+//   - firestation.name 필드 바로 사용 ✅
+//   - 단순화된 에러 처리 ✅
+//   - Spring Boot FirestationController 연동 ✅
+//   `);
+// }

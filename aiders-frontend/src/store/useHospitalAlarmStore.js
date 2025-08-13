@@ -1,5 +1,14 @@
 import { create } from "zustand"
-import { fetchWithAuth } from "../utils/apiInterceptor"
+import { 
+  getAllAlarms, 
+  getMatchingAlarms, 
+  getRequestAlarms, 
+  getEditAlarms,
+  deleteMatchingAlarm,
+  deleteRequestAlarm,
+  deleteEditAlarm,
+  deleteAllAlarms
+} from "../api/alarmAPI"
 
 export const useHospitalAlarmStore = create((set, get) => ({
   // 상태
@@ -18,23 +27,13 @@ export const useHospitalAlarmStore = create((set, get) => ({
   fetchAllAlarms: async (hospitalId) => {
     const id = hospitalId || get().hospitalId;
     if (!id) {
-      // console.error('Hospital ID가 설정되지 않았습니다.');
       return { success: false, error: 'Hospital ID가 필요합니다.' };
     }
 
     set({ loading: true, error: null });
     
     try {
-      const response = await fetchWithAuth(`${import.meta.env.VITE_API_BASE_URL}/api/alarm/${id}`, {
-        method: 'GET'
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
+      const data = await getAllAlarms(id);
       set({ 
         allAlarms: data,
         loading: false 
@@ -42,7 +41,6 @@ export const useHospitalAlarmStore = create((set, get) => ({
       
       return { success: true, data };
     } catch (error) {
-      // console.error('전체 알림 조회 실패:', error);
       set({ 
         error: error.message,
         loading: false
@@ -59,16 +57,7 @@ export const useHospitalAlarmStore = create((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      const response = await fetchWithAuth(`${import.meta.env.VITE_API_BASE_URL}/api/alarm/matching/${id}`, {
-        method: 'GET'
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
+      const data = await getMatchingAlarms(id);
       set({ 
         matchingAlarms: data,
         loading: false 
@@ -76,7 +65,6 @@ export const useHospitalAlarmStore = create((set, get) => ({
       
       return { success: true, data };
     } catch (error) {
-      // console.error('매칭 알림 조회 실패:', error);
       set({ 
         error: error.message,
         loading: false
@@ -93,16 +81,7 @@ export const useHospitalAlarmStore = create((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      const response = await fetchWithAuth(`${import.meta.env.VITE_API_BASE_URL}/api/alarm/request/${id}`, {
-        method: 'GET'
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
+      const data = await getRequestAlarms(id);
       set({ 
         requestAlarms: data,
         loading: false 
@@ -110,7 +89,6 @@ export const useHospitalAlarmStore = create((set, get) => ({
       
       return { success: true, data };
     } catch (error) {
-      // console.error('통화 요청 알림 조회 실패:', error);
       set({ 
         error: error.message,
         loading: false
@@ -127,16 +105,7 @@ export const useHospitalAlarmStore = create((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      const response = await fetchWithAuth(`${import.meta.env.VITE_API_BASE_URL}/api/alarm/edit/${id}`, {
-        method: 'GET'
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
+      const data = await getEditAlarms(id);
       set({ 
         editAlarms: data,
         loading: false 
@@ -144,7 +113,6 @@ export const useHospitalAlarmStore = create((set, get) => ({
       
       return { success: true, data };
     } catch (error) {
-      // console.error('수정 알림 조회 실패:', error);
       set({ 
         error: error.message,
         loading: false
@@ -158,23 +126,14 @@ export const useHospitalAlarmStore = create((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      const response = await fetchWithAuth(`${import.meta.env.VITE_API_BASE_URL}/api/alarm/matching/${alarmId}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
-
+      const result = await deleteMatchingAlarm(alarmId);
       set({ loading: false });
       
       // 삭제 후 다시 조회
       await get().fetchMatchingAlarms();
       
-      return { success: true, message: '매칭 알림이 삭제되었습니다.' };
+      return result;
     } catch (error) {
-      // console.error('매칭 알림 삭제 실패:', error);
       set({ 
         error: error.message,
         loading: false
@@ -188,23 +147,14 @@ export const useHospitalAlarmStore = create((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      const response = await fetchWithAuth(`${import.meta.env.VITE_API_BASE_URL}/api/alarm/request/${alarmId}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
-
+      const result = await deleteRequestAlarm(alarmId);
       set({ loading: false });
       
       // 삭제 후 다시 조회
       await get().fetchRequestAlarms();
       
-      return { success: true, message: '통화 요청 알림이 삭제되었습니다.' };
+      return result;
     } catch (error) {
-      // console.error('통화 요청 알림 삭제 실패:', error);
       set({ 
         error: error.message,
         loading: false
@@ -218,23 +168,14 @@ export const useHospitalAlarmStore = create((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      const response = await fetchWithAuth(`${import.meta.env.VITE_API_BASE_URL}/api/alarm/edit/${alarmId}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
-
+      const result = await deleteEditAlarm(alarmId);
       set({ loading: false });
       
       // 삭제 후 다시 조회
       await get().fetchEditAlarms();
       
-      return { success: true, message: '수정 알림이 삭제되었습니다.' };
+      return result;
     } catch (error) {
-      // console.error('수정 알림 삭제 실패:', error);
       set({ 
         error: error.message,
         loading: false
@@ -251,15 +192,7 @@ export const useHospitalAlarmStore = create((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      const response = await fetchWithAuth(`${import.meta.env.VITE_API_BASE_URL}/api/alarm/hospital/${id}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
-
+      const result = await deleteAllAlarms(id);
       set({ loading: false });
       
       // 삭제 후 모든 알림 다시 조회
@@ -268,9 +201,8 @@ export const useHospitalAlarmStore = create((set, get) => ({
       await get().fetchRequestAlarms();
       await get().fetchEditAlarms();
       
-      return { success: true, message: '모든 알림이 삭제되었습니다.' };
+      return result;
     } catch (error) {
-      // console.error('모든 알림 삭제 실패:', error);
       set({ 
         error: error.message,
         loading: false

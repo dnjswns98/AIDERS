@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import WebRtcCall from "../../components/webRTC/WebRtcCall";
+// import WebRtcCall from "../../components/webRTC/WebRtcCall";
 import { useAuthStore } from "../../store/useAuthStore";
 
 export default function TestHospitalCallPage() {
