@@ -67,9 +67,6 @@ export default function AmbulanceDashboardPage() {
   useEffect(() => {
   }, [currentUserKey, currentAmbulanceId, wsConnected]);
 
-  useEffect(() => {
-    fetchAmbulances();
-  }, [fetchAmbulances]);
 
   const triggerHospitalMatching = async () => {
 
