@@ -565,52 +565,35 @@ const MapDisplay = ({
         className="rounded-lg"
       />
 
-      {/* 🔥 실시간 거리 정보 표시 (좌표 품질 포함) */}
-      {distanceInfo && (
-        <div
-          className={`${
-            isFullScreen
-              ? "absolute bottom-4 left-4 bg-white bg-opacity-90 backdrop-blur-sm rounded-lg p-3 shadow-lg"
-              : "mt-2"
-          }`}
-        >
-          <p className="text-sm font-semibold text-gray-700">
-            🚑 ↔ 🏥 실시간 거리:{" "}
-            <span className="text-blue-600">
-              {(distanceInfo.distance / 1000).toFixed(2)} km
-            </span>
-          </p>
-          <p className="text-xs text-gray-500">
-            업데이트: {new Date(distanceInfo.timestamp).toLocaleTimeString()}
-          </p>
-
-          {/* 🔥 좌표 품질 배지 */}
-          <div className="mt-2 flex gap-2 text-xs">
-            <span
-              className={`px-2 py-1 rounded ${
-                ambulanceQuality.color === "green"
-                  ? "bg-green-100 text-green-700"
-                  : ambulanceQuality.color === "orange"
-                  ? "bg-orange-100 text-orange-700"
-                  : "bg-red-100 text-red-700"
-              }`}
-            >
-              🚑 {ambulanceQuality.message}
-            </span>
-            <span
-              className={`px-2 py-1 rounded ${
-                hospitalQuality.color === "green"
-                  ? "bg-green-100 text-green-700"
-                  : hospitalQuality.color === "orange"
-                  ? "bg-orange-100 text-orange-700"
-                  : "bg-red-100 text-red-700"
-              }`}
-            >
-              🏥 {hospitalQuality.message}
-            </span>
+      {/* 🔥 수정: 실시간 거리 정보 표시 UI 개선 */}
+      <div
+        className={`${
+          isFullScreen
+            ? "absolute bottom-4 left-4 bg-white bg-opacity-90 backdrop-blur-sm rounded-lg p-3 shadow-lg"
+            : "mt-2"
+        }`}
+      >
+        {distanceInfo ? (
+          <div>
+            <p className="text-sm font-semibold text-gray-700">
+              🚑 ↔ 🏥 실시간 거리:{" "}
+              <span className="text-blue-600">
+                {(distanceInfo.distance / 1000).toFixed(2)} km
+              </span>
+            </p>
+            <p className="text-xs text-gray-500">
+              업데이트: {new Date(distanceInfo.timestamp).toLocaleTimeString()}
+            </p>
           </div>
-        </div>
-      )}
+        ) : (
+          <div>
+            <p className="text-sm font-semibold text-gray-700">
+              🚑 ↔ 🏥 실시간 거리:{" "}
+              <span className="text-gray-500">수신 대기 중...</span>
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* 🔥 지역 불일치 경고 (구미병원인데 서울 좌표) */}
       {hasLocationMismatch && (

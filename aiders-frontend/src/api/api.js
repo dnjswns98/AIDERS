@@ -67,7 +67,6 @@ const getCurrentUserInfo = () => {
       const user = parsedAuth.state?.user;
       
       if (user) {
-        
         return user;
       }
     }
@@ -80,7 +79,6 @@ const getCurrentUserInfo = () => {
     const userString = localStorage.getItem('user');
     if (userString) {
       const user = JSON.parse(userString);
-      
       return user;
     }
   } catch (error) {
@@ -151,7 +149,6 @@ apiClient.interceptors.response.use(
   }
 );
 
-
 // === 공통 에러 처리 래퍼 ===
 const withErrorHandling = (apiFunction, functionName) => {
   return async (...args) => {
@@ -173,21 +170,22 @@ const withErrorHandling = (apiFunction, functionName) => {
 };
 
 // ======================================================================
-// 📝 보고서 관련 API (신규 추가)
+// 📋 보고서 생성 API
 // ======================================================================
+
 /**
- * AI 기반 소방서 보고서 생성
- * @returns {Promise<object>} 생성된 보고서 정보
+ * AI 보고서 생성
  */
 export const generateReport = withErrorHandling(async () => {
-    logger.info('AI 보고서 생성 요청');
-    const response = await apiClient.post('/api/v1/report/');
-    return response.data;
+  logger.info('AI 보고서 생성 요청');
+  const response = await apiClient.post('/api/v1/report/');
+  return response.data;
 }, 'generateReport');
 
 // ======================================================================
 // 🚑 구급차 관련 API (기존과 동일)
 // ======================================================================
+
 /**
  * 구급차 상태 업데이트
  */
@@ -218,7 +216,6 @@ export const updateAmbulanceStatus = withErrorHandling(async (ambulanceId, statu
   return response.data;
 }, 'updateAmbulanceStatus');
 
-
 /**
  * 구급차 목록 조회
  */
@@ -227,7 +224,6 @@ export const getAmbulances = withErrorHandling(async (status = null) => {
   const response = await apiClient.get('/api/v1/ambulance/list', { params });
   return response.data || [];
 }, 'getAmbulances');
-
 
 /**
  * 상태별 구급차 목록 조회
@@ -241,14 +237,12 @@ export const getAmbulancesByStatus = withErrorHandling(async (status) => {
   return await getAmbulances(status);
 }, 'getAmbulancesByStatus');
 
-
 /**
  * 대기 중인 구급차 목록 조회
  */
 export const getAvailableAmbulances = withErrorHandling(async () => {
   return await getAmbulances('WAIT');
 }, 'getAvailableAmbulances');
-
 
 /**
  * 구급차 상세 정보 조회
@@ -262,7 +256,6 @@ export const getAmbulanceDetail = withErrorHandling(async (ambulanceId) => {
   return response.data;
 }, 'getAmbulanceDetail');
 
-
 /**
  * 구급차 위치 조회
  */
@@ -275,7 +268,6 @@ export const getAmbulanceLocation = withErrorHandling(async (ambulanceId) => {
   return response.data;
 }, 'getAmbulanceLocation');
 
-
 /**
  * 현재 로그인된 구급차의 상태 조회
  */
@@ -284,7 +276,6 @@ export const getMyAmbulanceStatus = withErrorHandling(async () => {
   return response.data;
 }, 'getMyAmbulanceStatus');
 
-
 /**
  * 현재 로그인된 구급차의 출동 환자 정보 조회
  */
@@ -292,7 +283,6 @@ export const getMyAmbulancePatientInfo = withErrorHandling(async () => {
   const response = await apiClient.get('/api/v1/ambulance/patient-info');
   return response.data;
 }, 'getMyAmbulancePatientInfo');
-
 
 /**
  * 여러 구급차 위치 일괄 조회
@@ -306,11 +296,9 @@ export const getAmbulancesLocation = withErrorHandling(async (ambulanceIds) => {
   return response.data || [];
 }, 'getAmbulancesLocation');
 
-
 // ======================================================================
 // 🏥 병원 관련 API (기존과 동일)
 // ======================================================================
-
 
 /**
  * 현재 병원 위치 조회
@@ -319,7 +307,6 @@ export const getCurrentHospitalLocation = withErrorHandling(async () => {
   const response = await apiClient.get('/api/v1/hospital/location');
   return response.data;
 }, 'getCurrentHospitalLocation');
-
 
 /**
  * 특정 병원 위치 조회
@@ -333,7 +320,6 @@ export const getHospitalLocationByUserId = withErrorHandling(async (hospitalId) 
   return response.data;
 }, 'getHospitalLocationByUserId');
 
-
 /**
  * 병원 목록 조회
  */
@@ -341,7 +327,6 @@ export const getHospitals = withErrorHandling(async (options = {}) => {
   const response = await apiClient.get('/api/v1/hospital/list', { params: options });
   return response.data || [];
 }, 'getHospitals');
-
 
 /**
  * 병원 자동 매칭
@@ -356,6 +341,7 @@ export const requestHospitalMatching = withErrorHandling(async (matchingData) =>
   const requestBody = { latitude, longitude };
   const response = await apiClient.patch(`/api/v1/match/${ambulanceId}`, requestBody);
   
+  // 병원 좌표 정보가 없으면 별도 조회
   if (response.data && !response.data.latitude && response.data.hospitalId) {
     try {
       const locationInfo = await getHospitalLocationByUserId(response.data.hospitalId);
@@ -373,7 +359,6 @@ export const requestHospitalMatching = withErrorHandling(async (matchingData) =>
   return response.data;
 }, 'requestHospitalMatching');
 
-
 /**
  * 매칭된 병원 정보 조회
  */
@@ -384,6 +369,7 @@ export const getMatchedHospital = withErrorHandling(async (ambulanceId) => {
   
   const response = await apiClient.get(`/api/v1/match/${ambulanceId}`);
   
+  // 병원 좌표 정보가 없으면 별도 조회
   if (response.data && !response.data.latitude && response.data.hospitalId) {
     try {
       const locationInfo = await getHospitalLocationByUserId(response.data.hospitalId);
@@ -401,7 +387,6 @@ export const getMatchedHospital = withErrorHandling(async (ambulanceId) => {
   return response.data;
 }, 'getMatchedHospital');
 
-
 /**
  * 병원 진료과 정보 업데이트
  */
@@ -414,11 +399,9 @@ export const updateHospitalDepartment = withErrorHandling(async (departmentUpdat
   return response.data;
 }, 'updateHospitalDepartment');
 
-
 // ======================================================================
 // 🚨 출동 관련 API (Spring Boot 백엔드 연동)
 // ======================================================================
-
 
 /**
  * 출동 지시 생성
@@ -459,7 +442,6 @@ export const createDispatch = withErrorHandling(async (dispatchRequest) => {
   return response.data;
 }, 'createDispatch');
 
-
 /**
  * 출동 기록 조회
  */
@@ -468,6 +450,7 @@ export const getDispatchHistory = withErrorHandling(async (options = {}) => {
   
   const dispatchHistory = response.data || [];
   
+  // 출동 기록 데이터 정규화
   return dispatchHistory.map(item => ({
     id: item.id || item.createdAt,
     address: item.address,
@@ -485,7 +468,6 @@ export const getDispatchHistory = withErrorHandling(async (options = {}) => {
   }));
 }, 'getDispatchHistory');
 
-
 /**
  * 특정 출동 상세 정보 조회
  */
@@ -497,7 +479,6 @@ export const getDispatchDetail = withErrorHandling(async (dispatchId) => {
   const response = await apiClient.get(`/api/v1/dispatch/${dispatchId}`);
   return response.data;
 }, 'getDispatchDetail');
-
 
 /**
  * 출동 상태 업데이트
@@ -512,7 +493,6 @@ export const updateDispatchStatus = withErrorHandling(async (dispatchId, status,
   return response.data;
 }, 'updateDispatchStatus');
 
-
 /**
  * 출동 완료 처리
  */
@@ -525,11 +505,9 @@ export const completeDispatch = withErrorHandling(async (dispatchId, completeDat
   return response.data;
 }, 'completeDispatch');
 
-
 // ======================================================================
-// 👨‍⚕️ 환자 정보 관련 API (기존과 동일)
+// 👨‍⚕️ 환자 정보 관련 API (수정된 버전)
 // ======================================================================
-
 
 /**
  * 환자 필수 정보 저장
@@ -543,19 +521,25 @@ export const saveRequiredPatientInfo = withErrorHandling(async (patientInfo) => 
   return response.data;
 }, 'saveRequiredPatientInfo');
 
-
 /**
  * 환자 선택 정보 저장
+ * ✅ 수정: 빈 객체 허용
  */
-export const saveOptionalPatientInfo = withErrorHandling(async (patientDetails) => {
-  if (!patientDetails || Object.keys(patientDetails).length === 0) {
-    throw new Error('저장할 환자 정보가 필요합니다.');
-  }
+export const saveOptionalPatientInfo = withErrorHandling(async (data) => {
+  console.log('🔥🔥🔥 [api.js] saveOptionalPatientInfo 호출됨!');
+  console.log('🔥🔥🔥 [api.js] 전송할 데이터:', JSON.stringify(data, null, 2));
   
-  const response = await apiClient.patch('/api/v1/patient/optional', patientDetails);
+  // 🔥 빈 객체도 허용 (백엔드에서 Optional로 처리)
+  if (!data) {
+    throw new Error('환자 정보 데이터가 필요합니다.');
+  }
+
+  console.log('🔥🔥🔥 [api.js] apiClient.patch 호출 시작');
+  const response = await apiClient.patch('/api/v1/patient/optional', data);
+  console.log('🔥🔥🔥 [api.js] apiClient.patch 호출 성공:', response.data);
+  
   return response.data;
 }, 'saveOptionalPatientInfo');
-
 
 /**
  * 환자 정보 조회
@@ -565,7 +549,6 @@ export const getPatientInfo = withErrorHandling(async (ambulanceId = null) => {
   const response = await apiClient.get(url);
   return response.data;
 }, 'getPatientInfo');
-
 
 /**
  * 환자 요약 정보 조회
@@ -579,11 +562,9 @@ export const getPatientSummary = withErrorHandling(async (ambulanceId) => {
   return response.data;
 }, 'getPatientSummary');
 
-
 // ======================================================================
 // 📹 WebRTC 화상통화 API (기존과 동일)
 // ======================================================================
-
 
 /**
  * 구급차용 WebRTC 토큰 생성
@@ -625,7 +606,6 @@ export const createAmbulanceToken = withErrorHandling(async (request) => {
   return response.data;
 }, 'createAmbulanceToken');
 
-
 /**
  * 병원용 WebRTC 토큰 조회
  */
@@ -659,7 +639,6 @@ export const getHospitalToken = withErrorHandling(async (params) => {
   return response.data;
 }, 'getHospitalToken');
 
-
 /**
  * 화상통화 시작
  */
@@ -672,7 +651,6 @@ export const startVideoCall = withErrorHandling(async (request) => {
   return response.data;
 }, 'startVideoCall');
 
-
 /**
  * 화상통화 종료
  */
@@ -684,7 +662,6 @@ export const endVideoCall = withErrorHandling(async (request) => {
   const response = await apiClient.put('/api/v1/video-call/end-call', request);
   return response.data;
 }, 'endVideoCall');
-
 
 /**
  * 이송 완료 처리
@@ -701,7 +678,6 @@ export const completeTransport = withErrorHandling(async (sessionId, hospitalId)
   return response.data;
 }, 'completeTransport');
 
-
 /**
  * 대기열에서 제거
  */
@@ -713,7 +689,6 @@ export const removeFromWaitingList = withErrorHandling(async (hospitalId, sessio
   const response = await apiClient.delete(`/api/v1/redis/waiting/${hospitalId}/${sessionId}`);
   return response.data;
 }, 'removeFromWaitingList');
-
 
 /**
  * 대기 중인 구급차 목록 조회
@@ -727,11 +702,9 @@ export const getWaitingAmbulances = withErrorHandling(async (hospitalId) => {
   return response.data || [];
 }, 'getWaitingAmbulances');
 
-
 // ======================================================================
 // 📊 통계 관련 API (소방서용)
 // ======================================================================
-
 
 /**
  * 소방서 오늘 통계 조회
@@ -741,7 +714,6 @@ export const getTodayStats = withErrorHandling(async () => {
   return response.data;
 }, 'getTodayStats');
 
-
 /**
  * 구급차별 운영 현황 조회
  */
@@ -749,7 +721,6 @@ export const getAmbulanceStats = withErrorHandling(async (options = {}) => {
   const response = await apiClient.get('/api/v1/firestation/statistics/ambulances', { params: options });
   return response.data || [];
 }, 'getAmbulanceStats');
-
 
 /**
  * 출동 통계 조회
@@ -759,7 +730,6 @@ export const getDispatchStats = withErrorHandling(async (options = {}) => {
   return response.data || [];
 }, 'getDispatchStats');
 
-
 /**
  * 응답시간 분석
  */
@@ -768,11 +738,9 @@ export const getResponseTimeAnalysis = withErrorHandling(async (options = {}) =>
   return response.data;
 }, 'getResponseTimeAnalysis');
 
-
 // ======================================================================
 // 🗺️ 지도 및 위치 관련 API (기존과 동일)
 // ======================================================================
-
 
 /**
  * 주소를 좌표로 변환
@@ -786,7 +754,6 @@ export const geocodeAddress = withErrorHandling(async (address) => {
   return response.data;
 }, 'geocodeAddress');
 
-
 /**
  * 좌표를 주소로 변환
  */
@@ -798,7 +765,6 @@ export const reverseGeocode = withErrorHandling(async (latitude, longitude) => {
   const response = await apiClient.post('/api/v1/map/reverse-geocode', { latitude, longitude });
   return response.data;
 }, 'reverseGeocode');
-
 
 /**
  * 두 지점 간 거리 계산
@@ -817,7 +783,7 @@ export const calculateDistance = withErrorHandling(async (from, to) => {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   const distance = R * c * 1000; // 미터로 변환
   
-  const duration = Math.ceil((distance / 1000) / 40 * 60); // 분 단위
+  const duration = Math.ceil((distance / 1000) / 40 * 60); // 분 단위 (시속 40km 가정)
   
   const result = {
     distance: Math.round(distance), // 미터
@@ -829,11 +795,9 @@ export const calculateDistance = withErrorHandling(async (from, to) => {
   return result;
 }, 'calculateDistance');
 
-
 // ======================================================================
 // 🔥 소방서 관련 API (완전 단순화된 버전!) - 핵심!
 // ======================================================================
-
 
 /**
  * 🔥 소방서 정보 조회 (완전 단순화!) - DB 테이블 구조 기반
@@ -856,7 +820,6 @@ export const getFirestationInfo = withErrorHandling(async () => {
   }
   
   console.log(`[API] 추출된 firestation_id: ${firestationId}`);
-  
   
   // 🔥 2단계: firestation_id로 firestation 테이블에서 직접 조회
   let response;
@@ -930,7 +893,6 @@ export const getFirestationInfo = withErrorHandling(async () => {
   return firestationInfo;
 }, 'getFirestationInfo');
 
-
 /**
  * 🔥 소방서 위치 정보 조회
  */
@@ -938,7 +900,6 @@ export const getFirestationLocation = withErrorHandling(async () => {
   const response = await apiClient.get('/api/v1/firestation/location');
   return response.data;
 }, 'getFirestationLocation');
-
 
 /**
  * 🔥 소방서 위치 조회 (단순화)
@@ -957,7 +918,6 @@ export const getCurrentFirestationLocation = withErrorHandling(async () => {
     return response.data;
   }
 }, 'getCurrentFirestationLocation');
-
 
 /**
  * 특정 소방서 정보 조회 (firestation_id 직접 지정)
@@ -993,11 +953,8 @@ export const getFirestationInfoById = withErrorHandling(async (firestationId) =>
   return firestationInfo;
 }, 'getFirestationInfoById');
 
-
 /**
  * 소방서별 구급차 목록 조회 (403 에러 처리 추가)
- * TODO: 백엔드에서 firestationId에 따른 구급차 필터링 API가 필요합니다.
- * 현재는 /api/v1/ambulance/list 엔드포인트를 사용합니다.
  */
 export const getFirestationAmbulances = withErrorHandling(async (firestationId = null) => {
   // ✅ 수정된 부분: 403 에러를 개별적으로 처리하는 로직
@@ -1016,11 +973,9 @@ export const getFirestationAmbulances = withErrorHandling(async (firestationId =
   }
 }, 'getFirestationAmbulances');
 
-
 // ======================================================================
 // 🔧 시스템 유틸리티 API (기존과 동일)
 // ======================================================================
-
 
 /**
  * API 서버 상태 확인
@@ -1030,7 +985,6 @@ export const getServerStatus = withErrorHandling(async () => {
   return response.data;
 }, 'getServerStatus');
 
-
 /**
  * 사용자 권한 확인
  */
@@ -1038,7 +992,6 @@ export const getUserPermissions = withErrorHandling(async () => {
   const response = await apiClient.get('/api/v1/user/permissions');
   return response.data;
 }, 'getUserPermissions');
-
 
 /**
  * 시스템 설정 조회
@@ -1049,39 +1002,45 @@ export const getSystemConfig = withErrorHandling(async (category = null) => {
   return response.data;
 }, 'getSystemConfig');
 
-
-
-
 // ======================================================================
 // 📤 내보내기
 // ======================================================================
 
-
-export { apiClient, logger, getAccessToken, clearAllTokens, getCurrentUserInfo, withErrorHandling };
-
+export { 
+  apiClient, 
+  logger, 
+  getAccessToken, 
+  clearAllTokens, 
+  getCurrentUserInfo, 
+  withErrorHandling 
+};
 
 // ======================================================================
 // 🎯 API 로드 완료 알림
 // ======================================================================
 
+if (ENABLE_API_LOGGING) {
+  console.log(`
+🔥 소방서 시스템 API 클라이언트 로드 완료 (단순화된 firestation 조회)
+📡 서버: ${API_BASE_URL}
+⏱️ 타임아웃: ${API_TIMEOUT}ms
 
-// if (ENABLE_API_LOGGING) {
-//   console.log(`
-// 🔥 소방서 시스템 API 클라이언트 로드 완료 (단순화된 firestation 조회)
-// 📡 서버: ${API_BASE_URL}
-// ⏱️ 타임아웃: ${API_TIMEOUT}ms
+✨ 핵심 단순화:
+  🎯 구급차 조회와 동일한 방식
+  📋 사용자 firestation_id → firestation 테이블 직접 조회
+  🏷️ firestation.name 필드 바로 사용
+  🚀 복잡한 localStorage 탐색 제거
+  📊 DB 테이블 구조 그대로 활용
 
-// ✨ 핵심 단순화:
-//   🎯 구급차 조회와 동일한 방식
-//   📋 사용자 firestation_id → firestation 테이블 직접 조회
-//   🏷️ firestation.name 필드 바로 사용
-//   🚀 복잡한 localStorage 탐색 제거
-//   📊 DB 테이블 구조 그대로 활용
+🔗 실제 백엔드 연동:
+  - firestation 테이블 직접 조회 ✅
+  - firestation.name 필드 바로 사용 ✅
+  - 단순화된 에러 처리 ✅
+  - Spring Boot FirestationController 연동 ✅
 
-// 🔗 실제 백엔드 연동:
-//   - firestation 테이블 직접 조회 ✅
-//   - firestation.name 필드 바로 사용 ✅
-//   - 단순화된 에러 처리 ✅
-//   - Spring Boot FirestationController 연동 ✅
-//   `);
-// }
+✅ 수정사항:
+  - saveOptionalPatientInfo: 빈 객체 허용 ✅
+  - 보고서 생성 API 추가 ✅
+  - 모든 함수 주석/로깅 완비 ✅
+  `);
+}

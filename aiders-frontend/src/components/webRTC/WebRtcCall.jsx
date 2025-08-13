@@ -1,6 +1,6 @@
 // src/components/webRTC/WebRtcCall.jsx
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useWebRtc } from "../../context/WebRtcContext";
 import { useOpenVidu } from "../../hooks/useOpenVidu";
@@ -9,11 +9,16 @@ import { useFullScreen } from "../../hooks/useFullScreen";
 import VideoDisplay from "./VideoDisplay";
 import CallControls from "./CallControls";
 
-export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, patientName, ktas, onLeave }) {
+// 🔥 수정: onRequestCall prop 추가
+export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, patientName, ktas, onLeave, onRequestCall }) {
   const { togglePipMode } = useWebRtc();
   const location = useLocation();
+  const webRtcCallContainerRef = useRef(null); 
   
-  const { joinSession, leaveSession } = useOpenVidu({ 
+  const { 
+    joinSession, 
+    leaveSession 
+  } = useOpenVidu({ 
     sessionId, 
     ambulanceNumber,
     hospitalId,
@@ -21,8 +26,8 @@ export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, pat
     patientName,
     onError: (error) => {
       console.error("WebRTC Hook Error:", error);
-      alert(error.message); // 사용자에게 오류 알림
-      onLeave?.(); // 오류 발생 시 통화 종료 처리
+      alert(error.message);
+      onLeave?.();
     }
   });
   
@@ -32,11 +37,8 @@ export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, pat
     hasRemoteStream 
   } = useMediaStream();
   
-  const { isFullScreen, toggleFullScreen } = useFullScreen();
+  const { isFullScreen, toggleFullScreen } = useFullScreen(webRtcCallContainerRef);
 
-  // 🔥 수정된 부분: useEffect의 의존성 배열을 빈 배열([])로 변경
-  // 이렇게 하면 컴포넌트가 처음 마운트될 때 joinSession이 딱 한 번만 호출되고,
-  // 언마운트될 때 return문의 leaveSession이 딱 한 번만 호출됩니다.
   useEffect(() => {
     joinSession();
 
@@ -49,22 +51,17 @@ export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, pat
         window.removeEventListener("beforeunload", handleBeforeUnload);
         leaveSession();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // <-- 이 부분을 빈 배열로 수정했습니다!
-
-  useEffect(() => {
-    if (togglePipMode) {
-      togglePipMode(location.pathname !== "/emergency/map");
-    }
-  }, [location.pathname, togglePipMode]);
-
+  }, []);
+  
   const handleLeave = () => {
     leaveSession();
     onLeave?.();
   };
 
+  const isAmbulanceUser = !!ambulanceNumber;
+
   return (
-    <div className="web-rtc-call-container flex flex-col h-full">
+    <div ref={webRtcCallContainerRef} className="web-rtc-call-container flex flex-col h-full bg-gray-800">
       <VideoDisplay 
         localVideoRef={localVideoRef}
         remoteVideoRef={remoteVideoRef}
@@ -74,6 +71,10 @@ export default function WebRtcCall({ sessionId, ambulanceNumber, hospitalId, pat
         onLeave={handleLeave}
         onToggleFullScreen={toggleFullScreen}
         isFullScreen={isFullScreen}
+        canEndCall={!isAmbulanceUser}
+        // 🔥 추가: 전화 요청 기능과 표시 여부를 prop으로 전달
+        onRequestCall={onRequestCall}
+        showRequestButton={isAmbulanceUser}
       />
     </div>
   );

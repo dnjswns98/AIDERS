@@ -1,54 +1,35 @@
 import { useState, useCallback, useEffect } from 'react';
 
-export const useFullScreen = () => {
+// 🔥 수정: 특정 요소를 전체화면으로 만들기 위해 ref를 인자로 받도록 변경
+export const useFullScreen = (elementRef) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
 
-  // 전체화면 상태 변경 감지
   useEffect(() => {
     const handleFullScreenChange = () => {
       setIsFullScreen(!!document.fullscreenElement);
     };
 
     document.addEventListener('fullscreenchange', handleFullScreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullScreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullScreenChange);
-    document.addEventListener('MSFullscreenChange', handleFullScreenChange);
-
     return () => {
       document.removeEventListener('fullscreenchange', handleFullScreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullScreenChange);
-      document.removeEventListener('mozfullscreenchange', handleFullScreenChange);
-      document.removeEventListener('MSFullscreenChange', handleFullScreenChange);
     };
   }, []);
 
   const toggleFullScreen = useCallback(() => {
-    const elem = document.documentElement;
+    // 🔥 수정: document 전체가 아닌, ref로 전달받은 요소를 대상으로 실행
+    const elem = elementRef.current;
+    if (!elem) return;
 
     if (!document.fullscreenElement) {
-      // 전체화면 진입
       if (elem.requestFullscreen) {
         elem.requestFullscreen();
-      } else if (elem.mozRequestFullScreen) {
-        elem.mozRequestFullScreen();
-      } else if (elem.webkitRequestFullscreen) {
-        elem.webkitRequestFullscreen();
-      } else if (elem.msRequestFullscreen) {
-        elem.msRequestFullscreen();
       }
     } else {
-      // 전체화면 해제
       if (document.exitFullscreen) {
         document.exitFullscreen();
-      } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
       }
     }
-  }, []);
+  }, [elementRef]);
 
   return {
     isFullScreen,

@@ -47,6 +47,7 @@ const useLiveAmbulanceLocation = (ambulanceId) => {
                 stompClient.subscribe(topic, (message) => {
                     try {
                         const data = JSON.parse(message.body);
+                        console.log('[LiveLocation] 📩 메시지 수신:', data);
                         
                         // 실시간 위치 정보 업데이트
                         setAmbulanceLocation({
