@@ -6,6 +6,7 @@ import FireStationDispatch from "../pages/FireStation/FireStationDispatch";
 import FireStationLayout from "../components/FireStation/Layout/FireStationLayout";
 import FireStationSituationBoard from "../pages/FireStation/FireStationSituationBoard";
 import FireStationReportList from "../pages/FireStation/FireStationReportList";
+import FireStationReportDetail from "../pages/FireStation/FireStationReportDetail"; // 🔥 신규 import
 import useFireStationStore from "../store/useFireStationStore";
 import { useAuthStore } from "../store/useAuthStore";
 
@@ -33,12 +34,13 @@ const FireStationRouters = () => {
   return (
     <Routes>
       <Route element={<FireStationLayout />}>
-        {/* FireStation Routes */}
         <Route path="/" element={<FireStationDashboard />} />
         <Route path="/situation-board" element={<FireStationSituationBoard />} />
         <Route path="/reports" element={<FireStationReports />} />
         <Route path="/dispatch" element={<FireStationDispatch />} />
         <Route path="/reports-list" element={<FireStationReportList />} />
+        {/* 🔥 신규 라우트 추가 */}
+        <Route path="/reports/:reportId" element={<FireStationReportDetail />} /> 
       </Route>
     </Routes>
   );
