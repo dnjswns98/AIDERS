@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import useWaitingAmbulanceStore from '../../store/useWaitingAmbulanceStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import useHospitalAlarmRefresh from '../../hooks/useHospitalAlarmRefresh';
 
 const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = false }) => {
   const { ambulances, isLoading, error, fetchWaitingAmbulances } = useWaitingAmbulanceStore();
@@ -17,6 +18,13 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
       });
     }
   };
+
+  // WebSocket 알람 수신 시 자동 새로고침
+  useHospitalAlarmRefresh(() => {
+    if (user?.userId) {
+      fetchWaitingAmbulances(user.userId);
+    }
+  }, ['MATCHING', 'REQUEST']); // 매칭 완료, 통화 요청 알람에만 반응
 
   useEffect(() => {
     if (user?.userId) {
@@ -41,6 +49,8 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
       style={{
         width: "100%",
         backgroundColor: "white",
+        border: "2px solid #e5e7eb",
+        borderRadius: "12px",
         padding: compact ? "12px" : "20px",
         overflow: "auto",
         height: "100%",
@@ -49,26 +59,20 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
       <div
         style={{
           display: "flex",
+          justifyContent: "center",
           alignItems: "center",
           marginBottom: compact ? "16px" : "20px",
           paddingBottom: compact ? "12px" : "16px",
           borderBottom: "2px solid #e5e7eb",
         }}
       >
-        <div
-          style={{
-            fontSize: "20px",
-            marginRight: "8px",
-          }}
-        >
-          🚑
-        </div>
         <h3
           style={{
-            fontSize: compact ? "16px" : "18px",
+            fontSize: "30px",
             fontWeight: "bold",
             color: "#1f2937",
             margin: 0,
+            textAlign: "center",
           }}
         >
           대기중인 구급차

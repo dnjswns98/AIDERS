@@ -30,7 +30,10 @@ public class AlarmController {
         }
 
         // DB에 저장
-        alarmService.saveAlarm(alarmMessage);
+        String type = String.valueOf(alarmMessage.getType());
+        if(!type.equals("COMPLETE")) {
+            alarmService.saveAlarm(alarmMessage);
+        }
 
         // WebSocket 전송 (구독자: /topic/alarm/{hospitalId})
         String destination = "/topic/alarm/" + alarmService.getHospitalIdByAmbulanceKey(alarmMessage.getAmbulanceKey());

@@ -42,7 +42,7 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
   const cardStyle = compact ? {
     backgroundColor: bed.isAvailable === false ? '#f3f4f6' : '#f8fafc',
     borderRadius: '8px',
-    border: `1px solid ${bed.isAvailable === false ? '#d1d5db' : '#e2e8f0'}`,
+    border: `2px solid ${bed.isAvailable === false ? '#9ca3af' : '#cbd5e1'}`,
     padding: '12px',
     marginBottom: '8px',
     opacity: bed.isAvailable === false ? 0.6 : 1
@@ -85,7 +85,7 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
         <span style={{
           fontWeight: '700',
           color: bed.isAvailable === false ? '#9ca3af' : '#1f2937',
-          fontSize: compact ? '16px' : '20px',
+          fontSize: compact ? '20px' : '20px',
           letterSpacing: '-0.025em'
         }}>
           {bed.name} / {bed.category}
@@ -95,7 +95,7 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
         {compact && (
           <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
             <span style={{
-              fontSize: '12px',
+              fontSize: '20px',
               padding: '4px 8px',
               borderRadius: '4px',
               backgroundColor: bed.isAvailable === false ? '#fef3c7' : 
@@ -104,7 +104,7 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
                 (bed.totalBeds > 0 && bed.totalBeds > bed.currentPatients) ? '#166534' : '#991b1b'
             }}>
               {bed.isAvailable === false ? '중단됨' :
-                (bed.totalBeds > 0 && bed.totalBeds > bed.currentPatients) ? '여유있음' : '만실'}
+                (bed.totalBeds > 0 && bed.totalBeds > bed.currentPatients) ? '여유' : '만실'}
             </span>
           </div>
         )}
@@ -148,7 +148,7 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
         marginBottom: compact ? '8px' : '0'
       }}>
         <span style={{
-          fontSize: compact ? '13px' : '14px',
+          fontSize: compact ? '20px' : '14px',
           color: '#6b7280'
         }}>
           사용: {bed.currentPatients}/{bed.totalBeds} | 여유: {bed.totalBeds - bed.currentPatients}개
@@ -180,7 +180,7 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
               -
             </button>
             <span style={{
-              fontSize: '12px',
+              fontSize: '20px',
               fontWeight: '600',
               color: '#16a34a',
               minWidth: '16px',

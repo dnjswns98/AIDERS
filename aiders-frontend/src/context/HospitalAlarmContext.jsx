@@ -68,6 +68,11 @@ export const HospitalAlarmProvider = ({ children }) => {
             // 무조건 토스트 큐에 추가
             addToastToQueue(alarmData);
             
+            // 페이지 새로고침 이벤트 발생
+            window.dispatchEvent(new CustomEvent('hospitalAlarmReceived', { 
+              detail: alarmData 
+            }));
+            
             // 브라우저 알림
             if (Notification.permission === 'granted') {
               new Notification(`${getAlarmTypeText(alarmData.type)} 알림`, {

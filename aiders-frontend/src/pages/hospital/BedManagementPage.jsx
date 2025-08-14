@@ -3,6 +3,7 @@ import HospitalHeader from "../../components/hospital/HospitalHeader";
 import BedCard from "../../components/hospital/BedCard";
 import useHospitalStore from "../../store/useHospitalStore";
 import { useAuthStore } from "../../store/useAuthStore";
+import useHospitalAlarmRefresh from "../../hooks/useHospitalAlarmRefresh";
 
 
 export default function BedManagementPage() {
@@ -20,6 +21,13 @@ export default function BedManagementPage() {
 
   const [beds, setBeds] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
+
+  // WebSocket 알람 수신 시 자동 새로고침
+  useHospitalAlarmRefresh(() => {
+    if (user?.userId) {
+      fetchBedInfo();
+    }
+  }, ['MATCHING', 'REQUEST', 'EDIT']); // 매칭, 통화 요청, 정보 수정 알람에 반응
 
   useEffect(() => {
     const initializeData = async () => {
