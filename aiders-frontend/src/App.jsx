@@ -80,7 +80,7 @@ const AppContent = () => {
   return (
     <div className="min-h-screen min-h-dvh bg-gray-50 relative flex flex-col min-h-0" style={{ fontFamily: 'NanumGothic, sans-serif' }}>
       {showToast && <Toast message="구급차 정보가 업데이트되었습니다" />}
-      <main className="flex-1 p-0 m-0 overflow-y-auto min-h-0">
+      <main className="flex-1 overflow-y-auto min-h-0 p-0 m-0">
         <AppRouters />
       </main>
       
