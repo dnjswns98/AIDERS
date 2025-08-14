@@ -115,7 +115,8 @@ export default function AmbulanceDashboardPage() {
                     </div>
                 </div>
 
-                <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md h-[400px] lg:h-auto relative">
+                {/* 🔽 수정: h-[400px] 대신 flex-grow를 사용해 남은 공간을 모두 채우도록 변경 */}
+                <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md flex flex-col">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold">실시간 위치</h2>
                         <button 
@@ -125,11 +126,13 @@ export default function AmbulanceDashboardPage() {
                             전체화면
                         </button>
                     </div>
-                    <MapDisplay
-                        hospital={matchedHospital}
-                        ambulanceLocation={ambulanceLocation}
-                        distanceInfo={hospitalDistanceInfo}
-                    />
+                    <div className="flex-grow">
+                        <MapDisplay
+                            hospital={matchedHospital}
+                            ambulanceLocation={ambulanceLocation}
+                            distanceInfo={hospitalDistanceInfo}
+                        />
+                    </div>
                 </div>
 
                 <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md flex flex-col">

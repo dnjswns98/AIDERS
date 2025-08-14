@@ -1,14 +1,16 @@
+// src/components/Emergency/Layout/AmbulanceLayout.jsx
+
 import React, { forwardRef } from 'react';
 import AmbulanceHeader from '../AmbulanceHeader';
-import useLiveAmbulanceLocationSender from '../../../hooks/useLiveAmbulanceLocationSender'; // 1. 새로 만든 훅 import
+import useLiveAmbulanceLocationSender from '../../../hooks/useLiveAmbulanceLocationSender';
 
-const AmbulanceLayout = forwardRef(({ children }, ref) => {
-  // 2. 훅을 호출하여 위치 전송을 시작합니다.
+// showHeader prop을 받아서 헤더를 조건부로 렌더링합니다.
+const AmbulanceLayout = forwardRef(({ children, showHeader = true }, ref) => {
   useLiveAmbulanceLocationSender();
 
   return (
     <div className="bg-gray-100 h-screen flex flex-col">
-      <AmbulanceHeader />
+      {showHeader && <AmbulanceHeader />}
       <main ref={ref} className="flex-grow overflow-y-auto w-full relative">
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           {children}
