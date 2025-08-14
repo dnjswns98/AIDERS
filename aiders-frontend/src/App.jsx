@@ -78,7 +78,8 @@ const AppContent = () => {
   }
 
   return (
-    <div className="h-screen bg-gray-50 relative overflow-hidden flex flex-col" style={{ fontFamily: 'NanumGothic, sans-serif' }}>
+    // 🔽 수정된 부분: overflow-hidden 클래스 제거
+    <div className="h-screen bg-gray-50 relative flex flex-col" style={{ fontFamily: 'NanumGothic, sans-serif' }}>
       {showToast && <Toast message="구급차 정보가 업데이트되었습니다" />}
       <main className="px-4 sm:px-6 lg:px-8 flex-grow">
         <AppRouters />

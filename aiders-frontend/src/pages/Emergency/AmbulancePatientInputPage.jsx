@@ -6,7 +6,7 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import AmbulanceLayout from "../../components/Emergency/Layout/AmbulanceLayout";
 import useEmergencyStore from "../../store/useEmergencyStore";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -97,9 +97,8 @@ const ageRangeMap = {
 
 export default function AmbulancePatientInputPage() {
   const navigate = useNavigate();
-  const { state } = useLocation();
-  const isEditMode = state?.isEditMode || false;
-
+  
+  // 🔽 수정: useLocation 대신 useEmergencyStore에서 isEditMode를 가져옴
   const {
     selectedAmbulance,
     selectMyAmbulance,
@@ -115,6 +114,8 @@ export default function AmbulancePatientInputPage() {
     patientDataError,
     patientInfo,
     patientDetails,
+    isEditMode, // 스토어에서 isEditMode 직접 사용
+    setEditMode, // setEditMode도 가져오기
   } = useEmergencyStore();
 
   const { user } = useAuthStore();
@@ -213,13 +214,20 @@ export default function AmbulancePatientInputPage() {
       });
     });
   }, [user, formData]);
+  
+  // 🔽 수정: 더 이상 useLocation을 사용하지 않으므로, 관련 useEffect 제거
+  // useEffect(() => {
+  //   if (!isEditMode) {
+  //     resetHospitalMatching();
+  //   }
+  // }, [resetHospitalMatching, currentStep, isEditMode]);
 
-  // 🔥 수정: 수정모드일 때는 hospitalMatching 상태 초기화하지 않음
+  // 🔽 수정: 컴포넌트 unmount 시 isEditMode를 false로 초기화
   useEffect(() => {
-    if (!isEditMode) {
-      resetHospitalMatching();
-    }
-  }, [resetHospitalMatching, currentStep, isEditMode]);
+    return () => {
+      setEditMode(false);
+    };
+  }, [setEditMode]);
 
   useEffect(() => {
     initializeModel();
@@ -254,7 +262,6 @@ export default function AmbulancePatientInputPage() {
     setFormData((prev) => ({ ...prev, [fieldName]: value }));
   }, []);
 
-  // 🔥 수정: 신규 입력 모드에서만 자동 매칭 후속 작업 실행
   useEffect(() => {
     if (!isEditMode && hospitalMatchingStatus === "success" && matchedHospitals.length > 0) {
       const executePostMatchingTasks = async () => {
@@ -321,6 +328,8 @@ export default function AmbulancePatientInputPage() {
       if (isEditMode) {
         await sendWebSocketAlarms('EDIT');
         alert("✅ 환자 정보가 성공적으로 수정되었고, 병원에 알림을 전송했습니다.");
+        // 수정 완료 후 대시보드로 이동
+        navigate('/emergency/dashboard');
       } else {
         alert("✅ 환자 정보가 성공적으로 저장되었습니다.");
       }
@@ -685,7 +694,6 @@ export default function AmbulancePatientInputPage() {
                   )}
                 </div>
               </div>
-              {/* 🔥 수정: 수정 모드일 때는 빠른 매칭 버튼 숨기기 */}
               {!isEditMode && (
                 <button
                   type="button"
@@ -747,6 +755,7 @@ export default function AmbulancePatientInputPage() {
                 이전
               </button>
               <div className="flex space-x-3">
+                {/* 🔽 수정: isEditMode에 따라 버튼을 명확히 구분 */}
                 {isEditMode ? (
                   <button
                     type="submit"
@@ -778,7 +787,6 @@ export default function AmbulancePatientInputPage() {
             </div>
           </form>
 
-          {/* 🔥 수정: 수정 모드일 때는 병원 매칭 관련 안내 메시지 제거 */}
           {isLastStep && !isEditMode && (
             <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl border border-blue-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -801,7 +809,6 @@ export default function AmbulancePatientInputPage() {
             </div>
           )}
 
-          {/* 🔥 수정: 수정 모드일 때는 안내 메시지 변경 */}
           {currentStep >= 2 && (
             <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <p className="text-sm text-gray-600">
@@ -812,7 +819,6 @@ export default function AmbulancePatientInputPage() {
             </div>
           )}
 
-          {/* 🔥 수정: 수정 모드일 때는 병원 매칭 로딩 모달 표시하지 않음 */}
           {isHospitalMatching && !isEditMode && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">

@@ -33,6 +33,7 @@ export default defineConfig({
       "Cross-Origin-Embedder-Policy": "credentialless",
     },
   },
+  
 
   publicDir: "public",
 });

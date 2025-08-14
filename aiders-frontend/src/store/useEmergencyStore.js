@@ -140,11 +140,20 @@ const useEmergencyStore = create((set, get) => ({
   hospitalMatchingError: null,
   isHospitalMatching: false,
   
-  // 🔥 신규 추가: 수정 모드 플래그
   isEditMode: false,
   setEditMode: (isEdit) => {
-    console.log(`🔥 [setEditMode] 수정 모드 설정: ${isEdit}`);
-    set({ isEditMode: isEdit });
+    console.log(`🔥 [setEditMode] 수정 모드 상태 변경: ${isEdit}`);
+    if (isEdit) {
+      // 수정 모드 진입 시, 이전 매칭 상태를 확실히 초기화
+      set({ 
+        isEditMode: true, 
+        hospitalMatchingStatus: "idle", 
+        hospitalMatchingError: null,
+        isHospitalMatching: false 
+      });
+    } else {
+      set({ isEditMode: false });
+    }
   },
   
   patientInfo: {
@@ -212,7 +221,6 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  // 🔥 수정: 자동 환자 정보 로드 제어 추가
   selectMyAmbulance: async (skipPatientInfoLoad = false) => {
     const { user } = useAuthStore.getState();
     if (!user || (user.role !== "ambulance" && user.userType !== "ambulance")) {
@@ -247,7 +255,6 @@ const useEmergencyStore = create((set, get) => ({
         error: null,
       });
 
-      // 🔥 수정: skipPatientInfoLoad 플래그가 true이거나 수정 모드일 때는 환자 정보 로드 스킵
       const currentState = get();
       if (!skipPatientInfoLoad && !currentState.isEditMode) {
         await get()._fetchAndSetPatientInfo();
@@ -438,7 +445,6 @@ const useEmergencyStore = create((set, get) => ({
       const result = await saveOptionalPatientInfoApi(apiPayload);
       console.log("🔥🔥🔥 [saveOptionalPatientInfo] API 호출 성공!", result);
       
-      // 🔥 수정: 수정 모드가 아닐 때만 환자 정보 리로드
       const currentState = get();
       if (!currentState.isEditMode) {
         await get()._fetchAndSetPatientInfo();
@@ -495,7 +501,6 @@ const useEmergencyStore = create((set, get) => ({
       await saveOptionalPatientInfoApi(apiPayload);
       console.log("🔥🔥🔥 [saveAllPatientInfoAndMatch] API 호출 성공!");
 
-      // 🔥 수정: 수정 모드가 아닐 때만 환자 정보 리로드
       const currentState = get();
       if (!currentState.isEditMode) {
         await get()._fetchAndSetPatientInfo();
@@ -569,7 +574,6 @@ const useEmergencyStore = create((set, get) => ({
       const saveResult = await saveOptionalPatientInfoApi(apiPayload);
       console.log("🔥🔥🔥 [quickHospitalMatch] API 호출 성공:", saveResult);
 
-      // 🔥 수정: 수정 모드가 아닐 때만 환자 정보 리로드
       const currentState = get();
       if (!currentState.isEditMode) {
         await get()._fetchAndSetPatientInfo();
@@ -754,7 +758,7 @@ const useEmergencyStore = create((set, get) => ({
       patientDetails: initialPatientDetails,
       matchedHospitals: [],
       hospitalMatchingStatus: "idle",
-      isEditMode: false, // 🔥 추가: 완료 시 수정 모드 해제
+      isEditMode: false,
     }));
 
     if (navigate) {
