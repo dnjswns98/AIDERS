@@ -18,6 +18,60 @@ const RealTimeMap = ({ hospitalLocation, className }) => {
   // 테스트용 Store 사용
   const { mockAmbulances, setHospitalLocation } = useTestRealtimeStore();
 
+  // 말풍선 모양의 커스텀 마커 생성 함수
+  const createSpeechBubbleMarker = (text, backgroundColor = '#ef4444') => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // 캔버스 크기 설정
+    canvas.width = 120;
+    canvas.height = 50;
+    
+    // 말풍선 그리기
+    ctx.fillStyle = backgroundColor;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    
+    // 말풍선 본체 (둥근 사각형)
+    const bubbleWidth = 100;
+    const bubbleHeight = 30;
+    const bubbleX = 10;
+    const bubbleY = 5;
+    const radius = 8;
+    
+    ctx.beginPath();
+    ctx.moveTo(bubbleX + radius, bubbleY);
+    ctx.lineTo(bubbleX + bubbleWidth - radius, bubbleY);
+    ctx.quadraticCurveTo(bubbleX + bubbleWidth, bubbleY, bubbleX + bubbleWidth, bubbleY + radius);
+    ctx.lineTo(bubbleX + bubbleWidth, bubbleY + bubbleHeight - radius);
+    ctx.quadraticCurveTo(bubbleX + bubbleWidth, bubbleY + bubbleHeight, bubbleX + bubbleWidth - radius, bubbleY + bubbleHeight);
+    ctx.lineTo(bubbleX + radius, bubbleY + bubbleHeight);
+    ctx.quadraticCurveTo(bubbleX, bubbleY + bubbleHeight, bubbleX, bubbleY + bubbleHeight - radius);
+    ctx.lineTo(bubbleX, bubbleY + radius);
+    ctx.quadraticCurveTo(bubbleX, bubbleY, bubbleX + radius, bubbleY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    
+    // 말풍선 꼬리
+    ctx.beginPath();
+    ctx.moveTo(bubbleX + bubbleWidth/2 - 8, bubbleY + bubbleHeight);
+    ctx.lineTo(bubbleX + bubbleWidth/2, bubbleY + bubbleHeight + 12);
+    ctx.lineTo(bubbleX + bubbleWidth/2 + 8, bubbleY + bubbleHeight);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    
+    // 텍스트 그리기
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, bubbleX + bubbleWidth/2, bubbleY + bubbleHeight/2);
+    
+    return canvas.toDataURL();
+  };
+
   // 구급차 마커 생성/업데이트 함수
   const createOrUpdateAmbulanceMarker = (ambulanceData) => {
     if (!mapInstanceRef.current || !window.kakao?.maps) return;
@@ -51,9 +105,12 @@ const RealTimeMap = ({ hospitalLocation, className }) => {
     }
 
     // 새 구급차 마커 생성
-    const markerImageSrc = 'https://maps.google.com/mapfiles/ms/icons/red-dot.png';
-    const markerImageSize = new window.kakao.maps.Size(32, 32);
-    const markerImage = new window.kakao.maps.MarkerImage(markerImageSrc, markerImageSize);
+    const markerImageSrc = createSpeechBubbleMarker(ambulanceNumber || ambulanceId);
+    const markerImageSize = new window.kakao.maps.Size(120, 50);
+    const markerImageOptions = {
+      offset: new window.kakao.maps.Point(60, 50) // 말풍선 꼬리 끝이 위치를 가리키도록
+    };
+    const markerImage = new window.kakao.maps.MarkerImage(markerImageSrc, markerImageSize, markerImageOptions);
 
     const marker = new window.kakao.maps.Marker({
       position: position,
