@@ -471,36 +471,19 @@ export const createDispatch = withErrorHandling(async (dispatchRequest) => {
  */
 export const getDispatchHistory = withErrorHandling(async (options = {}) => {
   const response = await apiClient.get('/api/v1/dispatch/history', { params: options });
-  const dispatchHistory = response.data || [];
+  const dispatchHistory = Array.isArray(response.data) ? response.data : [];
   
   // 출동 기록 데이터 정규화
   return dispatchHistory.map(item => ({
-    id: item.id || item.createdAt,
-    address: item.address,
-    condition: item.condition,
-    latitude: item.latitude,
-    longitude: item.longitude,
-    dispatchTime: item.createdAt,
-    ambulanceIds: item.ambulanceIds,
-    status: item.status || 'dispatched',
-    priority: item.priority || 'normal',
-    hospitalId: item.hospitalId || null,
-    reportNumber: item.reportNumber,
-    ambulanceNumber: item.ambulanceNumber,
-    hospitalName: item.hospitalName
+    id: item.id,         // id 없으면 createdAt으로 대체 키
+    address: item.address ?? '',
+    condition: item.condition ?? '상태 미입력',
+    latitude: item.latitude ?? null,
+    longitude: item.longitude ?? null,
+    createdAt: item.createdAt,             // ⚠️ 정렬/표시/오늘판단에서 사용 → 반드시 유지
+    ambulanceIds: Array.isArray(item.ambulanceIds) ? item.ambulanceIds : [],
   }));
 }, 'getDispatchHistory');
-
-/**
- * 특정 출동 상세 정보 조회
- */
-export const getDispatchDetail = withErrorHandling(async (dispatchId) => {
-  if (!dispatchId) {
-    throw new Error('출동 ID가 필요합니다.');
-  }
-  const response = await apiClient.get(`/api/v1/dispatch/${dispatchId}`);
-  return response.data;
-}, 'getDispatchDetail');
 
 /**
  * 출동 상태 업데이트
