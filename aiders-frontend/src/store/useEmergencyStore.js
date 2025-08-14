@@ -721,6 +721,11 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
+  selectAmbulance: (ambulance) => {
+    console.log("🚑 [selectAmbulance] 구급차 선택:", ambulance);
+    set({ selectedAmbulance: ambulance });
+  },
+
   transferToHospital: async () => {
     const { selectedAmbulance } = get();
     if (!selectedAmbulance) {
