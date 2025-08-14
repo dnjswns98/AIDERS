@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuthStore } from "../../store/useAuthStore";
 import useHospitalStore from "../../store/useHospitalStore";
 import useBedStore from "../../store/useBedStore";
-import BedCard from "../../components/hospital/BedCard";
+import BedStatusPanel from "../../components/hospital/BedStatusPanel";
 import WaitingAmbulanceList from "../../components/hospital/WaitingAmbulanceList";
 import RealTimeMap from "../../components/hospital/RealTimeMap";
 
@@ -448,7 +448,7 @@ export default function DashboardPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "300px 1fr 350px",
+          gridTemplateColumns: "400px 1fr 400px",
           gap: "0",
           height: "100%",
           width: "100%",
@@ -457,141 +457,20 @@ export default function DashboardPage() {
       >
         <div
           style={{
-            backgroundColor: "white",
-            borderRight: "1px solid #e5e7eb",
             padding: "16px",
-            overflow: "auto",
             height: "100vh",
-            minHeight: "100vh",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              marginBottom: "16px",
-              paddingBottom: "12px",
-              borderBottom: "2px solid #e5e7eb",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "20px",
-                marginRight: "8px",
-              }}
-            >
-              🏥
-            </div>
-            <div>
-              <h3
-                style={{
-                  fontSize: "16px",
-                  fontWeight: "bold",
-                  color: "#1f2937",
-                  margin: 0,
-                }}
-              >
-                병상 현황
-              </h3>
-              {hospitalInfo && (
-                <p
-                  style={{
-                    fontSize: "12px",
-                    color: "#6b7280",
-                    margin: "2px 0 0 0",
-                  }}
-                >
-                  {hospitalInfo.name}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div
-            style={{
-              padding: "12px",
-              backgroundColor: "#f0f9ff",
-              borderRadius: "8px",
-              border: "1px solid #bfdbfe",
-              marginBottom: "16px",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: "13px",
-                marginBottom: "4px",
-              }}
-            >
-              <span style={{ color: "#0369a1", fontWeight: "600" }}>
-                전체 현황
-              </span>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: "12px",
-                color: "#0369a1",
-              }}
-            >
-              <span>총 병상: {stats.totalBeds}</span>
-              <span>총 환자: {stats.totalPatients}</span>
-              <span>여유: {stats.availableBeds}</span>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              flex: 1,
-              overflowY: "auto",
-            }}
-          >
-            {loading ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "20px",
-                  color: "#6b7280",
-                }}
-              >
-                베드 정보를 불러오는 중...
-              </div>
-            ) : error ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "20px",
-                  color: "#ef4444",
-                }}
-              >
-                오류: {error}
-              </div>
-            ) : beds.length === 0 ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "20px",
-                  color: "#6b7280",
-                }}
-              >
-                베드 정보가 없습니다.
-              </div>
-            ) : (
-              beds.map((bed) => (
-                <BedCard
-                  key={bed.id}
-                  bed={bed}
-                  onUpdate={handleBedUpdate}
-                  compact={true}
-                  readonly={true}
-                />
-              ))
-            )}
-          </div>
+          <BedStatusPanel
+            beds={beds}
+            loading={loading}
+            error={error}
+            hospitalInfo={hospitalInfo}
+            onBedUpdate={handleBedUpdate}
+            stats={stats}
+          />
         </div>
 
         <div
@@ -607,61 +486,34 @@ export default function DashboardPage() {
           <div
             style={{
               display: "flex",
+              justifyContent: "center",
               alignItems: "center",
               marginBottom: "12px",
               paddingBottom: "12px",
               borderBottom: "2px solid #e5e7eb",
             }}
           >
-            <div
-              style={{
-                fontSize: "24px",
-                marginRight: "12px",
-              }}
-            >
-              🗺️
-            </div>
-            <div>
+            {hospitalInfo && (
               <h3
                 style={{
-                  fontSize: "18px",
+                  fontSize: "40px",
                   fontWeight: "bold",
-                  color: "#1f2937",
+                  color: "#059669",
                   margin: 0,
+                  textAlign: "center",
                 }}
               >
-                실시간 위치
+                {hospitalInfo.name}
               </h3>
-              {hospitalInfo && (
-                <p
-                  style={{
-                    fontSize: "13px",
-                    color: "#6b7280",
-                    margin: "4px 0 0 0",
-                  }}
-                >
-                  📍 {hospitalInfo.address}
-                </p>
-              )}
-              {hospitalLocation && (
-                <p
-                  style={{
-                    fontSize: "12px",
-                    color: "#9ca3af",
-                    margin: "2px 0 0 0",
-                  }}
-                >
-                  🌐 위도: {hospitalLocation.latitude}, 경도:{" "}
-                  {hospitalLocation.longitude}
-                </p>
-              )}
-            </div>
+            )}
           </div>
 
           <div
             style={{
               flex: 1,
-              borderRadius: "8px",
+              borderRadius: "12px",
+              border: "2px solid #e5e7eb",
+              backgroundColor: "white",
               minHeight: "400px",
             }}
           >
