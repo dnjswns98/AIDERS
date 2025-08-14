@@ -86,18 +86,24 @@ export default function BedManagementPage() {
 
   const handleBedUpdate = async (bedType, updateType, value) => {
     try {
-      if (updateType === 'current') {
-
-        let result = { success: true };
+      if (updateType === 'available') {
+        // 이용가능 병상 수 직접 설정
+        const updateData = {};
+        const currentBed = beds.find(b => b.type === bedType);
         
-        if (value > 0) {
-          result = await decreaseBedManually(bedType);
-        } else if (value < 0) {
-          result = await increaseBedManually(bedType);
+        if (bedType === 'GENERAL') {
+          updateData.generalAvailableBed = value;
+        } else if (bedType === 'PEDIATRIC') {
+          updateData.pediatricAvailableBed = value;
+        } else if (bedType === 'TRAUMA') {
+          updateData.traumaAvailableBed = value;
+        } else if (bedType === 'NEONATAL') {
+          updateData.neonatalAvailableBed = value;
         }
-
+        
+        const result = await updateBedInfo(updateData);
         if (!result?.success) {
-          alert('베드 환자 수 변경에 실패했습니다: ' + (result?.error || '알 수 없는 오류'));
+          alert('이용가능 병상 수 변경에 실패했습니다: ' + (result?.error || '알 수 없는 오류'));
         }
       } else if (updateType === 'total') {
         

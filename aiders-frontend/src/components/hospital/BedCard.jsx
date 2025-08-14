@@ -15,15 +15,17 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
     setIsUpdating(false);
   };
 
-  const handleCurrentPatientsChange = async (e, delta) => {
+  const handleAvailableBedsChange = async (e, delta) => {
     e.stopPropagation();
     if (isUpdating) return;
     
-    if (delta > 0 && bed.currentPatients >= bed.totalBeds) return;
-    if (delta < 0 && bed.currentPatients <= 0) return;
+    const availableBeds = bed.totalBeds - bed.currentPatients;
+    const newAvailable = Math.max(0, Math.min(bed.totalBeds, availableBeds + delta));
+    
+    if (newAvailable === availableBeds) return;
     
     setIsUpdating(true);
-    await onUpdate(bed.type, 'current', delta);
+    await onUpdate(bed.type, 'available', newAvailable);
     setIsUpdating(false);
   };
 
@@ -159,17 +161,17 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
             gap: '4px'
           }}>
             <button
-              onClick={(e) => handleCurrentPatientsChange(e, -1)}
-              disabled={bed.currentPatients <= 0 || isUpdating}
+              onClick={(e) => handleAvailableBedsChange(e, -1)}
+              disabled={(bed.totalBeds - bed.currentPatients) <= 0 || isUpdating}
               style={{
-                backgroundColor: (bed.currentPatients <= 0 || isUpdating) ? '#f9fafb' : (bed.totalBeds > 0 && bed.totalBeds > bed.currentPatients ? '#dcfce7' : '#f3f4f6'),
-                color: (bed.currentPatients <= 0 || isUpdating) ? '#d1d5db' : (bed.totalBeds > 0 && bed.totalBeds > bed.currentPatients ? '#166534' : '#6b7280'),
-                border: `1px solid ${(bed.currentPatients <= 0 || isUpdating) ? '#e5e7eb' : (bed.totalBeds > 0 && bed.totalBeds > bed.currentPatients ? '#bbf7d0' : '#e5e7eb')}`,
+                backgroundColor: ((bed.totalBeds - bed.currentPatients) <= 0 || isUpdating) ? '#f9fafb' : '#dcfce7',
+                color: ((bed.totalBeds - bed.currentPatients) <= 0 || isUpdating) ? '#d1d5db' : '#166534',
+                border: `1px solid ${((bed.totalBeds - bed.currentPatients) <= 0 || isUpdating) ? '#e5e7eb' : '#bbf7d0'}`,
                 borderRadius: '3px',
                 width: '20px',
                 height: '20px',
                 fontSize: '12px',
-                cursor: (bed.currentPatients <= 0 || isUpdating) ? 'not-allowed' : 'pointer',
+                cursor: ((bed.totalBeds - bed.currentPatients) <= 0 || isUpdating) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -180,24 +182,24 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
             <span style={{
               fontSize: '12px',
               fontWeight: '600',
-              color: '#1f2937',
+              color: '#16a34a',
               minWidth: '16px',
               textAlign: 'center'
             }}>
-              {bed.currentPatients}
+              {bed.totalBeds - bed.currentPatients}
             </span>
             <button
-              onClick={(e) => handleCurrentPatientsChange(e, 1)}
-              disabled={bed.currentPatients >= bed.totalBeds || bed.totalBeds <= 0 || isUpdating}
+              onClick={(e) => handleAvailableBedsChange(e, 1)}
+              disabled={(bed.totalBeds - bed.currentPatients) >= bed.totalBeds || bed.totalBeds <= 0 || isUpdating}
               style={{
-                backgroundColor: (bed.currentPatients >= bed.totalBeds || bed.totalBeds <= 0 || isUpdating) ? '#f9fafb' : (bed.totalBeds > 0 && bed.totalBeds > bed.currentPatients ? '#dcfce7' : '#f3f4f6'),
-                color: (bed.currentPatients >= bed.totalBeds || bed.totalBeds <= 0 || isUpdating) ? '#d1d5db' : (bed.totalBeds > 0 && bed.totalBeds > bed.currentPatients ? '#166534' : '#6b7280'),
-                border: `1px solid ${(bed.currentPatients >= bed.totalBeds || bed.totalBeds <= 0 || isUpdating) ? '#e5e7eb' : (bed.totalBeds > 0 && bed.totalBeds > bed.currentPatients ? '#bbf7d0' : '#e5e7eb')}`,
+                backgroundColor: ((bed.totalBeds - bed.currentPatients) >= bed.totalBeds || bed.totalBeds <= 0 || isUpdating) ? '#f9fafb' : '#dcfce7',
+                color: ((bed.totalBeds - bed.currentPatients) >= bed.totalBeds || bed.totalBeds <= 0 || isUpdating) ? '#d1d5db' : '#166534',
+                border: `1px solid ${((bed.totalBeds - bed.currentPatients) >= bed.totalBeds || bed.totalBeds <= 0 || isUpdating) ? '#e5e7eb' : '#bbf7d0'}`,
                 borderRadius: '3px',
                 width: '20px',
                 height: '20px',
                 fontSize: '12px',
-                cursor: (bed.currentPatients >= bed.totalBeds || bed.totalBeds <= 0 || isUpdating) ? 'not-allowed' : 'pointer',
+                cursor: ((bed.totalBeds - bed.currentPatients) >= bed.totalBeds || bed.totalBeds <= 0 || isUpdating) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -319,16 +321,16 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            backgroundColor: '#f0f9ff',
+            backgroundColor: '#f0fdf4',
             padding: '8px 12px',
             borderRadius: '6px'
           }}>
             <span style={{
               fontSize: '12px',
-              color: '#0369a1',
+              color: '#16a34a',
               fontWeight: '500'
             }}>
-              환자 수
+              이용가능
             </span>
             <div style={{
               display: 'flex',
@@ -336,16 +338,17 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
               gap: '8px'
             }}>
               <button
-                onClick={(e) => handleCurrentPatientsChange(e, -1)}
+                onClick={(e) => handleAvailableBedsChange(e, -1)}
+                disabled={(bed.totalBeds - bed.currentPatients) <= 0 || isUpdating}
                 style={{
-                  backgroundColor: '#dbeafe',
-                  color: '#0369a1',
-                  border: '1px solid #bfdbfe',
+                  backgroundColor: ((bed.totalBeds - bed.currentPatients) <= 0 || isUpdating) ? '#f3f4f6' : '#dcfce7',
+                  color: ((bed.totalBeds - bed.currentPatients) <= 0 || isUpdating) ? '#9ca3af' : '#16a34a',
+                  border: `1px solid ${((bed.totalBeds - bed.currentPatients) <= 0 || isUpdating) ? '#d1d5db' : '#bbf7d0'}`,
                   borderRadius: '4px',
                   width: '24px',
                   height: '24px',
                   fontSize: '14px',
-                  cursor: 'pointer',
+                  cursor: ((bed.totalBeds - bed.currentPatients) <= 0 || isUpdating) ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -353,12 +356,16 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
                   transition: 'all 0.2s'
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#bfdbfe';
-                  e.target.style.color = '#1e40af';
+                  if ((bed.totalBeds - bed.currentPatients) > 0 && !isUpdating) {
+                    e.target.style.backgroundColor = '#bbf7d0';
+                    e.target.style.color = '#15803d';
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = '#dbeafe';
-                  e.target.style.color = '#0369a1';
+                  if ((bed.totalBeds - bed.currentPatients) > 0 && !isUpdating) {
+                    e.target.style.backgroundColor = '#dcfce7';
+                    e.target.style.color = '#16a34a';
+                  }
                 }}
               >
                 -
@@ -366,23 +373,24 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
               <span style={{
                 fontSize: '16px',
                 fontWeight: '600',
-                color: '#1e40af',
+                color: '#15803d',
                 minWidth: '20px',
                 textAlign: 'center'
               }}>
-                {bed.currentPatients}
+                {bed.totalBeds - bed.currentPatients}
               </span>
               <button
-                onClick={(e) => handleCurrentPatientsChange(e, 1)}
+                onClick={(e) => handleAvailableBedsChange(e, 1)}
+                disabled={(bed.totalBeds - bed.currentPatients) >= bed.totalBeds || bed.totalBeds <= 0 || isUpdating}
                 style={{
-                  backgroundColor: '#dbeafe',
-                  color: '#0369a1',
-                  border: '1px solid #bfdbfe',
+                  backgroundColor: ((bed.totalBeds - bed.currentPatients) >= bed.totalBeds || bed.totalBeds <= 0 || isUpdating) ? '#f3f4f6' : '#dcfce7',
+                  color: ((bed.totalBeds - bed.currentPatients) >= bed.totalBeds || bed.totalBeds <= 0 || isUpdating) ? '#9ca3af' : '#16a34a',
+                  border: `1px solid ${((bed.totalBeds - bed.currentPatients) >= bed.totalBeds || bed.totalBeds <= 0 || isUpdating) ? '#d1d5db' : '#bbf7d0'}`,
                   borderRadius: '4px',
                   width: '24px',
                   height: '24px',
                   fontSize: '14px',
-                  cursor: 'pointer',
+                  cursor: ((bed.totalBeds - bed.currentPatients) >= bed.totalBeds || bed.totalBeds <= 0 || isUpdating) ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -390,12 +398,16 @@ const BedCard = ({ bed, onUpdate, compact = false, readonly = false }) => {
                   transition: 'all 0.2s'
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#bfdbfe';
-                  e.target.style.color = '#1e40af';
+                  if ((bed.totalBeds - bed.currentPatients) < bed.totalBeds && bed.totalBeds > 0 && !isUpdating) {
+                    e.target.style.backgroundColor = '#bbf7d0';
+                    e.target.style.color = '#15803d';
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = '#dbeafe';
-                  e.target.style.color = '#0369a1';
+                  if ((bed.totalBeds - bed.currentPatients) < bed.totalBeds && bed.totalBeds > 0 && !isUpdating) {
+                    e.target.style.backgroundColor = '#dcfce7';
+                    e.target.style.color = '#16a34a';
+                  }
                 }}
               >
                 +

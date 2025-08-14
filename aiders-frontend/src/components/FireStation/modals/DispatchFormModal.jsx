@@ -3,7 +3,8 @@ import useFireStationStore from "../../../store/useFireStationStore";
 import AddressSearchModal from "./AddressSearchModal";
 import { getStatusText } from "../../../utils/statusUtils";
 
-const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo }) => {
+// 1. initialAmbulanceId prop을 추가로 받도록 수정
+const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo, initialAmbulanceId }) => {
     const {
         ambulances,
         dispatchAmbulance,
@@ -15,7 +16,7 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
     } = useFireStationStore();
 
     const [formData, setFormData] = useState({
-        ambulanceIds: [], // ambulanceId(숫자)를 담을 배열
+        ambulanceIds: [],
         priority: "normal",
         condition: "",
         notes: "",
@@ -33,16 +34,22 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
     const [validationErrors, setValidationErrors] = useState({});
     const [localError, setLocalError] = useState(null);
 
+    // 2. 모달이 열릴 때, initialAmbulanceId가 있으면 자동으로 해당 구급차를 선택하도록 useEffect 추가
+    useEffect(() => {
+        if (isOpen && initialAmbulanceId) {
+            setFormData(prev => ({ ...prev, ambulanceIds: [initialAmbulanceId] }));
+        }
+    }, [isOpen, initialAmbulanceId]);
+
+
     const availableAmbulances = useMemo(() => {
         if (!ambulances) return [];
+        // 대기중인 구급차만 필터링
         return ambulances.filter(ambulance => {
             const status = (ambulance.status || '').toUpperCase();
-            const isAvailable = status === 'WAIT';
-            // isAmbulanceDispatching 함수가 userKey를 사용하도록 수정
-            const isNotDispatching = !isAmbulanceDispatching(ambulance.userKey);
-            return isAvailable && isNotDispatching;
+            return status === 'WAIT' || status === 'STANDBY';
         });
-    }, [ambulances, isAmbulanceDispatching]);
+    }, [ambulances]);
 
     const handleInputChange = useCallback((e) => {
         const { name, value } = e.target;
@@ -50,11 +57,9 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
         if (validationErrors[name]) setValidationErrors(prev => ({ ...prev, [name]: "" }));
     }, [validationErrors]);
 
-    // 체크박스 핸들러: ambulanceId(숫자)를 받아서 처리하도록 수정
     const handleCheckboxChange = useCallback((ambulanceId) => {
         setFormData(prev => {
             const currentIds = prev.ambulanceIds;
-
             if (currentIds.includes(ambulanceId)) {
                 return { ...prev, ambulanceIds: currentIds.filter(id => id !== ambulanceId) };
             } else {
@@ -107,7 +112,7 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
         setLocalError(null);
         try {
             const dispatchData = {
-                ambulanceIds: formData.ambulanceIds, // 이미 숫자 ID 배열이므로 그대로 전송
+                ambulanceIds: formData.ambulanceIds,
                 latitude: locationData.latitude,
                 longitude: locationData.longitude,
                 address: locationData.address,
@@ -115,7 +120,6 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
             };
 
             await dispatchAmbulance(dispatchData);
-            await fetchFirestationAmbulances(firestationInfo.id);
             if (onDispatchSuccess) onDispatchSuccess();
             alert(`✅ 배차 완료!\n구급차 ID: ${formData.ambulanceIds.join(", ")}\n출동지: ${locationData.address}`);
             handleClose();
@@ -127,7 +131,7 @@ const DispatchFormModal = ({ isOpen, onClose, onDispatchSuccess, firestationInfo
             setIsSubmitting(false);
         }
     }, [
-        validateForm, formData, locationData, dispatchAmbulance, onDispatchSuccess, handleClose, fetchFirestationAmbulances, firestationInfo
+        validateForm, formData, locationData, dispatchAmbulance, onDispatchSuccess, handleClose
     ]);
 
     if (!isOpen) return null;

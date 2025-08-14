@@ -16,7 +16,7 @@ export default function Header() {
       <div className={styles.headerContent}>
         <div className={styles.logoSection}>
           <h1 className={styles.logoTitle}>
-            AIDER
+            AIDERS
           </h1>
         </div>
 

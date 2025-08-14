@@ -17,7 +17,7 @@ import {
 import { fetchWithAuth } from "../utils/apiInterceptor";
 import { useAuthStore } from "./useAuthStore";
 
-// === 유틸리티 함수들 ===
+// ... (유틸리티 함수는 이전과 동일)
 const getStatusText = (status) => {
   const statusMap = {
     'WAIT': '대기중',
@@ -59,22 +59,20 @@ const isToday = (dateString) => {
 };
 
 
-// === 메인 스토어 ===
-
 const useFireStationStore = create((set, get) => ({
-  // === 기본 상태 ===
+  // ... (기존 상태는 이전과 동일)
   ambulances: [],
   dispatchHistory: [],
   isLoading: false,
   error: null,
   lastUpdated: null,
-
-  // === 실시간 배차 추적 ===
+  reports: [],
+  reportPage: 0,
+  reportTotalPages: 0,
+  isReportLoading: false,
   dispatchingAmbulances: new Map(),
   recentDispatches: [],
   dispatchQueue: [],
-
-  // === 통계 데이터 ===
   todayStats: {
     totalDispatches: 0,
     completedDispatches: 0,
@@ -84,20 +82,12 @@ const useFireStationStore = create((set, get) => ({
     urgentDispatches: 0,
     normalDispatches: 0
   },
-
-  // === 구급차 현황 캐시 ===
   ambulanceStatusCache: new Map(),
   ambulanceDetailsCache: new Map(),
-
-  // === 소방서 정보 ===
   firestationInfo: null,
   firestationLocation: null,
 
-  // ======================================================================
-  // 🚨 출동 관련 액션들
-  // ======================================================================
-  // 이 부분의 함수들은 개별적으로 호출되는 대신, initializeData에 통합됩니다.
-
+  // ... (기존 액션 함수들은 이전과 동일)
   fetchDispatchHistory: async (options = {}) => {
     try {
       const history = await getDispatchHistory(options);
@@ -140,7 +130,6 @@ const useFireStationStore = create((set, get) => ({
       throw error;
     }
   },
-
   dispatchAmbulance: async (dispatchRequest) => {
     const { ambulanceIds } = dispatchRequest;
     const ambulanceId = ambulanceIds?.[0];
@@ -172,12 +161,6 @@ const useFireStationStore = create((set, get) => ({
       throw error;
     }
   },
-
-  // ======================================================================
-  // 🚑 구급차 관련 액션들
-  // ======================================================================
-  // 이 부분의 함수들은 개별적으로 호출되는 대신, initializeData에 통합됩니다.
-
   fetchFirestationAmbulances: async (firestationId) => {
     try {
         const ambulanceList = await getAmbulances();
@@ -189,7 +172,6 @@ const useFireStationStore = create((set, get) => ({
         throw error;
     }
   },
-
   fetchFirestationInfo: async () => {
     try {
       const [info, location] = await Promise.all([
@@ -210,12 +192,51 @@ const useFireStationStore = create((set, get) => ({
       throw error;
     }
   },
-  
-  // ======================================================================
-  // 🛠️ 유틸리티 및 상태 추적 함수
-  // ======================================================================
 
-  // 🔥 모든 초기 데이터를 한 번에 불러오는 함수 (핵심)
+  fetchReportById: async (reportId) => {
+    set({ isReportLoading: true, error: null });
+    try {
+        const { getReportById } = await import("../api/api");
+        const report = await getReportById(reportId);
+        return report;
+    } catch (error) {
+        const errorMessage = error.response?.data?.message || error.message || "보고서 상세 정보를 불러오는데 실패했습니다.";
+        set({ error: errorMessage });
+        throw error;
+    } finally {
+        set({ isReportLoading: false });
+    }
+  },
+
+  // 🔽 수정: fetchReports 함수가 검색 옵션을 받도록 수정
+  fetchReports: async (page = 0, size = 10, searchOptions = {}) => {
+    set({ isReportLoading: true, error: null });
+    try {
+      const { getReports } = await import("../api/api");
+      
+      // searchOptions 객체를 API가 요구하는 형식에 맞게 래핑합니다.
+      const searchEnvelope = {
+        request: searchOptions,
+        page,
+        size,
+        sort: "createdAt,desc"
+      };
+
+      const response = await getReports(searchEnvelope);
+      
+      set({
+        reports: response.content || [],
+        reportPage: response.number || 0,
+        reportTotalPages: response.totalPages || 0,
+        isReportLoading: false
+      });
+      return response;
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || "보고서 목록을 불러오는데 실패했습니다.";
+      set({ error: errorMessage, isReportLoading: false, reports: [] });
+      throw error;
+    }
+  },
   initializeData: async () => {
     set({ isLoading: true, error: null });
     const { user } = useAuthStore.getState();
@@ -228,7 +249,8 @@ const useFireStationStore = create((set, get) => ({
       await Promise.all([
         get().fetchFirestationInfo(),
         get().fetchFirestationAmbulances(user.userId),
-        get().fetchDispatchHistory()
+        get().fetchDispatchHistory(),
+        get().fetchReports()
       ]);
       set({ isLoading: false });
     } catch (error) {
@@ -239,18 +261,15 @@ const useFireStationStore = create((set, get) => ({
       });
     }
   },
-
   isAmbulanceDispatching: (ambulanceId) => {
     if (!ambulanceId) return false;
     const dispatching = get().dispatchingAmbulances.get(ambulanceId);
     return !!dispatching;
   },
-
   getDispatchProgress: (ambulanceId) => {
     if (!ambulanceId) return null;
     return get().dispatchingAmbulances.get(ambulanceId) || null;
   },
-
   refreshTodayStats: async () => {
     try {
       const history = await get().fetchDispatchHistory();
@@ -285,9 +304,7 @@ const useFireStationStore = create((set, get) => ({
       console.error("오늘 통계 새로고침 실패:", error);
     }
   },
-
   clearError: () => set({ error: null }),
-
   reset: () => {
     set({
       ambulances: [],
@@ -297,6 +314,10 @@ const useFireStationStore = create((set, get) => ({
       dispatchingAmbulances: new Map(),
       recentDispatches: [],
       firestationInfo: null,
+      reports: [],
+      reportPage: 0,
+      reportTotalPages: 0,
+      isReportLoading: false,
     });
   }
 }));

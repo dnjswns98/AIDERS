@@ -7,6 +7,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import team1234.aiders.application.ambulance.entity.Ambulance;
 import team1234.aiders.application.ambulance.repository.AmbulanceRepository;
+import team1234.aiders.application.firestation.entity.Firestation;
+import team1234.aiders.application.firestation.repository.FirestationRepository;
 import team1234.aiders.application.hospital.entity.Hospital;
 import team1234.aiders.application.location.dto.DistanceMessage;
 import team1234.aiders.application.location.dto.LocationUpdateRequest;
@@ -49,5 +51,15 @@ public class LocationSocketService {
 
         // 구급차에게
         messagingTemplate.convertAndSend("/topic/location/ambulance/" + ambulanceId, message);
+    }
+
+    public void sendLocationToFireStation(LocationUpdateRequest request) {
+        Ambulance ambulance = ambulanceRepository.findById(request.ambulanceId())
+                .orElseThrow(() -> new IllegalArgumentException("구급차를 찾을 수 없습니다."));
+
+        Long fireStationId = ambulance.getFirestation().getId();
+
+        // 소방서에게 전송 (병원과 거리 계산 x)
+        messagingTemplate.convertAndSend("/topic/location/firestation/" + fireStationId, request);
     }
 }

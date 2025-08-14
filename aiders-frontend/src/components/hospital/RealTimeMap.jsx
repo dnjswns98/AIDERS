@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useTestRealtimeStore } from '../../store/useTestRealtimeStore'; // 테스트용 Store 추가
 import SockJS from "sockjs-client/dist/sockjs";
 import Stomp from "stompjs";
 
@@ -13,19 +14,39 @@ const RealTimeMap = ({ hospitalLocation, className }) => {
   const [isMapInitialized, setIsMapInitialized] = useState(false);
   const [ambulanceLocations, setAmbulanceLocations] = useState(new Map()); // 구급차 위치 정보
   const { user } = useAuthStore();
+  
+  // 테스트용 Store 사용
+  const { mockAmbulances, setHospitalLocation } = useTestRealtimeStore();
 
   // 구급차 마커 생성/업데이트 함수
   const createOrUpdateAmbulanceMarker = (ambulanceData) => {
     if (!mapInstanceRef.current || !window.kakao?.maps) return;
 
-    const { ambulanceId, latitude, longitude, status, patientName, ktasLevel } = ambulanceData;
+    const { ambulanceId, ambulanceNumber, latitude, longitude, distance } = ambulanceData;
     const position = new window.kakao.maps.LatLng(latitude, longitude);
     
     // 기존 마커가 있으면 위치만 업데이트
     const existingMarker = ambulanceMarkersRef.current.get(ambulanceId);
     if (existingMarker) {
       existingMarker.marker.setPosition(position);
-      console.log(`🚑 [RealTimeMap] 구급차 ${ambulanceId} 위치 업데이트: ${latitude}, ${longitude}`);
+      // 정보창 내용도 업데이트
+      existingMarker.infoWindow.setContent(`
+        <div style="padding: 8px 12px; font-size: 12px; min-width: 150px;">
+          <div style="font-weight: bold; color: #dc2626; margin-bottom: 4px;">
+            🚑 구급차 ${ambulanceNumber || ambulanceId}
+          </div>
+          <div style="color: #6b7280; font-size: 11px; margin-bottom: 2px;">
+            상태: <span style="color: #f59e0b;">이송 중</span>
+          </div>
+          <div style="color: #6b7280; font-size: 11px; margin-bottom: 2px;">
+            병원까지: <span style="color: #059669;">${distance ? `${distance.toFixed(1)}km` : '계산 중'}</span>
+          </div>
+          <div style="color: #6b7280; font-size: 11px;">
+            위치: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}
+          </div>
+        </div>
+      `);
+      console.log(`🚑 [RealTimeMap] 구급차 ${ambulanceNumber || ambulanceId} 위치 업데이트: ${latitude}, ${longitude}, 거리: ${distance?.toFixed(1)}km`);
       return;
     }
 
@@ -38,7 +59,7 @@ const RealTimeMap = ({ hospitalLocation, className }) => {
       position: position,
       image: markerImage,
       map: mapInstanceRef.current,
-      title: `구급차 ${ambulanceId}`
+      title: `구급차 ${ambulanceNumber || ambulanceId}`
     });
 
     // 정보창 생성
@@ -46,17 +67,17 @@ const RealTimeMap = ({ hospitalLocation, className }) => {
       content: `
         <div style="padding: 8px 12px; font-size: 12px; min-width: 150px;">
           <div style="font-weight: bold; color: #dc2626; margin-bottom: 4px;">
-            🚑 구급차 ${ambulanceId}
+            🚑 구급차 ${ambulanceNumber || ambulanceId}
           </div>
           <div style="color: #6b7280; font-size: 11px; margin-bottom: 2px;">
-            상태: <span style="color: #f59e0b;">통신대기</span>
+            상태: <span style="color: #f59e0b;">이송 중</span>
           </div>
           <div style="color: #6b7280; font-size: 11px; margin-bottom: 2px;">
-            환자: ${patientName || '미상'}
+            병원까지: <span style="color: #059669;">${distance ? `${distance.toFixed(1)}km` : '계산 중'}</span>
           </div>
-          ${ktasLevel ? `<div style="color: #6b7280; font-size: 11px;">
-            KTAS: <span style="color: #ef4444;">${ktasLevel}</span>
-          </div>` : ''}
+          <div style="color: #6b7280; font-size: 11px;">
+            위치: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}
+          </div>
         </div>
       `,
       removable: false
@@ -74,7 +95,7 @@ const RealTimeMap = ({ hospitalLocation, className }) => {
       lastUpdate: Date.now()
     });
 
-    console.log(`🚑 [RealTimeMap] 새 구급차 ${ambulanceId} 마커 생성: ${latitude}, ${longitude}`);
+    console.log(`🚑 [RealTimeMap] 새 구급차 ${ambulanceNumber || ambulanceId} 마커 생성: ${latitude}, ${longitude}, 거리: ${distance?.toFixed(1)}km`);
   };
 
   // 구급차 마커 제거 함수
@@ -124,38 +145,37 @@ const RealTimeMap = ({ hospitalLocation, className }) => {
         stomp.subscribe(topic, (message) => {
           try {
             const locationData = JSON.parse(message.body);
-            console.log('🔍 [RealTimeMap] 수신된 데이터 전체 구조:', {
+            console.log('🔍 [RealTimeMap] 수신된 DistanceMessage 데이터:', {
               원본데이터: locationData,
               데이터타입: typeof locationData,
               키목록: Object.keys(locationData),
-              ambulanceId존재: !!locationData.ambulanceId,
-              hospitalId존재: !!locationData.hospitalId,
-              위도경도존재: !!(locationData.latitude && locationData.longitude),
+              ambulanceId: locationData.ambulanceId,
+              hospitalId: locationData.hospitalId,
+              ambulanceNumber: locationData.ambulanceNumber,
+              위도경도: `${locationData.latitude}, ${locationData.longitude}`,
+              거리: locationData.distance,
               타임스탬프: new Date().toLocaleTimeString()
             });
             
-            // 구급차 데이터인지 확인
-            if (locationData.ambulanceId) {
-              console.log('🚑 [RealTimeMap] 구급차 위치 데이터 감지!', {
+            // DistanceMessage 데이터 확인 및 처리
+            if (locationData.ambulanceId && locationData.latitude && locationData.longitude) {
+              console.log('🚑 [RealTimeMap] 구급차 위치 데이터 처리!', {
                 구급차ID: locationData.ambulanceId,
+                구급차번호: locationData.ambulanceNumber,
+                병원ID: locationData.hospitalId,
                 위도: locationData.latitude,
                 경도: locationData.longitude,
-                기타정보: {
-                  status: locationData.status,
-                  patientName: locationData.patientName,
-                  ktasLevel: locationData.ktasLevel,
-                  hospitalId: locationData.hospitalId
-                }
+                거리: `${locationData.distance?.toFixed(1)}km`
               });
               
               // 구급차 위치 상태 업데이트
               const ambulanceInfo = {
                 ambulanceId: locationData.ambulanceId,
+                ambulanceNumber: locationData.ambulanceNumber,
+                hospitalId: locationData.hospitalId,
                 latitude: locationData.latitude,
                 longitude: locationData.longitude,
-                status: locationData.status || 'waiting_communication',
-                patientName: locationData.patientName,
-                ktasLevel: locationData.ktasLevel,
+                distance: locationData.distance,
                 timestamp: new Date().toISOString()
               };
 
@@ -167,19 +187,8 @@ const RealTimeMap = ({ hospitalLocation, className }) => {
 
               // 지도에 구급차 마커 생성/업데이트
               createOrUpdateAmbulanceMarker(ambulanceInfo);
-            }
-            
-            // 병원 데이터인지 확인 (기존 로직)
-            if (locationData.latitude && locationData.longitude && mapInstanceRef.current && hospitalMarkerRef.current) {
-              console.log('🏥 [RealTimeMap] 병원/일반 위치 데이터 처리');
-              const newPosition = new window.kakao.maps.LatLng(locationData.latitude, locationData.longitude);
-              hospitalMarkerRef.current.setPosition(newPosition);
-              mapInstanceRef.current.panTo(newPosition);
-            }
-            
-            // 알 수 없는 데이터 형식
-            if (!locationData.ambulanceId && (!locationData.latitude || !locationData.longitude)) {
-              console.log('❓ [RealTimeMap] 알 수 없는 데이터 형식:', locationData);
+            } else {
+              console.log('❓ [RealTimeMap] 불완전한 데이터 형식:', locationData);
             }
             
           } catch (error) {
@@ -281,15 +290,32 @@ const RealTimeMap = ({ hospitalLocation, className }) => {
       setIsMapLoaded(true);
       setIsMapInitialized(true);
       console.log('[RealTimeMap] 카카오맵 초기화 완료');
+      
+      // 🧪 TEST: 병원 위치를 테스트 Store에 설정하여 Mock 데이터 동적 생성
+      setHospitalLocation(mapLocation.latitude, mapLocation.longitude);
+      console.log(`🧪 [RealTimeMap] 테스트 Store에 병원 위치 설정: ${mapLocation.latitude}, ${mapLocation.longitude}`);
 
     } catch (error) {
       console.error('[RealTimeMap] 지도 초기화 오류:', error);
     }
   }, [hospitalLocation]); // hospitalLocation이 있을 때만 지도 초기화
 
-  // WebSocket 연결 (지도와 분리)
+  // 🧪 TEST: Mock 데이터 처리 useEffect (항상 작동 - 실시간 데이터와 함께 표시)
+  useEffect(() => {
+    if (mockAmbulances.length > 0 && mapInstanceRef.current) {
+      console.log('🧪 [RealTimeMap] Mock 데이터 지도에 추가 표시', mockAmbulances);
+      
+      // Mock 구급차들을 지도에 표시 (실시간 데이터와 구분하지 않고 함께 표시)
+      mockAmbulances.forEach(ambulance => {
+        createOrUpdateAmbulanceMarker(ambulance);
+      });
+    }
+  }, [mockAmbulances, mapInstanceRef.current]); // Mock 데이터 변경 시 업데이트
+
+  // WebSocket 연결 (지도와 분리) - 항상 작동 (실시간 데이터 수신)
   useEffect(() => {
     if (user?.userId) {
+      console.log('🌐 [RealTimeMap] 실제 WebSocket 연결 시작');
       connectWebSocket();
     }
 
@@ -302,7 +328,7 @@ const RealTimeMap = ({ hospitalLocation, className }) => {
       // 컴포넌트 언마운트 시 모든 구급차 마커 정리
       clearAllAmbulanceMarkers();
     };
-  }, [user?.userId]); // 지도 로딩 상태와 무관하게 WebSocket 연결
+  }, [user?.userId]); // WebSocket은 항상 연결
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
