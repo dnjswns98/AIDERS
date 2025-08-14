@@ -11,7 +11,7 @@ import useLiveAmbulanceLocation from "../../hooks/useLiveAmbulanceLocation";
 import useWebRtcStore from "../../store/useWebRtcStore";
 import Stomp from "stompjs";
 import SockJS from "sockjs-client";
-import WebRtcCall from "../../components/webRTC/WebRtcCall"; // 🔥 WebRtcCall 컴포넌트를 직접 import 합니다.
+import WebRtcCall from "../../components/webRTC/WebRtcCall";
 
 export default function AmbulanceDashboardPage() {
     const navigate = useNavigate();
@@ -22,10 +22,10 @@ export default function AmbulanceDashboardPage() {
         selectMyAmbulance, 
         matchedHospitals, 
         patientInfo,
-        patientDetails 
+        patientDetails,
+        setEditMode
     } = useEmergencyStore();
     
-    // 🔥 WebRtcCall에 필요한 모든 상태를 가져옵니다.
     const { isCallActive, callInfo, endCall, setPipMode } = useWebRtcStore();
     const { ambulanceLocation, hospitalDistanceInfo } = useLiveAmbulanceLocation(user?.userId);
     
@@ -82,10 +82,10 @@ export default function AmbulanceDashboardPage() {
             alert("출동 지시를 받은 후 환자 정보를 입력할 수 있습니다.");
             return;
         }
-        navigate('/emergency/patient-input');
+        setEditMode(true); 
+        navigate('/emergency/patient-input', { state: { isEditMode: true } });
     };
 
-    const displayLocation = useMemo(() => ambulanceLocation || selectedAmbulance, [ambulanceLocation, selectedAmbulance]);
     const matchedHospital = useMemo(() => matchedHospitals[0], [matchedHospitals]);
 
     if (!selectedAmbulance) {
@@ -115,18 +115,25 @@ export default function AmbulanceDashboardPage() {
                     </div>
                 </div>
 
-                <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md h-[400px] lg:h-auto">
-                    <h2 className="text-xl font-bold mb-4">실시간 위치</h2>
+                <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md h-[400px] lg:h-auto relative">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold">실시간 위치</h2>
+                        <button 
+                            onClick={() => navigate('/emergency/map')}
+                            className="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-xs hover:bg-gray-300"
+                        >
+                            전체화면
+                        </button>
+                    </div>
                     <MapDisplay
                         hospital={matchedHospital}
-                        ambulanceLocation={displayLocation}
+                        ambulanceLocation={ambulanceLocation}
                         distanceInfo={hospitalDistanceInfo}
                     />
                 </div>
 
                 <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md flex flex-col">
                     <h2 className="text-xl font-bold mb-4">화상 통화</h2>
-                    {/* 🔥 수정: isCallActive 상태에 따라 화상통화 컴포넌트 또는 요청 버튼을 렌더링합니다. */}
                     <div className="flex-grow h-full min-h-[300px] bg-gray-200 rounded-lg flex items-center justify-center">
                         {isCallActive && callInfo ? (
                             <WebRtcCall

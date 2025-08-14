@@ -1,99 +1,87 @@
-// src/hooks/useLiveAmbulanceLocation.js
-
-import { useState, useEffect, useRef, useCallback } from 'react';
-import Stomp from 'stompjs';
+import { useState, useEffect, useRef } from 'react';
 import SockJS from 'sockjs-client';
+import Stomp from 'stompjs';
+import useEmergencyStore from '../store/useEmergencyStore';
+import { calculateDistance } from '../api/api';
 
 const useLiveAmbulanceLocation = (ambulanceId) => {
     const [ambulanceLocation, setAmbulanceLocation] = useState(null);
-    const [hospitalDistanceInfo, setHospitalDistanceInfo] = useState(null);
-    const [wsError, setWsError] = useState(null);
+    const [hospitalDistanceInfo, setHospitalDistanceInfo] = useState({ distance: null, duration: null });
+    const { matchedHospitals } = useEmergencyStore();
     const stompClientRef = useRef(null);
+    const locationWatchIdRef = useRef(null);
 
-    const disconnect = useCallback(() => {
-        if (stompClientRef.current && stompClientRef.current.connected) {
-            stompClientRef.current.disconnect(() => {
-                console.log('[LiveLocation] WebSocket 연결 해제');
-            });
-            stompClientRef.current = null;
-        }
-    }, []);
+    const hospital = matchedHospitals?.[0];
 
-    const connect = useCallback(() => {
-        if (!ambulanceId || stompClientRef.current) {
-            return;
-        }
+    useEffect(() => {
+        if (!ambulanceId) return;
 
+        // 1. 초기 위치 설정 (고정밀 GPS)
+        locationWatchIdRef.current = navigator.geolocation.watchPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                const newLocation = { latitude, longitude, timestamp: new Date().toISOString() };
+                
+                console.log('[GPS watch] 새 위치 수신:', newLocation);
+                setAmbulanceLocation(newLocation);
+
+                // WebSocket으로 위치 전송
+                if (stompClientRef.current && stompClientRef.current.connected) {
+                    stompClientRef.current.send(`/pub/location/ambulance/${ambulanceId}`, {}, JSON.stringify({ latitude, longitude }));
+                }
+
+                // 병원과의 거리 계산
+                if (hospital?.latitude && hospital?.longitude) {
+                    try {
+                        const distanceInfo = await calculateDistance(newLocation, hospital);
+                        setHospitalDistanceInfo({
+                            distance: (distanceInfo.distance / 1000).toFixed(1) + 'km',
+                            duration: Math.round(distanceInfo.duration) + '분'
+                        });
+                    } catch (error) {
+                        console.error('거리 계산 실패:', error);
+                    }
+                }
+            },
+            (error) => {
+                console.error("GPS 위치 추적 오류:", error);
+            },
+            { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000, distanceFilter: 10 }
+        );
+
+        // 2. WebSocket 연결 설정
         const WS_BASE_URL = (import.meta.env.VITE_WS_BASE_URL || "ws://localhost:8080/ws")
-            .replace(/^ws:\/\//, 'http://')
-            .replace(/^wss:\/\//, 'https://');
-        
-        console.log(`[LiveLocation] WebSocket 연결 시도: ${WS_BASE_URL}`);
+            .replace(/^ws:\/\//, "http://").replace(/^wss:\/\//, "https://");
         
         const socket = new SockJS(WS_BASE_URL);
         const stompClient = Stomp.over(socket);
-        stompClient.debug = null; // 디버그 로그 비활성화
+        stompClient.debug = null;
 
         stompClient.connect({}, 
-            (frame) => {
-                console.log('[LiveLocation] ✅ WebSocket 연결 성공');
-                setWsError(null);
+            () => {
+                console.log('[LiveLocation] WebSocket 연결 성공');
                 stompClientRef.current = stompClient;
-
-                // 구급차 위치 및 거리 정보 구독
-                const topic = `/topic/location/ambulance/${ambulanceId}`;
-                console.log(`[LiveLocation] 📡 토픽 구독: ${topic}`);
-                
-                stompClient.subscribe(topic, (message) => {
-                    try {
-                        const data = JSON.parse(message.body);
-                        console.log('[LiveLocation] 📩 메시지 수신:', data);
-                        
-                        // 실시간 위치 정보 업데이트
-                        setAmbulanceLocation({
-                            latitude: data.latitude,
-                            longitude: data.longitude,
-                            timestamp: new Date().toISOString()
-                        });
-                        
-                        // 거리 정보 업데이트
-                        setHospitalDistanceInfo({
-                            ambulanceId: data.ambulanceId,
-                            hospitalId: data.hospitalId,
-                            distance: data.distance,
-                            timestamp: new Date().toISOString()
-                        });
-
-                    } catch (e) {
-                        console.error('[LiveLocation] ❌ 메시지 처리 실패:', e);
-                        setWsError('수신 데이터 처리에 실패했습니다.');
-                    }
-                });
             },
             (error) => {
-                console.error('[LiveLocation] ❌ WebSocket 연결 실패:', error);
-                setWsError('실시간 위치 서버에 연결할 수 없습니다. 5초 후 재시도합니다.');
-                stompClientRef.current = null;
-                setTimeout(connect, 5000); // 5초 후 재연결 시도
+                console.error('[LiveLocation] WebSocket 연결 실패:', error);
             }
         );
 
-    }, [ambulanceId]);
-
-    // ambulanceId가 변경되면 웹소켓 연결을 다시 설정합니다.
-    useEffect(() => {
-        connect();
+        // 3. 컴포넌트 언마운트 시 정리
         return () => {
-            disconnect();
+            if (locationWatchIdRef.current) {
+                navigator.geolocation.clearWatch(locationWatchIdRef.current);
+                console.log('[GPS watch] 위치 추적 중지.');
+            }
+            if (stompClientRef.current && stompClientRef.current.connected) {
+                stompClientRef.current.disconnect(() => {
+                    console.log('[LiveLocation] WebSocket 연결 해제');
+                });
+            }
         };
-    }, [connect, disconnect]);
+    }, [ambulanceId, hospital]); // ambulanceId나 hospital이 변경되면 재설정
 
-    return {
-        ambulanceLocation,
-        hospitalDistanceInfo,
-        wsError,
-        wsReconnect: connect, // 수동 재연결 함수
-    };
+    return { ambulanceLocation, hospitalDistanceInfo };
 };
 
 export default useLiveAmbulanceLocation;

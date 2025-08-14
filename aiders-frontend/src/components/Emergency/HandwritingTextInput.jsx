@@ -131,14 +131,24 @@ const HandwritingTextInput = ({
   const getEventPos = useCallback((event) => {
     const canvas = canvasRef.current;
     if (!canvas) return { offsetX: 0, offsetY: 0 };
+
     const rect = canvas.getBoundingClientRect();
 
-    context.lineCap = "round";
-    context.lineJoin = "round";
-    context.strokeStyle = "#000000";
-    context.lineWidth = 5;
-    context.imageSmoothingEnabled = true;
-    contextRef.current = context;
+    // 터치 이벤트와 마우스 이벤트 구분
+    let clientX, clientY;
+    if (event.touches && event.touches.length > 0) {
+      clientX = event.touches[0].clientX;
+      clientY = event.touches[0].clientY;
+    } else {
+      clientX = event.clientX;
+      clientY = event.clientY;
+    }
+
+    const offsetX = clientX - rect.left;
+    const offsetY = clientY - rect.top;
+
+    // context 설정은 여기서 하지 말고 다른 곳에서 처리
+    // const context = contextRef.current; // 이 부분을 제거하거나 적절히 수정
 
     return { offsetX, offsetY };
   }, []);
@@ -146,13 +156,21 @@ const HandwritingTextInput = ({
   const startDrawing = useCallback(
     (event) => {
       if (disabled || !isModelLoaded) return;
-      event.preventDefault();
+
+      // 터치 이벤트인 경우에만 preventDefault 호출
+      if (event.type === "touchstart") {
+        event.preventDefault();
+      } else if (event.type === "mousedown") {
+        event.preventDefault();
+      }
+
       const { offsetX, offsetY } = getEventPos(event);
       contextRef.current.beginPath();
       contextRef.current.moveTo(offsetX, offsetY);
       lastPosRef.current = { offsetX, offsetY };
       setIsDrawing(true);
       lastDrawTimeRef.current = Date.now();
+
       if (drawingTimerRef.current) {
         clearTimeout(drawingTimerRef.current);
         drawingTimerRef.current = null;
@@ -164,10 +182,16 @@ const HandwritingTextInput = ({
   const draw = useCallback(
     (event) => {
       if (!isDrawing || disabled || !isModelLoaded) return;
-      event.preventDefault();
+
+      // 조건부 preventDefault
+      if (event.type === "touchmove") {
+        event.preventDefault();
+      }
+
       const { offsetX, offsetY } = getEventPos(event);
       const ctx = contextRef.current;
       const lastPos = lastPosRef.current;
+
       ctx.lineWidth = 4;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
@@ -180,6 +204,7 @@ const HandwritingTextInput = ({
         offsetY
       );
       ctx.stroke();
+
       lastPosRef.current = { offsetX, offsetY };
       lastDrawTimeRef.current = Date.now();
     },
@@ -392,8 +417,14 @@ const HandwritingTextInput = ({
               onMouseMove={draw}
               onMouseUp={finishDrawing}
               onMouseLeave={finishDrawing}
-              onTouchStart={startDrawing}
-              onTouchMove={draw}
+              onTouchStart={(e) => {
+                e.preventDefault(); // 여기서 preventDefault 처리
+                startDrawing(e);
+              }}
+              onTouchMove={(e) => {
+                e.preventDefault(); // 여기서 preventDefault 처리
+                draw(e);
+              }}
               onTouchEnd={finishDrawing}
             />
             {!handwritingBase64 && !isProcessing && (
