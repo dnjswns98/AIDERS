@@ -53,6 +53,9 @@ export default function AmbulanceDispatchWaitingPage() {
     } catch (error) {
       console.error('배차 취소 오류:', error);
       alert('배차 취소 중 오류가 발생했습니다.');
+    } finally {
+      // API 호출 성공/실패와 관계없이 다이얼로그를 닫습니다.
+      setShowCancelDialog(false);
     }
   };
   
@@ -92,8 +95,9 @@ export default function AmbulanceDispatchWaitingPage() {
   
   return (
     <AmbulanceLayout>
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-        <div className="max-w-2xl mx-auto p-6 min-h-screen">
+      {/* 뷰포트 전체 높이 기준으로 중앙 정렬을 위해 min-h-screen을 사용합니다. */}
+      <div className="flex flex-col items-center justify-center min-h-screen w-full">
+        <div className="max-w-2xl mx-auto p-6">
           <div className="text-center mb-8">
             {ambulanceStatus === 'dispatched' && (
               <div className="animate-pulse text-6xl">🚨</div>

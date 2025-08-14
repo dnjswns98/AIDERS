@@ -1,27 +1,31 @@
+// src/components/Emergency/AmbulanceHeader.jsx
+
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../hooks/useAppContext';
 import { useAuthStore } from '../../store/useAuthStore';
-import useEmergencyStore from '../../store/useEmergencyStore'; // zustand 스토어 import
+import useEmergencyStore from '../../store/useEmergencyStore';
 
 const AmbulanceHeader = () => {
     const { currentTime } = useAppContext();
     const { logout } = useAuthStore();
     const navigate = useNavigate();
 
-    // useEmergencyStore에서 필요한 상태와 함수를 가져옵니다.
     const { selectedAmbulance, completeTransport, resetHospitalMatching } = useEmergencyStore();
 
-    // 현재 구급차의 상태를 소문자로 가져옵니다.
     const ambulanceStatus = selectedAmbulance?.status?.toLowerCase() || selectedAmbulance?.currentStatus?.toLowerCase();
 
-    // 이송 완료 핸들러
     const handleCompleteTransport = async () => {
         if (window.confirm("환자 인계를 완료하고 대기 상태로 돌아가시겠습니까?")) {
             await completeTransport(navigate);
             await resetHospitalMatching();
         }
     };
+
+    // 구급차 상태가 'transfer'일 때만 헤더를 렌더링합니다.
+    if (ambulanceStatus !== 'transfer') {
+        return null;
+    }
 
     return (
         <header className="bg-blue-800 text-white shadow-lg">
