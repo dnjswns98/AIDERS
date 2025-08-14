@@ -41,6 +41,7 @@ const FireStationHeader = () => {
                 }`
               }
             >
+              <i className="fas fa-file-invoice mr-2 text-white"></i>
               보고서
             </NavLink>
           </nav>
