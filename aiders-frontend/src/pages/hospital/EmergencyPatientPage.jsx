@@ -665,10 +665,7 @@ export default function EmergencyPatientPage() {
     }
   };
 
-  useEffect(() => {
-    const { fetchAmbulances } = useEmergencyStore.getState();
-    fetchAmbulances();
-  }, []);
+  
 
   return (
     <>
