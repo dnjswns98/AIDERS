@@ -1,10 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import useFireStationStore from '../../store/useFireStationStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import { getStatusColor, getStatusText } from "../../utils/statusUtils";
-import DispatchFormModal from "../../components/FireStation/modals/DispatchFormModal";
+import Pagination from "../../components/admin/Pagination";
 
-const Dispatch = () => {
+const FireStationDispatch = () => {
     const { user } = useAuthStore();
     
     const { 
@@ -17,7 +16,8 @@ const Dispatch = () => {
         isLoading 
     } = useFireStationStore();
 
-    const [showDispatchModal, setShowDispatchModal] = useState(false);
+    const [currentPage, setCurrentPage] = useState(0);
+    const itemsPerPage = 10;
 
     const fetchData = useCallback(async () => {
         if (user?.userId) {
@@ -31,14 +31,8 @@ const Dispatch = () => {
         fetchData();
     }, [fetchData]);
 
-    const handleDispatchSuccess = () => {
-        fetchData();
-        setShowDispatchModal(false);
-    };
-
     const formatDateTime = (dateString) => {
         if (!dateString) return '시간 정보 없음';
-        
         try {
             const date = new Date(dateString);
             if (date instanceof Date && !isNaN(date)) {
@@ -58,6 +52,18 @@ const Dispatch = () => {
         return '시간 정보 없음';
     };
 
+    const paginatedHistory = useMemo(() => {
+        const sortedHistory = [...dispatchHistory].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        const startIndex = currentPage * itemsPerPage;
+        return sortedHistory.slice(startIndex, startIndex + itemsPerPage);
+    }, [dispatchHistory, currentPage]);
+
+    const totalPages = Math.ceil(dispatchHistory.length / itemsPerPage);
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page - 1);
+    };
+
     if (isLoading && !dispatchHistory.length) {
         return (
             <div className="p-8 bg-gray-50 min-h-full flex items-center justify-center">
@@ -73,13 +79,6 @@ const Dispatch = () => {
         <div className="p-8 bg-gray-50 min-h-full">
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">배차 관리</h2>
-                <button 
-                    onClick={() => setShowDispatchModal(true)} 
-                    className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors !rounded-button whitespace-nowrap flex items-center"
-                >
-                    <i className="fas fa-plus mr-2"></i>
-                    신규 배차
-                </button>
             </div>
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                 <div className="px-6 py-4 bg-gray-50 border-b">
@@ -90,39 +89,34 @@ const Dispatch = () => {
                         <thead className="bg-gray-50">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">구급차 번호</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">출동 주소</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">배차 시간</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">환자 상태</th>
+                                {/* --- '환자 상태' th 제거 --- */}
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {dispatchHistory && dispatchHistory.length > 0 ? (
-                                dispatchHistory.map((dispatch, index) => {
-                                    const ambulance = ambulances[index] || null;
-                                    const ambulanceStatus = ambulance?.status || 'UNKNOWN';
-                                    console.log(ambulance)
+                            {paginatedHistory && paginatedHistory.length > 0 ? (
+                                paginatedHistory.map((dispatch, index) => {
+                                    const ambulanceNumbers = dispatch.ambulanceIds
+                                        .map(id => ambulances.find(a => a.ambulanceId === id)?.userKey)
+                                        .filter(Boolean)
+                                        .join(', ');
+
                                     return (
                                         <tr key={dispatch.id || index} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                                {ambulance ? ambulance.userKey : `ID: ${index}`}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full text-white ${
-                                                    ambulance ? getStatusColor(ambulanceStatus) : 'bg-gray-400'
-                                                }`}>
-                                                    {ambulance ? getStatusText(ambulanceStatus) : '정보 없음'}
-                                                </span>
+                                                {ambulanceNumbers || '정보 없음'}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-500">{dispatch.address}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-500">{formatDateTime(dispatch.id)}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-500">{dispatch.condition}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">{formatDateTime(dispatch.createdAt)}</td>
+                                            {/* --- '환자 상태' td 제거 --- */}
                                         </tr>
                                     );
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                                    {/* --- colSpan을 3으로 수정 --- */}
+                                    <td colSpan="3" className="px-6 py-4 text-center text-gray-500">
                                         배차 내역이 없습니다.
                                     </td>
                                 </tr>
@@ -130,16 +124,16 @@ const Dispatch = () => {
                         </tbody>
                     </table>
                 </div>
+                {totalPages > 1 && (
+                     <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={handlePageChange}
+                    />
+                )}
             </div>
-            
-            <DispatchFormModal
-                isOpen={showDispatchModal}
-                onClose={() => setShowDispatchModal(false)}
-                onDispatchSuccess={handleDispatchSuccess}
-                firestationInfo={firestationInfo}
-            />
         </div>
     );
 };
 
-export default Dispatch;
+export default FireStationDispatch;
