@@ -405,11 +405,19 @@ export const getMatchedHospital = withErrorHandling(async (ambulanceId) => {
 }, 'getMatchedHospital');
 
 /**
+ * 병원 진료과 정보 조회
+ */
+export const getHospitalDepartments = withErrorHandling(async () => {
+  const response = await apiClient.get('/api/v1/hospital/department');
+  return response.data;
+}, 'getHospitalDepartments');
+
+/**
  * 병원 진료과 정보 업데이트
  */
 export const updateHospitalDepartment = withErrorHandling(async (departmentUpdate) => {
-  if (!departmentUpdate || !departmentUpdate.hospitalId) {
-    throw new Error('병원 ID가 필요합니다.');
+  if (!departmentUpdate) {
+    throw new Error('진료과목 업데이트 정보가 필요합니다.');
   }
   const response = await apiClient.patch('/api/v1/hospital/department', departmentUpdate);
   return response.data;

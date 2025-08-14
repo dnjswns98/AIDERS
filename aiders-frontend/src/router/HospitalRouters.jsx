@@ -6,6 +6,7 @@ import EmergencyPatientPage from "../pages/hospital/EmergencyPatientPage";
 import BedManagementPage from "../pages/hospital/BedManagementPage";
 import NotificationPage from "../pages/hospital/NotificationPage";
 import TestPage from "../pages/hospital/TestPage";
+import DepartmentsPage from "../pages/hospital/DepartmentsPage";
 import { Route, Routes } from "react-router-dom";
 import TestHospitalCallPage from "../pages/hospital/TestHospitalCallPage";
 import { useHospitalStore } from '../store/useHospitalStore';
@@ -26,6 +27,7 @@ function HospitalRouters() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/emergency" element={<EmergencyPatientPage />} />
         <Route path="/beds" element={<BedManagementPage />} />
+        <Route path="/departments" element={<DepartmentsPage />} />
         <Route path="/webrtc-test" element={<TestPage />} />
         <Route path="/notifications" element={<NotificationPage />} />
         <Route path="/main" element={<DashboardPage />} />

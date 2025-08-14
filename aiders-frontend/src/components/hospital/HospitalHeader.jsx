@@ -18,6 +18,7 @@ export default function HospitalHeader() {
     { label: "상황판", icon: "📊", path: "/hospital/dashboard" },
     { label: "구급환자", icon: "🚑", path: "/hospital/emergency" },
     { label: "병상관리", icon: "🏥", path: "/hospital/beds" },
+    { label: "진료과목", icon: "🏥", path: "/hospital/departments" },
     { label: "화상통화 테스트", icon: "📹", path: "/hospital/webrtc-test" }
   ];
 

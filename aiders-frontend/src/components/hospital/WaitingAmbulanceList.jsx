@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import useWaitingAmbulanceStore from '../../store/useWaitingAmbulanceStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import useHospitalAlarmRefresh from '../../hooks/useHospitalAlarmRefresh';
 
 const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = false }) => {
   const { ambulances, isLoading, error, fetchWaitingAmbulances } = useWaitingAmbulanceStore();
@@ -17,6 +18,13 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
       });
     }
   };
+
+  // WebSocket 알람 수신 시 자동 새로고침
+  useHospitalAlarmRefresh(() => {
+    if (user?.userId) {
+      fetchWaitingAmbulances(user.userId);
+    }
+  }, ['MATCHING', 'REQUEST']); // 매칭 완료, 통화 요청 알람에만 반응
 
   useEffect(() => {
     if (user?.userId) {

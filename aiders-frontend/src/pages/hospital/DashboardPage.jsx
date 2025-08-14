@@ -6,6 +6,7 @@ import useBedStore from "../../store/useBedStore";
 import BedCard from "../../components/hospital/BedCard";
 import WaitingAmbulanceList from "../../components/hospital/WaitingAmbulanceList";
 import RealTimeMap from "../../components/hospital/RealTimeMap";
+import useHospitalAlarmRefresh from "../../hooks/useHospitalAlarmRefresh";
 
 const InitialSetupModal = ({ onSave, onCancel }) => {
   const [generalTotal, setGeneralTotal] = useState(20);
@@ -238,6 +239,17 @@ export default function DashboardPage() {
 
   const [beds, setBeds] = useState([]);
   const [isInitialSetup, setIsInitialSetup] = useState(false);
+
+  // WebSocket 알람 수신 시 자동 새로고침
+  useHospitalAlarmRefresh(async () => {
+    if (user?.userId) {
+      try {
+        await fetchBedInfo();
+      } catch (error) {
+        console.error("자동 새로고침 - 병상 정보 조회 실패:", error);
+      }
+    }
+  }, ['MATCHING', 'REQUEST', 'EDIT']); // 매칭, 통화 요청, 정보 수정 알람에 반응
 
   useEffect(() => {}, [hospitalInfo]);
 
