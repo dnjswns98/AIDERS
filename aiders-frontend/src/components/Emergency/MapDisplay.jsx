@@ -526,7 +526,7 @@ const MapDisplay = ({
         className="rounded-lg"
       />
 
-      <div
+      {/* <div
         className={`${
           isFullScreen
             ? "absolute bottom-4 left-4 bg-white bg-opacity-90 backdrop-blur-sm rounded-lg p-3 shadow-lg"
@@ -553,7 +553,7 @@ const MapDisplay = ({
             </p>
           </div>
         )}
-      </div>
+      </div> */}
 
       {hasLocationMismatch && (
         <div
