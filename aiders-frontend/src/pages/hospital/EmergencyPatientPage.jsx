@@ -597,7 +597,7 @@ export default function EmergencyPatientPage() {
       const webRtcElement = (
         <WebRtcCall
           sessionId={sessionId}
-          hospitalId={user?.userId}
+          hospitalId={parseInt(user?.userId)}
           onLeave={handleEndCall}
           patientName={ambulance.patientName || ""}
           ktas={ambulance.ktas || ""}
