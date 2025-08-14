@@ -11,7 +11,7 @@ export default function TestPage() {
 
   // 테스트 데이터 객체
   const testData = {
-    ambulanceKey: "998버4200",
+    ambulanceKey: "998무6984",
     patientName: "김테스트",
     ktas: 3,
     messages: {
