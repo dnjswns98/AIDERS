@@ -14,6 +14,7 @@ const safeParseJSON = (data, fallback = {}) => {
       return data;
     }
   } catch (error) {
+    // Fallback for simple strings that are not JSON
   }
   return fallback;
 };
@@ -36,6 +37,7 @@ const safeRenderObject = (data, emptyText = '-') => {
             }
           }
         } catch (e) {
+          // Not a valid JSON string, return as is
           return data;
         }
       } else {
@@ -78,6 +80,7 @@ const safeRenderMedications = (medications, emptyText = '-') => {
             }).join(', ');
           }
         } catch (e) {
+          // Not a valid JSON array string
         }
       }
       return medications;
@@ -107,7 +110,6 @@ const safeRenderMedications = (medications, emptyText = '-') => {
 
 export default function AmbulancePatientInfoPage() {
   const navigate = useNavigate();
-  // 🔽 수정: setEditMode 액션 가져오기
   const { selectedAmbulance, ambulanceDetails, patientInfo, patientDetails, setEditMode } = useEmergencyStore();
   const { setPipMode } = useWebRtcStore();
 
@@ -118,10 +120,9 @@ export default function AmbulancePatientInfoPage() {
   const dataSource = ambulanceDetails || selectedAmbulance;
   const isHospitalView = !!ambulanceDetails;
 
-  // 🔽 수정: 수정 버튼 클릭 시 스토어 상태 변경
   const handleGoToEdit = () => {
-    setEditMode(true); // 수정 모드로 상태 변경
-    navigate('/emergency/patient-input');
+    setEditMode(true); // 전역 상태를 '수정 모드'로 변경
+    navigate('/emergency/patient-input', { state: { isEditMode: true } }); // 페이지 이동 시 state로도 전달
   };
 
   if (!dataSource) {

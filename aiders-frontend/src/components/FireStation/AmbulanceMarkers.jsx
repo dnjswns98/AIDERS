@@ -45,29 +45,20 @@ const getAmbulanceMarkerImage = (status, isSelected) => {
   );
 };
 
-const AmbulanceMarkers = ({ map, filteredAmbulances, selectedAmbulance, firestationInfo, infoWindow }) => {
+const AmbulanceMarkers = ({ map, ambulances, selectedAmbulance, firestationInfo, infoWindow }) => {
   const ambulanceMarkers = useRef([]);
 
   useEffect(() => {
     if (!map) return;
 
+    // 기존 마커 제거
     ambulanceMarkers.current.forEach(marker => marker.setMap(null));
     ambulanceMarkers.current = [];
 
-    if (Array.isArray(filteredAmbulances)) {
-      filteredAmbulances.forEach((ambulance, index) => {
-        if (!ambulance) {
-          return;
-        }
-
-        const status = (ambulance.status || ambulance.currentStatus)?.toLowerCase();
-        
-        // 출동/이송 중인 구급차만 마커를 표시합니다.
-        if (status !== 'dispatched' && status !== 'dispatch' && status !== 'transporting' && status !== 'transfer') {
-            return;
-        }
-
-        if (typeof ambulance.latitude !== 'number' || typeof ambulance.longitude !== 'number') {
+    if (Array.isArray(ambulances)) {
+      ambulances.forEach((ambulance) => {
+        if (!ambulance || typeof ambulance.latitude !== 'number' || typeof ambulance.longitude !== 'number') {
+          // 유효한 위치 정보가 없는 구급차는 건너뜁니다.
           return;
         }
 
@@ -140,7 +131,7 @@ const AmbulanceMarkers = ({ map, filteredAmbulances, selectedAmbulance, firestat
         ambulanceMarkers.current.push(marker);
       });
     }
-  }, [map, filteredAmbulances, selectedAmbulance, firestationInfo, infoWindow]);
+  }, [map, ambulances, selectedAmbulance, firestationInfo, infoWindow]);
 
   return null;
 };

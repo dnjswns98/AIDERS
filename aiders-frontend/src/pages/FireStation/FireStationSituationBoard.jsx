@@ -3,7 +3,7 @@ import useFireStationStore from "../../store/useFireStationStore";
 import SituationMap from "../../components/FireStation/SituationMap";
 import { useAuthStore } from "../../store/useAuthStore";
 import DispatchFormModal from "../../components/FireStation/modals/DispatchFormModal";
-import useFirestationWebSocket from "../../hooks/useFirestationWebSocket"; // 1. 웹소켓 훅 import
+import useFirestationWebSocket from "../../hooks/useFirestationWebSocket";
 
 const FireStationSituationBoard = () => {
   const { user } = useAuthStore();
@@ -22,33 +22,29 @@ const FireStationSituationBoard = () => {
       isLoading: storeLoading 
   } = useFireStationStore();
 
-  // 2. 웹소켓 훅 사용하여 실시간 위치 업데이트 수신
   const { ambulanceUpdates } = useFirestationWebSocket(firestationInfo?.id);
 
-  // === 상태 관리 ===
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedAmbulance, setSelectedAmbulance] = useState(null);
   const [mapCenter, setMapCenter] = useState({ lat: 36.145, lng: 128.39 });
   const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [preselectedAmbulance, setPreselectedAmbulance] = useState(null);
-
-  // UI 상태
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAutoRefresh, setIsAutoRefresh] = useState(true);
   const [lastRefreshTime, setLastRefreshTime] = useState(null);
   const [localError, setLocalError] = useState(null);
 
-    const fetchData = useCallback(async () => {
-        if (user?.userId) {
-            await fetchFirestationInfo();
-            await fetchFirestationAmbulances(user.userId);
-            await fetchDispatchHistory();
-        }
-    }, [user?.userId, fetchFirestationInfo, fetchFirestationAmbulances, fetchDispatchHistory]);
+  const fetchData = useCallback(async () => {
+    if (user?.userId) {
+        await fetchFirestationInfo();
+        await fetchFirestationAmbulances(user.userId);
+        await fetchDispatchHistory();
+    }
+  }, [user?.userId, fetchFirestationInfo, fetchFirestationAmbulances, fetchDispatchHistory]);
 
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const ambulanceStats = useMemo(() => {
     const stats = {
@@ -66,8 +62,23 @@ const FireStationSituationBoard = () => {
     return stats;
   }, [ambulances]);
 
+  const allAmbulancesWithLocation = useMemo(() => {
+    return ambulances.map(ambulance => {
+        const update = ambulanceUpdates.get(ambulance.ambulanceId);
+        if (update) {
+            return {
+                ...ambulance,
+                latitude: update.latitude,
+                longitude: update.longitude,
+                lastLocationUpdate: update.timestamp,
+            };
+        }
+        return ambulance;
+    });
+  }, [ambulances, ambulanceUpdates]);
+  
   const filteredAmbulances = useMemo(() => {
-    let filtered = [...ambulances];
+    let filtered = [...allAmbulancesWithLocation];
     switch (filterStatus) {
       case "dispatched":
         filtered = filtered.filter((a) => ["DISPATCH", "dispatched"].includes(a.currentStatus || a.status) || isAmbulanceDispatching(a.userKey));
@@ -86,25 +97,8 @@ const FireStationSituationBoard = () => {
       return bP - aP;
     });
     return filtered;
-  }, [ambulances, filterStatus, isAmbulanceDispatching]);
-
-  // 3. 실시간 위치 정보가 업데이트된 구급차 목록 생성
-  const ambulancesWithLocation = useMemo(() => {
-    return filteredAmbulances.map(ambulance => {
-        const update = ambulanceUpdates.get(ambulance.ambulanceId);
-        if (update) {
-            return {
-                ...ambulance,
-                latitude: update.latitude,
-                longitude: update.longitude,
-                lastLocationUpdate: update.timestamp,
-            };
-        }
-        return ambulance;
-    });
-  }, [filteredAmbulances, ambulanceUpdates]);
-
-
+  }, [allAmbulancesWithLocation, filterStatus, isAmbulanceDispatching]);
+  
   useEffect(() => {
     if (firestationInfo?.latitude && firestationInfo?.longitude) {
       setMapCenter({ lat: firestationInfo.latitude, lng: firestationInfo.longitude });
@@ -244,9 +238,8 @@ const FireStationSituationBoard = () => {
         <div className="flex-1 p-4">
           <div className="bg-white rounded-lg shadow-lg border border-gray-200 h-full overflow-hidden">
             <div className="h-full">
-              {/* 4. 위치 정보가 병합된 구급차 목록을 전달 */}
               <SituationMap
-                ambulances={ambulancesWithLocation}
+                ambulances={filteredAmbulances}
                 selectedAmbulance={selectedAmbulance}
                 center={mapCenter}
               />

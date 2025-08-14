@@ -3,7 +3,6 @@ import { getCurrentUserInfo } from '../../api/api';
 import useFireStationStore from '../../store/useFireStationStore';
 import MapContainer from './MapContainer';
 import AmbulanceMarkers from './AmbulanceMarkers';
-import HospitalMarkers from './HospitalMarkers';
 import InfoPanel from './InfoPanel';
 
 export default function SituationMap({
@@ -188,20 +187,14 @@ export default function SituationMap({
         onMapInitialized={setIsMapInitialized}
         mapRef={map}
       />
-
       <AmbulanceMarkers
         map={map.current}
-        filteredAmbulances={ambulances}
+        ambulances={ambulances} 
         selectedAmbulance={selectedAmbulance}
         firestationInfo={firestationInfo}
         infoWindow={infoWindow}
       />
 
-      <HospitalMarkers
-        map={map.current}
-        hospitals={hospitals}
-        infoWindow={infoWindow}
-      />
     </div>
   );
 }

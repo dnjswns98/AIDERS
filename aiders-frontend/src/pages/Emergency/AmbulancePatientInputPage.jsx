@@ -6,7 +6,7 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import AmbulanceLayout from "../../components/Emergency/Layout/AmbulanceLayout";
 import useEmergencyStore from "../../store/useEmergencyStore";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -15,75 +15,6 @@ import HandwritingTextInput from "../../components/Emergency/HandwritingTextInpu
 import { useCRNNModel } from "../../hooks/useCRNNModel";
 import Stomp from "stompjs";
 import SockJS from "sockjs-client";
-
-// Helper functions (기존과 동일)
-const safeGetValue = (value, fallback = "") => {
-  if (value === null || value === undefined) return fallback;
-  if (typeof value === "string" && value.trim() === "") return fallback;
-  if (
-    typeof value === "string" &&
-    (value.includes("선택") ||
-      value === "선택해주세요" ||
-      value === "-" ||
-      value === "unknown")
-  )
-    return fallback;
-  return value;
-};
-
-const safeGetKtasLevel = (ktasLevel) => {
-  const cleaned = safeGetValue(ktasLevel);
-  if (!cleaned) return "";
-  if (typeof cleaned === "string" && cleaned.includes("등급")) {
-    const number = cleaned.replace(/[^0-9]/g, "");
-    return number || "";
-  }
-  return cleaned;
-};
-
-const safeGetComplexObject = (obj, path, fallback = "") => {
-  if (!obj || typeof obj !== "object") return fallback;
-  try {
-    if (path.includes(".")) {
-      const keys = path.split(".");
-      let result = obj;
-      for (const key of keys) {
-        if (result && typeof result === "object" && result[key] !== undefined) {
-          result = result[key];
-        } else {
-          return fallback;
-        }
-      }
-      return safeGetValue(result, fallback);
-    } else {
-      return safeGetValue(obj[path], fallback);
-    }
-  } catch (error) {
-    return fallback;
-  }
-};
-
-const safeGetMedications = (medications) => {
-  if (!medications) return "";
-  try {
-    if (Array.isArray(medications)) {
-      return medications
-        .map((med) => (typeof med === "object" && med.name ? med.name : med))
-        .filter((name) => name && name.trim() !== "")
-        .join(", ");
-    }
-    if (typeof medications === "string") {
-      if (medications.startsWith("[")) {
-        const parsed = JSON.parse(medications);
-        return safeGetMedications(parsed);
-      }
-      return medications;
-    }
-    return "";
-  } catch (error) {
-    return "";
-  }
-};
 
 const ageRangeMap = {
   영아: "INFANT",
@@ -95,10 +26,11 @@ const ageRangeMap = {
   노년: "ELDERLY",
 };
 
+
 export default function AmbulancePatientInputPage() {
   const navigate = useNavigate();
+  const { state } = useLocation();
   
-  // 🔽 수정: useLocation 대신 useEmergencyStore에서 isEditMode를 가져옴
   const {
     selectedAmbulance,
     selectMyAmbulance,
@@ -114,9 +46,11 @@ export default function AmbulancePatientInputPage() {
     patientDataError,
     patientInfo,
     patientDetails,
-    isEditMode, // 스토어에서 isEditMode 직접 사용
-    setEditMode, // setEditMode도 가져오기
+    isEditMode: isEditModeFromStore, // Store에서 가져온 isEditMode
+    setEditMode,
   } = useEmergencyStore();
+  
+  const isEditMode = state?.isEditMode || isEditModeFromStore;
 
   const { user } = useAuthStore();
   const { startCall } = useWebRtcStore();
@@ -215,20 +149,24 @@ export default function AmbulancePatientInputPage() {
     });
   }, [user, formData]);
   
-  // 🔽 수정: 더 이상 useLocation을 사용하지 않으므로, 관련 useEffect 제거
-  // useEffect(() => {
-  //   if (!isEditMode) {
-  //     resetHospitalMatching();
-  //   }
-  // }, [resetHospitalMatching, currentStep, isEditMode]);
-
-  // 🔽 수정: 컴포넌트 unmount 시 isEditMode를 false로 초기화
   useEffect(() => {
+    // 페이지에 들어올 때, location state나 전역 상태를 기준으로 모드 설정
+    setEditMode(isEditMode);
+    
+    // 페이지를 벗어날 때(unmount) isEditMode를 false로 초기화
     return () => {
+      console.log("PatientInputPage Unmounting: isEditMode를 false로 초기화합니다.");
       setEditMode(false);
     };
-  }, [setEditMode]);
+  }, [isEditMode, setEditMode]);
 
+
+  useEffect(() => {
+    if (!isEditMode) {
+      resetHospitalMatching();
+    }
+  }, [resetHospitalMatching, isEditMode]);
+  
   useEffect(() => {
     initializeModel();
     if (!selectedAmbulance) {
@@ -238,6 +176,7 @@ export default function AmbulancePatientInputPage() {
   
   useEffect(() => {
     if (isEditMode && (patientInfo || patientDetails) && !isDataLoaded) {
+      console.log("Input Page (Edit Mode): 스토어에서 폼 데이터를 채웁니다.");
       setFormData({
         ktasLevel: patientDetails.ktasLevel || "",
         department: patientDetails.department || "",
@@ -252,7 +191,13 @@ export default function AmbulancePatientInputPage() {
         vitalSigns: patientDetails.vitalSigns || "",
       });
       setIsDataLoaded(true);
-    } else if (!isDataLoaded) {
+    } else if (!isEditMode && !isDataLoaded) {
+       console.log("Input Page (New Entry Mode): 폼을 비운 상태로 시작합니다.");
+       setFormData({
+        ktasLevel: "", department: "", gender: "", ageRange: "", name: "",
+        chiefComplaint: "", treatmentDetails: "", familyHistory: "",
+        pastHistory: "", medications: "", vitalSigns: "",
+      });
       setIsDataLoaded(true);
     }
   }, [isEditMode, patientInfo, patientDetails, isDataLoaded]);
@@ -328,8 +273,7 @@ export default function AmbulancePatientInputPage() {
       if (isEditMode) {
         await sendWebSocketAlarms('EDIT');
         alert("✅ 환자 정보가 성공적으로 수정되었고, 병원에 알림을 전송했습니다.");
-        // 수정 완료 후 대시보드로 이동
-        navigate('/emergency/dashboard');
+        navigate('/emergency/patient-info');
       } else {
         alert("✅ 환자 정보가 성공적으로 저장되었습니다.");
       }
@@ -343,7 +287,6 @@ export default function AmbulancePatientInputPage() {
     }
   };
 
-  // 렌더링 함수들 (기존과 동일)
   const renderKtasStep = () => (
     <div className="space-y-6">
       <div className="text-center">
@@ -755,15 +698,25 @@ export default function AmbulancePatientInputPage() {
                 이전
               </button>
               <div className="flex space-x-3">
-                {/* 🔽 수정: isEditMode에 따라 버튼을 명확히 구분 */}
                 {isEditMode ? (
-                  <button
-                    type="submit"
-                    disabled={isPatientDataSaving || saveStatus === "saving"}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isPatientDataSaving || saveStatus === "saving" ? "저장 중..." : "수정 완료"}
-                  </button>
+                  <>
+                    {!isLastStep && (
+                       <button
+                          type="button"
+                          onClick={() => setCurrentStep(Math.min(3, currentStep + 1))}
+                          className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                       >
+                         다음
+                       </button>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={isPatientDataSaving || saveStatus === "saving"}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isPatientDataSaving || saveStatus === "saving" ? "저장 중..." : "수정 완료"}
+                    </button>
+                  </>
                 ) : isLastStep ? (
                   <button
                     type="button"

@@ -1,4 +1,3 @@
-// src/components/Emergency/MapDisplay.jsx
 import React, {
   useEffect,
   useRef,
@@ -8,17 +7,17 @@ import React, {
 } from "react";
 
 const MapDisplay = ({
-  hospital, // 🔥 배정된 병원 정보 (DB에서 정확한 좌표 포함)
-  ambulanceLocation, // 🔥 구급차 실시간 위치 { latitude, longitude, timestamp }
-  distanceInfo, // 🔥 병원과의 거리 정보 { ambulanceId, hospitalId, distance, timestamp }
+  hospital,
+  ambulanceLocation,
+  distanceInfo,
   isFullScreen = false,
   showControls = true,
   zoom = 4,
 }) => {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
-  const ambulanceMarker = useRef(null); // 🔥 구급차 마커
-  const hospitalMarker = useRef(null); // 병원 마커
+  const ambulanceMarker = useRef(null);
+  const hospitalMarker = useRef(null);
   const initialMapSetupDone = useRef(false);
   const isMountedRef = useRef(true);
   const scriptLoadedRef = useRef(false);
@@ -26,7 +25,6 @@ const MapDisplay = ({
   const [mapError, setMapError] = useState(null);
   const [isMapReady, setIsMapReady] = useState(false);
 
-  // 🔥 컴포넌트 마운트 상태 관리
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -34,7 +32,6 @@ const MapDisplay = ({
     };
   }, []);
 
-  // 🔥 마커 정리 함수 (안정화)
   const cleanupMarkers = useCallback(() => {
     if (ambulanceMarker.current) {
       ambulanceMarker.current.setMap(null);
@@ -47,7 +44,6 @@ const MapDisplay = ({
     }
   }, []);
 
-  // 🔥 좌표 추출 함수 (memoized)
   const getCoordinates = useCallback((locationData) => {
     if (!locationData) return null;
 
@@ -56,21 +52,19 @@ const MapDisplay = ({
       locationData.longitude || locationData.lng || locationData.lon || null;
 
     if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
-      // 🔥 대한민국 좌표 범위 확인
       if (lat >= 33 && lat <= 39 && lng >= 124 && lng <= 132) {
         return { lat: Number(lat), lng: Number(lng) };
       } else {
         console.warn(
           `⚠️ [MapDisplay] 좌표가 대한민국 범위를 벗어남: ${lat}, ${lng}`
         );
-        return { lat: Number(lat), lng: Number(lng) }; // 범위 벗어나도 일단 표시
+        return { lat: Number(lat), lng: Number(lng) };
       }
     }
 
     return null;
   }, []);
 
-  // 🔥 좌표 품질 분석 함수 (memoized)
   const analyzeCoordinateQuality = useCallback((locationData, name = "") => {
     if (!locationData) {
       return { quality: "none", message: "좌표 정보 없음", color: "gray" };
@@ -88,7 +82,6 @@ const MapDisplay = ({
       };
     }
 
-    // 🔥 서울시청 기본 좌표 확인
     if (
       (Number(lat).toFixed(6) === "37.566826" &&
         Number(lng).toFixed(6) === "126.978657") ||
@@ -102,7 +95,6 @@ const MapDisplay = ({
       };
     }
 
-    // 🔥 대한민국 범위 확인
     if (lat < 33 || lat > 39 || lng < 124 || lng > 132) {
       return {
         quality: "outbound",
@@ -111,11 +103,9 @@ const MapDisplay = ({
       };
     }
 
-    // 🔥 실제 좌표
     return { quality: "real", message: "실제 위치", color: "green" };
   }, []);
 
-  // 🔥 안정화된 좌표 추출 (memoization으로 불필요한 재계산 방지)
   const stableAmbulanceCoords = useMemo(() => {
     if (!ambulanceLocation) return null;
     const coords = getCoordinates(ambulanceLocation);
@@ -132,7 +122,6 @@ const MapDisplay = ({
     return coords;
   }, [hospital?.latitude, hospital?.longitude, hospital?.id, getCoordinates]);
 
-  // 🔥 좌표 품질 분석 (memoization)
   const ambulanceQuality = useMemo(() => {
     const quality = analyzeCoordinateQuality(ambulanceLocation, "구급차");
     return quality;
@@ -152,7 +141,6 @@ const MapDisplay = ({
     analyzeCoordinateQuality,
   ]);
 
-  // 🔥 지역 불일치 감지 (구미병원인데 서울 좌표인 경우)
   const hasLocationMismatch = useMemo(() => {
     if (!hospital?.name || !stableHospitalCoords) return false;
 
@@ -160,7 +148,6 @@ const MapDisplay = ({
     const lat = stableHospitalCoords.lat;
     const lng = stableHospitalCoords.lng;
 
-    // 구미 지역 병원인데 서울 좌표인 경우
     if (hospitalName.includes("구미") && lat > 37 && lng < 127) {
       return {
         type: "구미→서울",
@@ -170,7 +157,6 @@ const MapDisplay = ({
       };
     }
 
-    // 대구 지역 병원인데 서울 좌표인 경우
     if (hospitalName.includes("대구") && lat > 37 && lng < 127) {
       return {
         type: "대구→서울",
@@ -183,7 +169,6 @@ const MapDisplay = ({
     return false;
   }, [hospital?.name, stableHospitalCoords]);
 
-  // 🔥 카카오 맵 스크립트 로딩 (변경 없음)
   useEffect(() => {
     if (scriptLoadedRef.current) return;
 
@@ -194,7 +179,6 @@ const MapDisplay = ({
       return;
     }
 
-    // 이미 로드된 경우
     if (window.kakao && window.kakao.maps) {
       scriptLoadedRef.current = true;
       setIsMapReady(true);
@@ -226,7 +210,6 @@ const MapDisplay = ({
     };
   }, []);
 
-  // 🔥 지도 초기화 (안정화된 의존성 - 무한 렌더링 방지)
   useEffect(() => {
     if (!isMapReady || !mapRef.current) {
       return;
@@ -238,10 +221,8 @@ const MapDisplay = ({
           return;
         }
 
-        // 기존 마커 정리
         cleanupMarkers();
 
-        // 🔥 초기 위치 결정 (안정화된 좌표 사용)
         let initialPosition = null;
 
         if (stableAmbulanceCoords) {
@@ -261,7 +242,6 @@ const MapDisplay = ({
           );
         }
 
-        // 지도 생성
         const mapOptions = {
           center: initialPosition,
           level: zoom,
@@ -271,7 +251,6 @@ const MapDisplay = ({
         const map = new window.kakao.maps.Map(mapRef.current, mapOptions);
         mapInstance.current = map;
 
-        // 🔥 컨트롤 추가
         if (showControls) {
           const mapTypeControl = new window.kakao.maps.MapTypeControl();
           map.addControl(
@@ -283,7 +262,6 @@ const MapDisplay = ({
           map.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT);
         }
 
-        // 🔥 구급차 마커 생성 (안정화된 좌표 사용)
         if (stableAmbulanceCoords) {
           const ambulancePos = new window.kakao.maps.LatLng(
             stableAmbulanceCoords.lat,
@@ -296,7 +274,6 @@ const MapDisplay = ({
             title: "구급차 (실시간)",
           });
 
-          // 🔥 구급차 정보창 (품질 정보 포함)
           const ambulanceInfoWindow = new window.kakao.maps.InfoWindow({
             content: `
               <div style="padding:10px;min-width:200px;text-align:center;">
@@ -342,10 +319,8 @@ const MapDisplay = ({
               ambulanceInfoWindow.open(map, ambulanceMarker.current);
             }
           );
-
         }
 
-        // 🔥 병원 마커 생성 (안정화된 좌표 사용)
         if (stableHospitalCoords && hospital) {
           const hospitalPos = new window.kakao.maps.LatLng(
             stableHospitalCoords.lat,
@@ -358,7 +333,6 @@ const MapDisplay = ({
             title: hospital.name || "배정 병원",
           });
 
-          // 🔥 병원 정보창 (품질 + 거리 정보 포함)
           const hospitalInfoContent = () => {
             let content = `
               <div style="padding:10px;min-width:220px;text-align:center;">
@@ -371,7 +345,6 @@ const MapDisplay = ({
               content += `<br><small style="color:#6b7280;">${hospital.address}</small>`;
             }
 
-            // 🔥 좌표 품질 표시
             content += `
               <div style="margin:5px 0;padding:3px 6px;background:${
                 hospitalQuality.color === "green"
@@ -392,7 +365,6 @@ const MapDisplay = ({
               </div>
             `;
 
-            // 🔥 지역 불일치 경고
             if (hasLocationMismatch) {
               content += `
                 <div style="margin:5px 0;padding:3px 6px;background:#fecaca;border-radius:4px;">
@@ -403,12 +375,10 @@ const MapDisplay = ({
               `;
             }
 
-            // 🔥 좌표 정보
             content += `<small style="color:#4b5563;">${stableHospitalCoords.lat.toFixed(
               6
             )}, ${stableHospitalCoords.lng.toFixed(6)}</small>`;
 
-            // 🔥 거리 정보
             if (distanceInfo && distanceInfo.distance) {
               content += `<br><small style="color:#059669;font-weight:bold;">실시간 거리: ${(
                 distanceInfo.distance / 1000
@@ -434,10 +404,8 @@ const MapDisplay = ({
               hospitalInfoWindow.open(map, hospitalMarker.current);
             }
           );
-
         }
 
-        // 🔥 지도 범위 설정 (안정화)
         if (ambulanceMarker.current && hospitalMarker.current) {
           const bounds = new window.kakao.maps.LatLngBounds();
           bounds.extend(ambulanceMarker.current.getPosition());
@@ -473,7 +441,6 @@ const MapDisplay = ({
     zoom,
   ]);
 
-  // 🔥 구급차 위치 실시간 업데이트 (안정화)
   useEffect(() => {
     if (
       !mapInstance.current ||
@@ -489,14 +456,11 @@ const MapDisplay = ({
         stableAmbulanceCoords.lng
       );
 
-      // 🔥 구급차 마커 위치 업데이트
       ambulanceMarker.current.setPosition(newAmbulancePos);
 
-      // 🔥 초기 설정 완료 후에만 지도 중심 부드럽게 이동
       if (initialMapSetupDone.current) {
         mapInstance.current.panTo(newAmbulancePos);
       }
-
     } catch (error) {
       console.error("[MapDisplay] ❌ 구급차 위치 업데이트 실패:", error);
     }
@@ -506,7 +470,6 @@ const MapDisplay = ({
     ambulanceQuality.quality,
   ]);
 
-  // 🔥 전체 정리 (변경 없음)
   useEffect(() => {
     return () => {
       cleanupMarkers();
@@ -516,7 +479,6 @@ const MapDisplay = ({
     };
   }, [cleanupMarkers]);
 
-  // 🔥 에러 상태 렌더링 (변경 없음)
   if (mapError) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-lg">
@@ -542,7 +504,6 @@ const MapDisplay = ({
     );
   }
 
-  // 🔥 로딩 상태 렌더링 (변경 없음)
   if (!isMapReady) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-lg">
@@ -565,7 +526,6 @@ const MapDisplay = ({
         className="rounded-lg"
       />
 
-      {/* 🔥 수정: 실시간 거리 정보 표시 UI 개선 */}
       <div
         className={`${
           isFullScreen
@@ -595,7 +555,6 @@ const MapDisplay = ({
         )}
       </div>
 
-      {/* 🔥 지역 불일치 경고 (구미병원인데 서울 좌표) */}
       {hasLocationMismatch && (
         <div
           className={`${
@@ -621,7 +580,6 @@ const MapDisplay = ({
         </div>
       )}
 
-      {/* 🔥 일반 좌표 품질 경고 */}
       {!hasLocationMismatch &&
         (hospitalQuality.quality === "default" ||
           hospitalQuality.quality === "invalid") && (
@@ -644,7 +602,6 @@ const MapDisplay = ({
           </div>
         )}
 
-      {/* 🔥 구급차 위치 정보 (좌표 품질 포함) */}
       {ambulanceLocation && isFullScreen && (
         <div className="absolute bottom-4 right-4 bg-white bg-opacity-90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
           <p className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-2">
@@ -675,17 +632,14 @@ const MapDisplay = ({
             {new Date(ambulanceLocation.timestamp).toLocaleTimeString()}
           </p>
 
-          {/* 🔥 좌표 품질 상세 정보 */}
           <p className="text-xs mt-1" style={{ color: ambulanceQuality.color }}>
             📍 {ambulanceQuality.message}
           </p>
         </div>
       )}
 
-      {/* 🔥 풀스크린 컨트롤 버튼들 (좌표 품질에 따라 색깔 구분) */}
       {isFullScreen && (
         <div className="absolute top-4 right-4 flex flex-col gap-2">
-          {/* 구급차 위치로 이동 */}
           {ambulanceMarker.current && (
             <button
               onClick={() => {
@@ -693,7 +647,7 @@ const MapDisplay = ({
                   mapInstance.current.setCenter(
                     ambulanceMarker.current.getPosition()
                   );
-                  mapInstance.current.setLevel(3); // 줌인
+                  mapInstance.current.setLevel(3);
                 }
               }}
               className={`p-2 rounded-lg shadow-lg transition-all ${
@@ -709,7 +663,6 @@ const MapDisplay = ({
             </button>
           )}
 
-          {/* 병원 위치로 이동 */}
           {hospitalMarker.current && (
             <button
               onClick={() => {
@@ -717,7 +670,7 @@ const MapDisplay = ({
                   mapInstance.current.setCenter(
                     hospitalMarker.current.getPosition()
                   );
-                  mapInstance.current.setLevel(3); // 줌인
+                  mapInstance.current.setLevel(3);
                 }
               }}
               className={`p-2 rounded-lg shadow-lg transition-all ${
@@ -733,7 +686,6 @@ const MapDisplay = ({
             </button>
           )}
 
-          {/* 전체 보기 */}
           <button
             onClick={() => {
               if (
@@ -753,7 +705,6 @@ const MapDisplay = ({
             🔍
           </button>
 
-          {/* 지도 새로고침 */}
           <button
             onClick={() => {
               setIsMapReady(false);
@@ -767,8 +718,6 @@ const MapDisplay = ({
         </div>
       )}
 
-      {/* 🔥 개발 모드 디버깅 정보 (안정화 버전) */}
-      
     </div>
   );
 };
