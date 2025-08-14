@@ -21,5 +21,6 @@ public class LocationSocketController {
     @MessageMapping("/location/update")
     public void receiveAmbulanceLocation(LocationUpdateRequest request) {
         locationSocketService.processLocationUpdate(request);
+        locationSocketService.sendLocationToFireStation(request);
     }
 }
