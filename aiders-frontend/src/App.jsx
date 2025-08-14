@@ -78,9 +78,9 @@ const AppContent = () => {
   }
 
   return (
-    <div className="h-screen bg-gray-50 relative overflow-hidden flex flex-col" style={{ fontFamily: 'NanumGothic, sans-serif' }}>
+    <div className="min-h-screen min-h-dvh bg-gray-50 relative flex flex-col min-h-0" style={{ fontFamily: 'NanumGothic, sans-serif' }}>
       {showToast && <Toast message="구급차 정보가 업데이트되었습니다" />}
-      <main className="px-4 sm:px-6 lg:px-8 flex-grow">
+      <main className="flex-1 p-0 m-0 overflow-y-auto min-h-0">
         <AppRouters />
       </main>
       
