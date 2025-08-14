@@ -187,7 +187,6 @@ export default function SituationMap({
         onMapInitialized={setIsMapInitialized}
         mapRef={map}
       />
-      {/* --- 🔽 핵심 수정: props 이름을 'filteredAmbulances'에서 'ambulances'로 변경 --- */}
       <AmbulanceMarkers
         map={map.current}
         ambulances={ambulances} 
