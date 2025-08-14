@@ -6,6 +6,7 @@ import useEmergencyStore from "../../store/useEmergencyStore";
 import useWaitingAmbulanceStore from "../../store/useWaitingAmbulanceStore";
 import { useAuthStore } from "../../store/useAuthStore";
 import { startVideoCall, endVideoCall } from "../../api/api";
+import useHospitalAlarmRefresh from "../../hooks/useHospitalAlarmRefresh";
 
 const DraggablePipVideoContainer = ({ webRtcComponent }) => {
   const [position, setPosition] = useState({ x: 20, y: 20 });
@@ -251,6 +252,13 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
     useWaitingAmbulanceStore();
 
   const { user } = useAuthStore();
+
+  // WebSocket 알람 수신 시 자동 새로고침
+  useHospitalAlarmRefresh(() => {
+    if (user?.userId) {
+      fetchWaitingAmbulances(user.userId);
+    }
+  }, ['MATCHING', 'REQUEST']); // 매칭 완료, 통화 요청 알람에만 반응
 
   useEffect(() => {
     if (user?.userId) {
