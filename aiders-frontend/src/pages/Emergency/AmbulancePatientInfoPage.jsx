@@ -1,10 +1,9 @@
-import React, { useEffect } from "react"; // useEffect import
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AmbulanceLayout from "../../components/Emergency/Layout/AmbulanceLayout";
 import useEmergencyStore from "../../store/useEmergencyStore";
-import useWebRtcStore from "../../store/useWebRtcStore"; // 🔥 WebRtcStore import
+import useWebRtcStore from "../../store/useWebRtcStore";
 
-// ... (safeParseJSON, safeRenderObject, safeRenderMedications 함수는 이전과 동일)
 const safeParseJSON = (data, fallback = {}) => {
   try {
     if (typeof data === 'string') {
@@ -108,10 +107,10 @@ const safeRenderMedications = (medications, emptyText = '-') => {
 
 export default function AmbulancePatientInfoPage() {
   const navigate = useNavigate();
-  const { selectedAmbulance, ambulanceDetails, patientInfo, patientDetails } = useEmergencyStore();
-  const { setPipMode } = useWebRtcStore(); // 🔥 setPipMode 함수 가져오기
+  // 🔽 수정: setEditMode 액션 가져오기
+  const { selectedAmbulance, ambulanceDetails, patientInfo, patientDetails, setEditMode } = useEmergencyStore();
+  const { setPipMode } = useWebRtcStore();
 
-  // 🔥 추가: 이 페이지에 들어오면 PIP 모드를 활성화합니다.
   useEffect(() => {
     setPipMode(true);
   }, [setPipMode]);
@@ -119,8 +118,10 @@ export default function AmbulancePatientInfoPage() {
   const dataSource = ambulanceDetails || selectedAmbulance;
   const isHospitalView = !!ambulanceDetails;
 
+  // 🔽 수정: 수정 버튼 클릭 시 스토어 상태 변경
   const handleGoToEdit = () => {
-    navigate('/emergency/patient-input', { state: { isEditMode: true } });
+    setEditMode(true); // 수정 모드로 상태 변경
+    navigate('/emergency/patient-input');
   };
 
   if (!dataSource) {
