@@ -4,26 +4,26 @@ services:
     image: redis:7-alpine
     container_name: aiders-redis
     ports:
-      - "127.0.0.1:6379:6379"
+      - "127.0.0.1:${REDIS_PORT}:6379"
     command: >
       redis-server
       --appendonly yes
-      --requirepass "SJ0pbTsi2024"
+      --requirepass "${REDIS_PASSWORD}"
       --bind 0.0.0.0
       --protected-mode yes
     volumes:
       - redis_data:/data
     restart: unless-stopped
-    
+
   # MySQL Database
   mysql:
     image: mysql:8.0
     container_name: aiders-mysql
     ports:
-      - "127.0.0.1:3306:3306"
+      - "127.0.0.1:${MYSQL_PORT}:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=SJ0pbTsi2024
-      - MYSQL_DATABASE=mydb
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
     volumes:
       - mysql_data:/var/lib/mysql
       - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf
@@ -34,7 +34,7 @@ services:
       --skip-character-set-client-handshake
       --init-connect='SET NAMES utf8mb4; SET character_set_client = utf8mb4; SET character_set_connection = utf8mb4; SET character_set_results = utf8mb4;'
     restart: unless-stopped
-    
+
   # Backend Application
   aiders-app:
     build: ./aiders-backend
@@ -42,28 +42,28 @@ services:
     network_mode: host
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/mydb
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=SJ0pbTsi2024
-      - OPENVIDU_SECRET=MY_SECRET
-      - OPENVIDU_URL=http://localhost:5443
-      - SPRING_DATA_REDIS_URL=redis://:SJ0pbTsi2024@localhost:6379
+      - SPRING_DATASOURCE_URL=jdbc:mysql://localhost:${MYSQL_PORT}/${MYSQL_DATABASE}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - OPENVIDU_SECRET=${OPENVIDU_SECRET}
+      - OPENVIDU_URL=${OPENVIDU_URL}
+      - SPRING_DATA_REDIS_URL=redis://:${REDIS_PASSWORD}@localhost:${REDIS_PORT}
     depends_on:
       - mysql
       - redis
     restart: unless-stopped
-    
+
   # 나머지 서비스들...
   aiders-frontend:
     build: ./aiders-frontend
     container_name: aiders-frontend
     ports:
-      - "3000:5173"
+      - "${FRONTEND_HOST_PORT}:${FRONTEND_CONTAINER_PORT}"
     environment:
       - VITE_API_BASE_URL=${VITE_API_BASE_URL}
-      - VITE_KAKAO_MAP_API_KEY=d9e2776635cfc4df321e42a6106442e1
-      - VITE_WS_BASE_URL=wss://i13d107.p.ssafy.io/ws
-    command: sh -c "cd /app && npm run dev -- --host 0.0.0.0 --port 5173"
+      - VITE_KAKAO_MAP_API_KEY=${KAKAO_MAP_API_KEY}
+      - VITE_WS_BASE_URL=${VITE_WS_BASE_URL}
+    command: sh -c "cd /app && npm run dev -- --host 0.0.0.0 --port ${FRONTEND_CONTAINER_PORT}"
     depends_on:
       - aiders-app
     restart: unless-stopped
