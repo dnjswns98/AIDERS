@@ -3,11 +3,15 @@
 import axios from 'axios';
 
 // === 환경 설정 ===
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
 const API_TIMEOUT = parseInt(import.meta.env.VITE_API_TIMEOUT) || 30000;
+
 const ENABLE_API_LOGGING = import.meta.env.VITE_ENABLE_API_LOGGING !== 'false';
 
 // === API 클라이언트 생성 ===
+
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -20,6 +24,7 @@ const apiClient = axios.create({
 });
 
 // === 로깅 유틸리티 ===
+
 const logger = {
   info: (message, data) => {
     if (ENABLE_API_LOGGING) {
@@ -40,6 +45,7 @@ const logger = {
 };
 
 // === 토큰 관리 ===
+
 const getAccessToken = () => {
   try {
     const authStorage = localStorage.getItem('auth-storage');
@@ -55,6 +61,7 @@ const getAccessToken = () => {
 };
 
 // === 🔥 단순화된 사용자 정보 가져오기 ===
+
 const getCurrentUserInfo = () => {
   console.log('[API] 사용자 정보 조회 시작');
   try {
@@ -94,17 +101,16 @@ const clearAllTokens = () => {
 };
 
 // === 요청 인터셉터 ===
+
 apiClient.interceptors.request.use(
   (config) => {
     const accessToken = getAccessToken();
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
-    
     if (ENABLE_API_LOGGING) {
       logger.info(`${config.method?.toUpperCase()} ${config.url}`);
     }
-    
     return config;
   },
   (error) => {
@@ -114,6 +120,7 @@ apiClient.interceptors.request.use(
 );
 
 // === 응답 인터셉터 (수정된 로직) ===
+
 apiClient.interceptors.response.use(
   (response) => {
     if (ENABLE_API_LOGGING) {
@@ -124,14 +131,12 @@ apiClient.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
     const url = error.config?.url || '';
-    
     logger.error(`API 에러: ${status} ${url}`, error.response?.data?.message || error.message);
     
     // ✅ 수정된 부분: 401 (인증 실패) 에러일 때만 자동 로그아웃 실행
     if (status === 401) {
       logger.warn('인증 만료 - 자동 로그아웃');
       clearAllTokens();
-      
       if (window.location.pathname !== '/login') {
         alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
         setTimeout(() => {
@@ -147,6 +152,7 @@ apiClient.interceptors.response.use(
 );
 
 // === 공통 에러 처리 래퍼 ===
+
 const withErrorHandling = (apiFunction, functionName) => {
   return async (...args) => {
     try {
@@ -156,11 +162,9 @@ const withErrorHandling = (apiFunction, functionName) => {
     } catch (error) {
       const message = error.response?.data?.message || error.message || `${functionName} 실패`;
       logger.error(`${functionName} 실패`, message);
-      
       const enhancedError = new Error(message);
       enhancedError.originalError = error;
       enhancedError.functionName = functionName;
-      
       throw enhancedError;
     }
   };
@@ -214,7 +218,7 @@ export const updateAmbulanceStatus = withErrorHandling(async (ambulanceId, statu
 
   let endpoint = '';
   const requestBody = { ambulanceId };
-
+  
   switch (status.toLowerCase()) {
     case 'wait':
       endpoint = '/api/v1/ambulance/transfer/wait';
@@ -346,13 +350,14 @@ export const getHospitals = withErrorHandling(async (options = {}) => {
  */
 export const requestHospitalMatching = withErrorHandling(async (matchingData) => {
   const { ambulanceId, latitude, longitude } = matchingData;
+  
   if (!ambulanceId || !latitude || !longitude) {
     throw new Error('구급차 ID와 위치 정보가 모두 필요합니다.');
   }
 
   const requestBody = { latitude, longitude };
   const response = await apiClient.patch(`/api/v1/match/${ambulanceId}`, requestBody);
-
+  
   // 병원 좌표 정보가 없으면 별도 조회
   if (response.data && !response.data.latitude && response.data.hospitalId) {
     try {
@@ -367,7 +372,7 @@ export const requestHospitalMatching = withErrorHandling(async (matchingData) =>
       return response.data;
     }
   }
-
+  
   return response.data;
 }, 'requestHospitalMatching');
 
@@ -378,9 +383,9 @@ export const getMatchedHospital = withErrorHandling(async (ambulanceId) => {
   if (!ambulanceId) {
     throw new Error('구급차 ID가 필요합니다.');
   }
-
+  
   const response = await apiClient.get(`/api/v1/match/${ambulanceId}`);
-
+  
   // 병원 좌표 정보가 없으면 별도 조회
   if (response.data && !response.data.latitude && response.data.hospitalId) {
     try {
@@ -395,7 +400,7 @@ export const getMatchedHospital = withErrorHandling(async (ambulanceId) => {
       return response.data;
     }
   }
-
+  
   return response.data;
 }, 'getMatchedHospital');
 
@@ -423,19 +428,19 @@ export const createDispatch = withErrorHandling(async (dispatchRequest) => {
   }
 
   const { ambulanceIds, latitude, longitude, address, condition } = dispatchRequest;
-
+  
   if (!ambulanceIds || !Array.isArray(ambulanceIds) || ambulanceIds.length === 0) {
     throw new Error('출동할 구급차 ID가 필요합니다.');
   }
-
+  
   if (!latitude || !longitude) {
     throw new Error('출동 위치 좌표가 필요합니다.');
   }
-
+  
   if (!address || !address.trim()) {
     throw new Error('출동 주소가 필요합니다.');
   }
-
+  
   if (!condition || !condition.trim()) {
     throw new Error('환자 상태 정보가 필요합니다.');
   }
@@ -459,7 +464,7 @@ export const createDispatch = withErrorHandling(async (dispatchRequest) => {
 export const getDispatchHistory = withErrorHandling(async (options = {}) => {
   const response = await apiClient.get('/api/v1/dispatch/history', { params: options });
   const dispatchHistory = response.data || [];
-
+  
   // 출동 기록 데이터 정규화
   return dispatchHistory.map(item => ({
     id: item.id || item.createdAt,
@@ -496,7 +501,6 @@ export const updateDispatchStatus = withErrorHandling(async (dispatchId, status,
   if (!dispatchId || !status) {
     throw new Error('출동 ID와 상태가 필요합니다.');
   }
-
   const requestBody = { status, ...updateData };
   const response = await apiClient.patch(`/api/v1/dispatch/${dispatchId}/status`, requestBody);
   return response.data;
@@ -509,13 +513,12 @@ export const completeDispatch = withErrorHandling(async (dispatchId, completeDat
   if (!dispatchId) {
     throw new Error('출동 ID가 필요합니다.');
   }
-
   const response = await apiClient.patch(`/api/v1/dispatch/${dispatchId}/complete`, completeData);
   return response.data;
 }, 'completeDispatch');
 
 // ======================================================================
-// 👨‍⚕️ 환자 정보 관련 API (수정된 버전)
+// 👨⚕️ 환자 정보 관련 API (수정된 버전)
 // ======================================================================
 
 /**
@@ -536,7 +539,7 @@ export const saveRequiredPatientInfo = withErrorHandling(async (patientInfo) => 
 export const saveOptionalPatientInfo = withErrorHandling(async (data) => {
   console.log('🔥🔥🔥 [api.js] saveOptionalPatientInfo 호출됨!');
   console.log('🔥🔥🔥 [api.js] 전송할 데이터:', JSON.stringify(data, null, 2));
-
+  
   // 🔥 빈 객체도 허용 (백엔드에서 Optional로 처리)
   if (!data) {
     throw new Error('환자 정보 데이터가 필요합니다.');
@@ -564,7 +567,6 @@ export const getPatientSummary = withErrorHandling(async (ambulanceId) => {
   if (!ambulanceId) {
     throw new Error('구급차 ID가 필요합니다.');
   }
-
   const response = await apiClient.get(`/api/v1/patient/${ambulanceId}/summary`);
   return response.data;
 }, 'getPatientSummary');
@@ -582,15 +584,15 @@ export const createAmbulanceToken = withErrorHandling(async (request) => {
   }
 
   const { sessionId, ambulanceNumber, hospitalId, ktas, patientName } = request;
-
+  
   if (!sessionId || typeof sessionId !== 'string') {
     throw new Error('유효한 세션 ID가 필요합니다.');
   }
-
+  
   if (!ambulanceNumber || typeof ambulanceNumber !== 'string') {
     throw new Error('유효한 구급차 번호가 필요합니다.');
   }
-
+  
   if (!hospitalId || typeof hospitalId !== 'number') {
     throw new Error('유효한 병원 ID가 필요합니다.');
   }
@@ -605,11 +607,11 @@ export const createAmbulanceToken = withErrorHandling(async (request) => {
 
   logger.info('구급차 WebRTC 토큰 생성', { sessionId, ambulanceNumber, hospitalId });
   const response = await apiClient.post('/api/v1/video-call/ambulance/token', body);
-
+  
   if (!response.data || !response.data.token) {
     throw new Error('구급차 토큰 응답에 토큰 값이 없습니다.');
   }
-
+  
   return response.data;
 }, 'createAmbulanceToken');
 
@@ -622,11 +624,11 @@ export const getHospitalToken = withErrorHandling(async (params) => {
   }
 
   const { sessionId, hospitalId } = params;
-
+  
   if (!sessionId || typeof sessionId !== 'string') {
     throw new Error('유효한 세션 ID가 필요합니다.');
   }
-
+  
   if (!hospitalId || typeof hospitalId !== 'number') {
     throw new Error('유효한 병원 ID가 필요합니다.');
   }
@@ -638,11 +640,11 @@ export const getHospitalToken = withErrorHandling(async (params) => {
 
   logger.info('병원 WebRTC 토큰 조회', { sessionId, hospitalId });
   const response = await apiClient.get('/api/v1/video-call/hospital/token', { params: queryParams });
-
+  
   if (!response.data || !response.data.token) {
     throw new Error('병원 토큰 응답에 토큰 값이 없습니다.');
   }
-
+  
   return response.data;
 }, 'getHospitalToken');
 
@@ -653,7 +655,6 @@ export const startVideoCall = withErrorHandling(async (request) => {
   if (!request) {
     throw new Error('화상통화 시작 요청 데이터가 필요합니다.');
   }
-
   const response = await apiClient.put('/api/v1/video-call/start-call', request);
   return response.data;
 }, 'startVideoCall');
@@ -665,7 +666,6 @@ export const endVideoCall = withErrorHandling(async (request) => {
   if (!request) {
     throw new Error('화상통화 종료 요청 데이터가 필요합니다.');
   }
-
   const response = await apiClient.put('/api/v1/video-call/end-call', request);
   return response.data;
 }, 'endVideoCall');
@@ -677,7 +677,6 @@ export const completeTransport = withErrorHandling(async (sessionId, hospitalId)
   if (!sessionId || !hospitalId) {
     throw new Error('세션 ID와 병원 ID가 모두 필요합니다.');
   }
-
   const response = await apiClient.delete(`/api/v1/video-call/session/${sessionId}/complete`, {
     params: { hospitalId: Number(hospitalId) }
   });
@@ -691,7 +690,6 @@ export const removeFromWaitingList = withErrorHandling(async (hospitalId, sessio
   if (!hospitalId || !sessionId) {
     throw new Error('병원 ID와 세션 ID가 모두 필요합니다.');
   }
-
   const response = await apiClient.delete(`/api/v1/redis/waiting/${hospitalId}/${sessionId}`);
   return response.data;
 }, 'removeFromWaitingList');
@@ -703,7 +701,6 @@ export const getWaitingAmbulances = withErrorHandling(async (hospitalId) => {
   if (!hospitalId) {
     throw new Error('병원 ID가 필요합니다.');
   }
-
   const response = await apiClient.get(`/api/v1/redis/waiting/${hospitalId}`);
   return response.data || [];
 }, 'getWaitingAmbulances');
@@ -755,7 +752,6 @@ export const geocodeAddress = withErrorHandling(async (address) => {
   if (!address || !address.trim()) {
     throw new Error('주소가 필요합니다.');
   }
-
   const response = await apiClient.post('/api/v1/map/geocode', { address });
   return response.data;
 }, 'geocodeAddress');
@@ -767,7 +763,6 @@ export const reverseGeocode = withErrorHandling(async (latitude, longitude) => {
   if (!latitude || !longitude) {
     throw new Error('위도와 경도가 필요합니다.');
   }
-
   const response = await apiClient.post('/api/v1/map/reverse-geocode', { latitude, longitude });
   return response.data;
 }, 'reverseGeocode');
@@ -783,7 +778,7 @@ export const calculateDistance = withErrorHandling(async (from, to) => {
   const R = 6371; // 지구 반지름 (km)
   const dLat = (to.latitude - from.latitude) * Math.PI / 180;
   const dLon = (to.longitude - from.longitude) * Math.PI / 180;
-  const a =
+  const a = 
     Math.sin(dLat/2) * Math.sin(dLat/2) +
     Math.cos(from.latitude * Math.PI / 180) * Math.cos(to.latitude * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
@@ -802,92 +797,43 @@ export const calculateDistance = withErrorHandling(async (from, to) => {
 }, 'calculateDistance');
 
 // ======================================================================
-// 🔥 소방서 관련 API (완전 단순화된 버전!) - 핵심!
+// 🔥 소방서 관련 API (수정된 버전) - 핵심 수정 부분!
 // ======================================================================
 
 /**
- * 🔥 소방서 정보 조회 (완전 단순화!) - DB 테이블 구조 기반
+ * 🔥 소방서 정보 조회 (수정된 버전!) - userId 사용
  */
 export const getFirestationInfo = withErrorHandling(async () => {
-  console.log('[API] 🔥 소방서 정보 조회 시작 - 단순화된 버전');
-
-  // 🔥 1단계: 사용자 정보에서 firestation_id 추출
   const userInfo = getCurrentUserInfo();
-  if (!userInfo) {
-    throw new Error('로그인된 사용자 정보를 찾을 수 없습니다.');
+  if (!userInfo || !userInfo.userId) {
+    throw new Error('로그인된 사용자 정보 또는 user_id를 찾을 수 없습니다.');
   }
 
-  // firestation_id 찾기 (간단하게)
-  let firestationId = userInfo.userKey || userInfo.firestation_id || userInfo.firestationId;
-  if (!firestationId) {
-    console.warn('[API] firestation_id를 찾을 수 없음, 기본 API 사용');
-  }
+  // --- 🔽 핵심 수정: userKey가 아닌, 정확한 숫자 ID인 userId를 사용합니다. ---
+  const firestationId = userInfo.userId;
+  console.log(`[API] 소방서 정보 조회 시작 (user_id: ${firestationId})`);
 
-  console.log(`[API] 추출된 firestation_id: ${firestationId}`);
-
-  // 🔥 2단계: firestation_id로 firestation 테이블에서 직접 조회
-  let response;
-  if (firestationId) {
-    try {
-      console.log(`[API] firestation 테이블에서 직접 조회: firestation_id=${firestationId}`);
-      response = await apiClient.get(`/api/v1/firestation/me`);
-      console.log('[API] ✅ firestation_id 기반 조회 성공');
-    } catch (error) {
-      console.warn(`[API] firestation_id ${firestationId} 조회 실패:`, error.response?.status, error.message);
-      // 실패시 기본 API 시도
-      console.log('[API] 기본 API로 폴백');
-      response = await apiClient.get('/api/v1/firestation/me');
-    }
-  } else {
-    // firestation_id가 없으면 기본 API 사용
-    console.log('[API] firestation_id 없음, 기본 API 사용');
-    response = await apiClient.get('/api/v1/firestation/me');
-  }
-
+  const response = await apiClient.get(`/api/v1/firestation/me`);
+  
   if (!response || !response.data) {
     throw new Error('소방서 정보 응답이 없습니다.');
   }
 
-  console.log('[API] 📦 소방서 정보 원본 응답:', response.data);
-
-  // 🔥 3단계: firestation 테이블의 name 필드 바로 사용
-  let firestationName = null;
-  // DB 테이블의 name 필드 직접 사용 (가장 단순하게)
-  if (response.data.name && typeof response.data.name === 'string' && response.data.name.trim() !== '') {
-    firestationName = response.data.name.trim();
-    console.log(`[API] ✅ firestation.name 필드 사용: "${firestationName}"`);
-  } else {
-    // name이 없으면 기본값
-    firestationName = '소방센터';
-    console.warn(`[API] ⚠️ firestation.name이 없어서 기본값 사용: "${firestationName}"`);
-  }
-
-  // 🔥 4단계: 최종 데이터 구성 (단순하게)
   const firestationInfo = {
-    // 기본 정보
-    id: response.data.id || firestationId,
-    firestation_id: firestationId,
-    name: firestationName,
-    // 위치 정보 (DB 테이블 구조 그대로)
-    address: response.data.address || null,
+    id: firestationId, // user_id를 명확하게 id로 사용
+    userKey: userInfo.userKey, // userKey도 별도로 저장
+    name: response.data.name || '소방서 정보 없음',
+    address: response.data.address || '주소 정보 없음',
     latitude: response.data.latitude ? parseFloat(response.data.latitude) : null,
     longitude: response.data.longitude ? parseFloat(response.data.longitude) : null,
-    // 메타데이터
     fetchedAt: new Date().toISOString(),
-    isValid: !!(firestationName && firestationName.trim() !== ''),
-    dataSource: firestationId ? `direct_${firestationId}` : 'default_api',
+    isValid: !!(response.data.name && response.data.name.trim() !== ''),
+    dataSource: `user_id_${firestationId}`,
     hasLocation: !!(response.data.latitude && response.data.longitude),
-    // 원본 데이터 보존
     raw: response.data
   };
 
-  console.log('[API] 🎉 소방서 정보 파싱 완료:', {
-    firestation_id: firestationId,
-    name: firestationInfo.name,
-    address: firestationInfo.address,
-    isValid: firestationInfo.isValid
-  });
-
+  console.log('[API] 🎉 소방서 정보 파싱 완료:', firestationInfo);
   return firestationInfo;
 }, 'getFirestationInfo');
 
@@ -926,6 +872,7 @@ export const getFirestationInfoById = withErrorHandling(async (firestationId) =>
 
   console.log(`[API] 특정 소방서 정보 조회: ${firestationId}`);
   const response = await apiClient.get(`/api/v1/firestation/${firestationId}`);
+  
   if (!response.data) {
     throw new Error(`소방서 ID ${firestationId}의 정보를 찾을 수 없습니다.`);
   }
@@ -962,7 +909,7 @@ export const getFirestationAmbulances = withErrorHandling(async (firestationId =
       logger.warn(`getFirestationAmbulances: '소방서' 역할은 구급차 전체 목록에 접근할 수 없습니다. 빈 목록을 반환합니다.`);
       return []; // 에러를 전파하지 않고, 빈 배열을 반환하여 앱이 정상 작동하도록 함
     }
-
+    
     // 그 외 다른 에러는 그대로 상위로 전달하여 처리
     throw error;
   }
@@ -1016,25 +963,33 @@ export {
 
 if (ENABLE_API_LOGGING) {
   console.log(`
-🔥 소방서 시스템 API 클라이언트 로드 완료 (단순화된 firestation 조회)
+🔥 소방서 시스템 API 클라이언트 로드 완료 (userId 기반 소방서 조회)
+
 📡 서버: ${API_BASE_URL}
 ⏱️ 타임아웃: ${API_TIMEOUT}ms
-✨ 핵심 단순화:
-  🎯 구급차 조회와 동일한 방식
-  📋 사용자 firestation_id → firestation 테이블 직접 조회
-  🏷️ firestation.name 필드 바로 사용
-  🚀 복잡한 localStorage 탐색 제거
-  📊 DB 테이블 구조 그대로 활용
+
+✨ 핵심 수정사항:
+🎯 getFirestationInfo에서 userInfo.userId 사용 ✅
+📋 userKey 대신 userId를 firestation ID로 활용 ✅
+🏷️ userKey는 별도 필드로 보존 ✅
+🚀 명확한 에러 메시지와 로깅 추가 ✅
 
 🔗 실제 백엔드 연동:
-  - firestation 테이블 직접 조회 ✅
-  - firestation.name 필드 바로 사용 ✅
-  - 단순화된 에러 처리 ✅
-  - Spring Boot FirestationController 연동 ✅
+- Spring Boot FirestationController 연동 ✅
+- user_id 기반 소방서 정보 조회 ✅
+- 단순화된 에러 처리 ✅
+- 모든 API 함수 완비 ✅
 
-✅ 수정사항:
-  - saveOptionalPatientInfo: 빈 객체 허용 ✅
-  - 보고서 생성 API 추가 ✅
-  - 모든 함수 주석/로깅 완비 ✅
+✅ 전체 기능:
+- 보고서 생성 및 관리 ✅
+- 구급차 상태 관리 ✅
+- 병원 매칭 시스템 ✅
+- 출동 관리 ✅
+- 환자 정보 관리 ✅
+- WebRTC 화상통화 ✅
+- 통계 및 분석 ✅
+- 지도 및 위치 서비스 ✅
+- 소방서 정보 관리 (수정됨) ✅
+- 시스템 유틸리티 ✅
 `);
 }
