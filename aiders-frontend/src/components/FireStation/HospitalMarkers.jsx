@@ -3,7 +3,8 @@ import React, { useEffect, useRef } from 'react';
 const getHospitalMarkerImage = () => {
   if (!window.kakao || !window.kakao.maps) return null;
   
-  const imgSrc = 'https://maps.google.com/mapfiles/kml/shapes/hospitals.png';
+  // 안정적인 카카오 기본 마커 이미지로 변경
+  const imgSrc = 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png';
   const imgSize = new window.kakao.maps.Size(32, 32);
   
   return new window.kakao.maps.MarkerImage(imgSrc, imgSize);
@@ -62,12 +63,12 @@ const HospitalMarkers = ({ map, hospitals, infoWindow }) => {
                 </div>
               ` : ''}
               <div style="margin-bottom:4px;">
-                <span style="color:#666;">위치:</span> 
+                <span style="color:#666;">위치:</span>
                 ${hospital.latitude.toFixed(4)}, ${hospital.longitude.toFixed(4)}
               </div>
               ${hospital.availableBeds ? `
                 <div style="margin-bottom:4px;">
-                  <span style="color:#666;">병상:</span> 
+                  <span style="color:#666;">병상:</span>
                   <span style="font-weight:bold; color:#27ae60;">${hospital.availableBeds}개 이용 가능</span>
                 </div>
               ` : ''}
