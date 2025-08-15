@@ -106,25 +106,13 @@ const AmbulanceMarkers = ({ map, ambulances, selectedAmbulance, firestationInfo,
     
     switch (normalizedStatus) {
       case 'WAIT':
-      case 'STANDBY':
         color = 'red';
         break;
       case 'DISPATCH':
-      case 'DISPATCHED':
         color = 'blue';
         break;
       case 'TRANSFER':
-      case 'TRANSPORTING':
         color = 'green';
-        break;
-      case 'COMPLETED':
-        color = 'purple';
-        break;
-      case 'RETURNING':
-        color = 'orange';
-        break;
-      case 'MAINTENANCE':
-        color = 'gray';
         break;
       default:
         color = 'yellow';

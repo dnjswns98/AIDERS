@@ -192,7 +192,7 @@ const FireStationSituationBoard = () => {
             })}
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           {filteredAmbulances.length === 0 ? <div className="p-6 text-center text-gray-500"><span className="text-4xl block mb-4">🚑</span><div className="font-medium">해당 상태의 구급차가 없습니다</div></div> :
             <div className="p-2">
               {filteredAmbulances.map(ambulance => {
@@ -215,7 +215,7 @@ const FireStationSituationBoard = () => {
         </div>
         <div className="p-4 border-t border-gray-200 bg-gray-50"><div className="flex items-center justify-between text-sm text-gray-600"><div className="flex items-center"><div className={`w-2 h-2 rounded-full mr-2 ${isAutoRefresh ? "bg-green-500 animate-pulse" : "bg-gray-400"}`}></div>{isAutoRefresh ? "자동 새로고침 ON" : "자동 새로고침 OFF"}</div>{lastRefreshTime && <div>{lastRefreshTime.toLocaleTimeString()}</div>}</div></div>
       </aside>
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col min-h-0">
         <header className="bg-white border-b border-gray-200 shadow-sm">
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
@@ -235,7 +235,7 @@ const FireStationSituationBoard = () => {
           </div>
         </header>
         {(storeError || localError) && (<div className="m-4 p-4 bg-red-50 border border-red-200 rounded-lg"><div className="flex items-center justify-between"><div className="flex items-center"><span className="text-red-600 mr-2">⚠️</span><div><p className="text-red-800 font-medium">오류가 발생했습니다</p><p className="text-red-700 text-sm mt-1">{storeError || localError}</p></div></div><button onClick={() => { clearError(); setLocalError(null); }} className="text-red-600 hover:text-red-800 text-lg">×</button></div></div>)}
-        <div className="flex-1 p-4">
+        <div className="flex-1 min-h-0 p-4">
           <div className="bg-white rounded-lg shadow-lg border border-gray-200 h-full overflow-hidden">
             <div className="h-full">
               <SituationMap

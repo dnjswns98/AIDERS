@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
-import FireStationReports from "../pages/FireStation/FireStationReports";
 import FireStationDispatch from "../pages/FireStation/FireStationDispatch";
 import FireStationLayout from "../components/FireStation/Layout/FireStationLayout";
 import FireStationSituationBoard from "../pages/FireStation/FireStationSituationBoard";
@@ -36,7 +35,6 @@ const FireStationRouters = () => {
         {/* FireStation Routes */}
         <Route index element={<FireStationSituationBoard />}/>
         <Route path="/" element={<FireStationSituationBoard />} />
-        <Route path="/reports" element={<FireStationReports />} />
         <Route path="/dispatch" element={<FireStationDispatch />} />
         <Route path="/reports-list" element={<FireStationReportList />} />
         {/* 🔥 신규 라우트 추가 */}

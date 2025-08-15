@@ -73,8 +73,8 @@ export default function SituationMap({
       );
 
       const markerImage = new window.kakao.maps.MarkerImage(
-        'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
-        new window.kakao.maps.Size(32, 32)
+        '/src/assets/icon/free-icon-fire-station-9922138.png',
+        new window.kakao.maps.Size(50, 50)
       );
 
       firestationMarker.current = new window.kakao.maps.Marker({
