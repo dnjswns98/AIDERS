@@ -8,7 +8,7 @@
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   border-bottom: 1px solid #e5e7eb;
   z-index: 50;
-  height: 64px;
+  height: 67px;
 }
 
 /* Header 내용 */
@@ -27,7 +27,7 @@
 }
 
 .logoTitle {
-  font-size: 24px;
+  font-size: 30px;
   font-weight: bold;
   color: #059669;
   margin: 0;
@@ -42,14 +42,14 @@
 }
 
 .hospitalName {
-  font-size: 18px;
+  font-size: 26px;
   font-weight: bold;
   color: #1f2937;
   margin: 0;
 }
 
 .hospitalType {
-  font-size: 14px;
+  font-size: 16px;
   color: #6b7280;
   margin: 0;
 }
