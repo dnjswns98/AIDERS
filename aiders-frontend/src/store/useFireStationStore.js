@@ -2,7 +2,6 @@ import { create } from "zustand";
 import {
   createDispatch,
   getDispatchHistory,
-  getDispatchDetail,
   updateAmbulanceStatus,
   getAmbulanceDetail,
   getAmbulances,
