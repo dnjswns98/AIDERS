@@ -18,7 +18,6 @@ const AmbulanceHeader = () => {
     const handleCompleteTransport = async () => {
         if (window.confirm("환자 인계를 완료하고 대기 상태로 돌아가시겠습니까?")) {
             await completeTransport(navigate);
-            await resetHospitalMatching();
         }
     };
 

@@ -15,11 +15,12 @@ import {
   getMyAmbulanceStatus,
   getMyAmbulancePatientInfo,
   generateReport,
-  // 🔽 1. api.js에 정의된 올바른 completeTransport 함수를 import 합니다.
+  // ✅ 1. 이송 완료 API 함수를 import 합니다.
   completeTransport as completeTransportApi,
 } from "../api/api";
 import { useAuthStore } from "./useAuthStore";
-import useWebRtcStore from "./useWebRtcStore"; // 🔽 WebRTC 스토어 import
+// ✅ 2. WebRTC 스토어를 import 합니다.
+import useWebRtcStore from "./useWebRtcStore";
 
 // === 유틸리티 함수들 ===
 const getCurrentLocationFromDashboard = () => {
@@ -75,7 +76,7 @@ const ageRangeMap = {
 
 const convertFormDataForApi = (formData) => {
   console.log('🔥🔥🔥 [convertFormDataForApi] 입력:', formData);
-  
+ 
   let processedAgeRange = null;
   if (formData.ageRange) {
     const ageKey = formData.ageRange.split(' ')[0].replace(/[^가-힣]/g, '');
@@ -147,7 +148,6 @@ const useEmergencyStore = create((set, get) => ({
   setEditMode: (isEdit) => {
     console.log(`🔥 [setEditMode] 수정 모드 상태 변경: ${isEdit}`);
     if (isEdit) {
-      // 수정 모드 진입 시, 이전 매칭 상태를 확실히 초기화
       set({ 
         isEditMode: true, 
         hospitalMatchingStatus: "idle", 
@@ -431,42 +431,20 @@ const useEmergencyStore = create((set, get) => ({
   },
 
   saveOptionalPatientInfo: async (optionalData) => {
-    console.log("🔥🔥🔥 [saveOptionalPatientInfo] 함수 시작됨!");
-    console.log(
-      "🔥🔥🔥 [saveOptionalPatientInfo] 입력 데이터:",
-      JSON.stringify(optionalData, null, 2)
-    );
-    
     set({ isPatientDataSaving: true, patientDataError: null });
     
     try {
-      console.log("🔥🔥🔥 [saveOptionalPatientInfo] convertFormDataForApi 호출 전");
       const apiPayload = convertFormDataForApi(optionalData);
-      console.log("🔥🔥🔥 [saveOptionalPatientInfo] convertFormDataForApi 호출 후");
-      
-      console.log("🔥🔥🔥 [saveOptionalPatientInfo] API 호출 시도!");
       const result = await saveOptionalPatientInfoApi(apiPayload);
-      console.log("🔥🔥🔥 [saveOptionalPatientInfo] API 호출 성공!", result);
       
-      const currentState = get();
-      if (!currentState.isEditMode) {
-        await get()._fetchAndSetPatientInfo();
-      } else {
-        console.log("🔥 [saveOptionalPatientInfo] 수정 모드에서는 환자 정보 리로드 스킵");
-      }
+      console.log("✅ 정보 저장 성공. 최신 정보를 다시 불러와 상태를 동기화합니다.");
+      await get()._fetchAndSetPatientInfo();
       
       set({ isPatientDataSaving: false, patientDataError: null });
       console.log("✅ [saveOptionalPatientInfo] 선택 정보 저장 및 동기화 완료");
       return { success: true, data: result };
     } catch (error) {
       console.error("🔥🔥🔥 [saveOptionalPatientInfo] 에러 발생:", error);
-      console.error("🔥🔥🔥 [saveOptionalPatientInfo] 에러 상세:", {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        stack: error.stack,
-      });
-      
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -477,12 +455,6 @@ const useEmergencyStore = create((set, get) => ({
   },
 
   saveAllPatientInfoAndMatch: async (allFormData) => {
-    console.log("🔥🔥🔥 [saveAllPatientInfoAndMatch] 함수 시작됨!");
-    console.log(
-      "🔥🔥🔥 [saveAllPatientInfoAndMatch] 입력 데이터:",
-      JSON.stringify(allFormData, null, 2)
-    );
-
     if (!allFormData.ktasLevel || !allFormData.department) {
       const errorMsg = "병원 매칭을 위해 KTAS와 진료과는 필수입니다.";
       alert(errorMsg);
@@ -496,18 +468,10 @@ const useEmergencyStore = create((set, get) => ({
     });
 
     try {
-      console.log("🔥🔥🔥 [saveAllPatientInfoAndMatch] convertFormDataForApi 호출 전");
       const apiPayload = convertFormDataForApi(allFormData);
-      console.log("🔥🔥🔥 [saveAllPatientInfoAndMatch] convertFormDataForApi 호출 후");
-
-      console.log("🔥🔥🔥 [saveAllPatientInfoAndMatch] API 호출 시도!");
       await saveOptionalPatientInfoApi(apiPayload);
-      console.log("🔥🔥🔥 [saveAllPatientInfoAndMatch] API 호출 성공!");
 
-      const currentState = get();
-      if (!currentState.isEditMode) {
-        await get()._fetchAndSetPatientInfo();
-      }
+      await get()._fetchAndSetPatientInfo();
 
       console.log("✅ [saveAllPatientInfoAndMatch] 모든 환자 정보 저장 및 동기화 완료. 병원 매칭을 시작합니다.");
 
@@ -520,14 +484,6 @@ const useEmergencyStore = create((set, get) => ({
         throw new Error("구급차 정보를 찾을 수 없어 매칭을 시작할 수 없습니다.");
       }
     } catch (error) {
-      console.error("🔥🔥🔥 [saveAllPatientInfoAndMatch] 에러 발생:", error);
-      console.error("🔥🔥🔥 [saveAllPatientInfoAndMatch] 에러 상세:", {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        stack: error.stack,
-      });
-
       const errorMessage = error.message || "정보 저장 또는 매칭 중 오류 발생";
       set({
         isHospitalMatching: false,
@@ -540,8 +496,6 @@ const useEmergencyStore = create((set, get) => ({
   },
 
   quickHospitalMatch: async (ktasLevel, department) => {
-    console.log("🔥🔥🔥 [quickHospitalMatch] === 함수 진입 ===");
-    
     if (!ktasLevel || !department) {
       const errorMsg = "병원 매칭을 위해 KTAS와 진료과는 필수입니다.";
       alert(errorMsg);
@@ -570,17 +524,8 @@ const useEmergencyStore = create((set, get) => ({
         vitalSigns: null,
       };
 
-      console.log("🔥🔥🔥 [quickHospitalMatch] Optional DTO 스펙에 맞춘 페이로드:");
-      console.log("🔥🔥🔥 [quickHospitalMatch]", JSON.stringify(apiPayload, null, 2));
-
-      console.log("🔥🔥🔥 [quickHospitalMatch] saveOptionalPatientInfoApi 호출");
-      const saveResult = await saveOptionalPatientInfoApi(apiPayload);
-      console.log("🔥🔥🔥 [quickHospitalMatch] API 호출 성공:", saveResult);
-
-      const currentState = get();
-      if (!currentState.isEditMode) {
-        await get()._fetchAndSetPatientInfo();
-      }
+      await saveOptionalPatientInfoApi(apiPayload);
+      await get()._fetchAndSetPatientInfo();
 
       const { selectedAmbulance } = get();
       if (selectedAmbulance?.id) {
@@ -589,13 +534,6 @@ const useEmergencyStore = create((set, get) => ({
         throw new Error("구급차 정보를 찾을 수 없어 매칭을 시작할 수 없습니다.");
       }
     } catch (error) {
-      console.error("🔥🔥🔥 [quickHospitalMatch] 에러:", error);
-      if (error.response) {
-        console.error("🔥🔥🔥 [quickHospitalMatch] HTTP 에러:");
-        console.error("🔥🔥🔥 [quickHospitalMatch] - status:", error.response.status);
-        console.error("🔥🔥🔥 [quickHospitalMatch] - data:", error.response.data);
-      }
-
       const errorMessage = error.message || "빠른 매칭 중 오류 발생";
       set({
         isHospitalMatching: false,
@@ -722,51 +660,56 @@ const useEmergencyStore = create((set, get) => ({
     });
   },
 
-  // 🔽 2. completeTransport 함수를 수정합니다.
+  // ✅✅✅ 병합 및 수정된 최종 함수 ✅✅✅
   completeTransport: async (navigate = null) => {
     const { selectedAmbulance, matchedHospitals } = get();
+    // WebRTC 스토어에서 상태와 함수를 가져옵니다.
     const { callInfo, endCall } = useWebRtcStore.getState();
 
     if (!selectedAmbulance) {
       alert("구급차 정보가 없습니다.");
       return;
     }
-    
-    // 세션 ID와 병원 ID를 가져옵니다.
-    const sessionId = callInfo?.sessionId || selectedAmbulance.id;
-    const hospitalId = matchedHospitals[0]?.id || callInfo?.hospitalId;
 
+    // 함수 전체를 try...catch로 감싸서 안정성을 높입니다.
     try {
-      // 3. 올바른 API를 호출합니다.
+      // 1. 서버에 이송 완료 API를 먼저 호출하여 세션을 정리합니다.
+      const sessionId = callInfo?.sessionId || selectedAmbulance.id;
+      const hospitalId = matchedHospitals[0]?.id || callInfo?.hospitalId;
+
       if (sessionId && hospitalId) {
         console.log(`[이송완료] API 호출: sessionId=${sessionId}, hospitalId=${hospitalId}`);
         await completeTransportApi(String(sessionId), hospitalId);
         console.log("✅ 서버 세션 정리 완료");
       } else {
         console.warn("[이송완료] 세션 또는 병원 ID가 없어 서버 세션 정리를 건너뜁니다.");
-        // 세션 정보가 없더라도 로컬 상태는 정리해야 하므로, 에러를 던지지 않고 계속 진행합니다.
-        await updateAmbulanceStatus(selectedAmbulance.id, "wait");
-      }
-      
-      // 4. WebRTC 통화가 활성화 상태이면 종료합니다.
-      if (callInfo) {
-        endCall();
-        console.log("📞 WebRTC 통화 종료");
       }
 
-      // 5. 보고서를 생성합니다.
+      // 2. WebRTC 통화가 활성화 상태이면 종료하여 PIP 모드를 끕니다.
+      if (callInfo) {
+        endCall();
+        console.log("📞 WebRTC 통화 종료 및 PIP 모드 해제");
+      }
+
+      // 3. 보고서를 생성합니다.
+      // 이 작업은 로컬 상태가 초기화되기 전에 수행되어야 합니다.
       try {
         console.log("📝 AI 보고서 생성을 시작합니다...");
         const report = await generateReport();
         console.log(`✅ 보고서 생성 완료: ${report.reportId}`);
       } catch (reportError) {
         console.error("⚠️ 보고서 생성 실패:", reportError);
+        // 보고서 생성 실패가 전체 프로세스를 막지 않도록 alert만 띄웁니다.
         alert(`⚠️ 보고서 생성에 실패했습니다: ${reportError.message}`);
       }
-
-      alert("✅ 이송 완료 처리되었습니다. 잠시 후 대기 상태로 전환됩니다.");
       
-      // 6. 로컬 상태를 초기화하고 페이지를 이동합니다.
+      // 4. 구급차 상태를 서버에 'wait'으로 업데이트합니다.
+      await updateAmbulanceStatus(selectedAmbulance.id, "wait");
+      console.log('✅ 구급차 상태가 서버에 "대기"로 업데이트되었습니다.');
+
+      // 5. 모든 비동기 작업이 끝난 후 사용자에게 알리고 로컬 상태를 초기화합니다.
+      alert("✅ 이송 완료 처리되었습니다. 잠시 후 대기 상태로 전환됩니다.");
+
       const initialPatientInfo = { name: "", gender: "", ageRange: "" };
       const initialPatientDetails = {
         ktasLevel: "", department: "", medicalRecord: "", familyHistory: "",
@@ -786,14 +729,15 @@ const useEmergencyStore = create((set, get) => ({
         isEditMode: false,
       });
 
+      // 6. 마지막으로 대기 페이지로 이동합니다.
       if (navigate) {
         navigate("/emergency/waiting", { replace: true });
       }
 
     } catch (error) {
-      console.error("❌ 이송 완료 처리 실패:", error);
+      console.error("❌ 이송 완료 처리 중 심각한 오류 발생:", error);
       alert("❌ 이송 완료 처리에 실패했습니다: " + error.message);
-      // 실패하더라도 대기 화면으로 이동하여 사용자가 다음 행동을 할 수 있도록 합니다.
+      // 실패하더라도 사용자가 다음 행동을 할 수 있도록 대기 화면으로 이동시킵니다.
       if (navigate) {
         navigate("/emergency/waiting", { replace: true });
       }
@@ -838,4 +782,4 @@ const useEmergencyStore = create((set, get) => ({
   },
 }));
 
-export default useEmergencyStore
+export default useEmergencyStore;

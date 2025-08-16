@@ -194,7 +194,7 @@ export default function AmbulanceDashboardPage() {
             hospitalId:
               matchedHospitals[0].hospitalId || matchedHospitals[0].id,
             message: isCallActive
-              ? `구급차(${user.userKey})에서 긴급 추가 알림을 요청했습니다.`
+              ? `구급차(${user.userKey})에서 추가 통화를 요청했습니다.`
               : `구급차(${user.userKey})에서 통화를 요청했습니다.`,
             timestamp: new Date().toISOString(),
           };
@@ -212,8 +212,8 @@ export default function AmbulanceDashboardPage() {
             );
             console.log("📤 전화 요청 알림 전송 완료");
 
-            const alertMessage = isCallActive
-              ? "병원에 긴급 추가 알림을 전송했습니다."
+                        const alertMessage = isCallActive
+              ? "병원에 추가 통화 알림을 전송했습니다."
               : "병원에 통화를 요청했습니다. 잠시만 기다려주세요.";
 
             alert(alertMessage);
@@ -452,7 +452,7 @@ export default function AmbulanceDashboardPage() {
               </div>
             )}
           </div>
-          {/* 현재 UI 상태를 명확히 표시 */}화{" "}
+          {/* 현재 UI 상태를 명확히 표시 */}{" "}
         </div>
       </div>
     </AmbulanceLayout>

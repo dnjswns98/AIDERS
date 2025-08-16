@@ -113,9 +113,7 @@ export default function AmbulancePatientInfoPage() {
   const { selectedAmbulance, ambulanceDetails, patientInfo, patientDetails, setEditMode } = useEmergencyStore();
   const { setPipMode } = useWebRtcStore();
 
-  useEffect(() => {
-    setPipMode(true);
-  }, [setPipMode]);
+  
 
   const dataSource = ambulanceDetails || selectedAmbulance;
   const isHospitalView = !!ambulanceDetails;

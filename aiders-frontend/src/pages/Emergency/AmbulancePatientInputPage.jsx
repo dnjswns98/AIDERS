@@ -54,7 +54,7 @@ export default function AmbulancePatientInputPage() {
   const isEditMode = state?.isEditMode || isEditModeFromStore;
 
   const { user } = useAuthStore();
-  const { startCall } = useWebRtcStore();
+  const { startCall, setPipMode } = useWebRtcStore();
   const { isModelLoaded, initializeModel } = useCRNNModel();
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -202,6 +202,13 @@ export default function AmbulancePatientInputPage() {
       setIsDataLoaded(true);
     }
   }, [isEditMode, patientInfo, patientDetails, isDataLoaded]);
+
+  useEffect(() => {
+    setPipMode(true);
+    return () => {
+      setPipMode(false);
+    };
+  }, [setPipMode]);
 
   const handleHandwritingInputChange = useCallback((fieldName, value) => {
     console.log(`📝 [handleHandwritingInputChange] ${fieldName}:`, value);

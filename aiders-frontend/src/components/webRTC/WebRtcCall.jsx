@@ -1,6 +1,5 @@
-// src/components/webRTC/WebRtcCall.jsx
 import React, { useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom"; // 🔥 추가
 import { useWebRtc } from "../../context/WebRtcContext";
 import { useOpenVidu } from "../../hooks/useOpenVidu";
 import { useMediaStream } from "../../hooks/useMediaStream";
@@ -8,7 +7,6 @@ import { useFullScreen } from "../../hooks/useFullScreen";
 import VideoDisplay from "./VideoDisplay";
 import CallControls from "./CallControls";
 
-// 🔥 수정: 모든 필요한 props 추가
 export default function WebRtcCall({
   sessionId,
   ambulanceNumber,
@@ -17,12 +15,12 @@ export default function WebRtcCall({
   ktas,
   onLeave,
   onRequestCall,
-  isRequestInProgress = false, // 🔥 추가: 기본값 설정
-  userRole = 'ambulance',      // 🔥 추가: 기본값 설정
-  showRequestButton = true,    // 🔥 추가: 기본값 설정
+  isRequestInProgress = false,
+  userRole = 'ambulance',
+  showRequestButton = true,
 }) {
-  const { togglePipMode } = useWebRtc();
-  const location = useLocation();
+  const { isPipMode } = useWebRtc(); // PIP 모드 상태 가져오기
+  const location = useLocation(); // 🔥 추가
   const webRtcCallContainerRef = useRef(null);
 
   const { joinSession, leaveSession } = useOpenVidu({
@@ -39,10 +37,7 @@ export default function WebRtcCall({
   });
 
   const { localVideoRef, remoteVideoRef, hasRemoteStream } = useMediaStream();
-
-  const { isFullScreen, toggleFullScreen } = useFullScreen(
-    webRtcCallContainerRef
-  );
+  const { isFullScreen, toggleFullScreen } = useFullScreen(webRtcCallContainerRef);
 
   useEffect(() => {
     joinSession();
@@ -54,9 +49,8 @@ export default function WebRtcCall({
 
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      leaveSession();
     };
-  }, []);
+  }, []); // joinSession, leaveSession은 useCallback으로 최적화되어 있으므로 의존성 배열에서 제외 가능
 
   const handleLeave = () => {
     leaveSession();
@@ -64,6 +58,11 @@ export default function WebRtcCall({
   };
 
   const isAmbulanceUser = !!ambulanceNumber;
+  
+  // 🔥 PIP 모드이거나, 현재 경로가 대시보드가 아닐 경우 전체 화면 컴포넌트를 렌더링하지 않음
+  if (isPipMode) {
+    return null;
+  }
 
   return (
     <div
@@ -78,23 +77,18 @@ export default function WebRtcCall({
         hasRemoteStream={hasRemoteStream}
       />
 
-      {/* 🔥 구급차 사용자일 때만 하단 컨트롤 패널 표시 */}
       {isAmbulanceUser && (
         <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-80 rounded-lg p-3 backdrop-blur-sm">
           <div className="flex gap-2">
-            {/* 긴급 추가 알림 버튼 */}
             {onRequestCall && (
               <button
                 onClick={onRequestCall}
                 disabled={isRequestInProgress}
-                className={`
-                  flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2
-                  ${
-                    isRequestInProgress
-                      ? "bg-orange-400 cursor-not-allowed text-white"
-                      : "bg-orange-500 hover:bg-orange-600 text-white active:bg-orange-700"
-                  }
-                `}
+                className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 ${
+                  isRequestInProgress
+                    ? "bg-orange-400 cursor-not-allowed text-white"
+                    : "bg-orange-500 hover:bg-orange-600 text-white active:bg-orange-700"
+                }`}
               >
                 {isRequestInProgress ? (
                   <>
@@ -106,11 +100,8 @@ export default function WebRtcCall({
                     >
                       <circle
                         className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
+                        cx="12" cy="12" r="10"
+                        stroke="currentColor" strokeWidth="4"
                       ></circle>
                       <path
                         className="opacity-75"
@@ -121,24 +112,20 @@ export default function WebRtcCall({
                     전송 중...
                   </>
                 ) : (
-                  <>🚨 긴급 알림</>
+                  <>🚨 통화 요청</>
                 )}
               </button>
             )}
-
-            {/* 전체화면 토글 */}
             <button
               onClick={toggleFullScreen}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold transition-colors duration-200"
             >
-              {isFullScreen ? "🔄" : "⛶"}
+              {isFullScreen ? "축소" : "전체화면"}
             </button>
           </div>
-
         </div>
       )}
 
-      {/* 🔥 CallControls는 중복되므로 제거하거나 조건부 렌더링 */}
       {!isAmbulanceUser && (
         <CallControls
           onLeave={handleLeave}

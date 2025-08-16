@@ -1,6 +1,4 @@
-// src/hooks/useOpenVidu.js
-
-import { useRef, useCallback, useState, useEffect } from "react";
+import { useRef, useCallback, useState } from "react";
 import { OpenVidu } from "openvidu-browser";
 import { useWebRtc } from "../context/WebRtcContext";
 import { createAmbulanceToken, getHospitalToken } from "../api/api";
@@ -14,7 +12,8 @@ export const useOpenVidu = ({
   onError,
 }) => {
   const sessionContextRef = useRef(null);
-  const { startCall, endCall } = useWebRtc();
+  // 🔥 수정: Zustand 스토어와 직접 상호작용하는 액션들을 가져옵니다.
+  const { setLocalStream, setRemoteStream, endCall } = useWebRtc();
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const operationLockRef = useRef(false);
@@ -59,11 +58,10 @@ export const useOpenVidu = ({
       subscribers: [],
       isActive: true,
       hasEventListeners: false,
-
       cleanup: async function () {
         if (!this.isActive) return;
-        this.isActive = false; 
-        
+        this.isActive = false;
+
         try {
           if (this.session) {
             this.session.off('streamCreated');
@@ -85,84 +83,78 @@ export const useOpenVidu = ({
     };
   }, []);
 
-  const handleError = useCallback(
-    (error) => {
-      let errorType = "GENERAL_ERROR";
-      let errorMessage = `WebRTC 연결 중 오류가 발생했습니다: ${error.message}`;
+  const handleError = useCallback((error) => {
+    let errorType = "GENERAL_ERROR";
+    let errorMessage = `WebRTC 연결 중 오류가 발생했습니다: ${error.message}`;
 
-      if (error.code === 1001 || error.message.includes("camera") || error.message.includes("microphone")) {
-        errorType = "CAMERA_ACCESS_DENIED";
-        errorMessage = "카메라 또는 마이크 접근이 거부되었습니다.";
-      } else if (error.message.includes("connect") || error.message.includes("token")) {
-        errorType = "CONNECTION_FAILED";
-        errorMessage = "세션 연결에 실패했습니다.";
-      }
+    if (error.code === 1001 || error.message.includes("camera") || error.message.includes("microphone")) {
+      errorType = "CAMERA_ACCESS_DENIED";
+      errorMessage = "카메라 또는 마이크 접근이 거부되었습니다.";
+    } else if (error.message.includes("connect") || error.message.includes("token")) {
+      errorType = "CONNECTION_FAILED";
+      errorMessage = "세션 연결에 실패했습니다.";
+    }
 
-      onError?.({
-        type: errorType,
-        message: errorMessage,
-      });
-    },
-    [onError]
-  );
+    onError?.({
+      type: errorType,
+      message: errorMessage,
+    });
+  }, [onError]);
 
-  const setupEventListeners = useCallback(
-    (sessionContext) => {
-      if (!sessionContext.session || sessionContext.hasEventListeners) return;
+  const setupEventListeners = useCallback((sessionContext) => {
+    if (!sessionContext.session || sessionContext.hasEventListeners) return;
 
-      sessionContext.session.on("streamCreated", (event) => {
-        if (!sessionContext.isActive) return;
+    sessionContext.session.on("streamCreated", (event) => {
+      if (!sessionContext.isActive) return;
+
+      try {
+        const subscriber = sessionContext.session.subscribe(event.stream, undefined);
+        const remoteStream = subscriber.stream.getMediaStream();
         
-        try {
-          const subscriber = sessionContext.session.subscribe(event.stream, 'remote-video-container');
-          subscriber.on('videoElementCreated', (e) => {
-            const remote = e.element.srcObject;
-            const local = sessionContext.publisher?.stream?.getMediaStream();
-            if (remote && local) {
-              startCall(local, remote);
-            }
-          });
-          sessionContext.subscribers.push(subscriber);
-        } catch (error) {
-          console.error("[streamCreated] 구독 중 오류:", error);
-        }
-      });
+        // 🔥 수정: remoteStream을 스토어에 직접 설정합니다.
+        setRemoteStream(remoteStream);
 
-      sessionContext.session.on("streamDestroyed", (event) => {
-        if (!sessionContext.isActive) return;
-        sessionContext.subscribers = sessionContext.subscribers.filter(
-          (sub) => sub.stream.streamId !== event.stream.streamId
-        );
-      });
+        sessionContext.subscribers.push(subscriber);
+      } catch (error) {
+        console.error("[streamCreated] 구독 중 오류:", error);
+      }
+    });
 
-      sessionContext.session.on("exception", (exception) => {
-        if (!sessionContext.isActive) return;
-        handleError(new Error(`OpenVidu Exception: ${exception.message || 'Unknown error'}`));
-      });
+    sessionContext.session.on("streamDestroyed", (event) => {
+      if (!sessionContext.isActive) return;
+      sessionContext.subscribers = sessionContext.subscribers.filter(
+        (sub) => sub.stream.streamId !== event.stream.streamId
+      );
+      // 🔥 수정: 상대방이 나가면 remoteStream을 null로 설정합니다.
+      setRemoteStream(null);
+    });
 
-      sessionContext.session.on("sessionDisconnected", async () => {
-        if (sessionContext.isActive) {
-          await sessionContext.cleanup();
-          setIsConnected(false);
-          setIsConnecting(false);
-          endCall();
-        }
-      });
+    sessionContext.session.on("exception", (exception) => {
+      if (!sessionContext.isActive) return;
+      handleError(new Error(`OpenVidu Exception: ${exception.message || 'Unknown error'}`));
+    });
 
-      sessionContext.hasEventListeners = true;
-    },
-    [startCall, endCall, handleError]
-  );
+    sessionContext.session.on("sessionDisconnected", async () => {
+      if (sessionContext.isActive) {
+        await sessionContext.cleanup();
+        setIsConnected(false);
+        setIsConnecting(false);
+        endCall();
+      }
+    });
+
+    sessionContext.hasEventListeners = true;
+  }, [setRemoteStream, endCall, handleError]);
 
   const joinSession = useCallback(async () => {
     if (operationLockRef.current || isConnecting || isConnected) return;
     operationLockRef.current = true;
     setIsConnecting(true);
-    
+
     if (sessionContextRef.current) {
-        await sessionContextRef.current.cleanup();
+      await sessionContextRef.current.cleanup();
     }
-    
+
     const sessionContext = createSessionContext();
     sessionContextRef.current = sessionContext;
 
@@ -176,17 +168,18 @@ export const useOpenVidu = ({
 
       if (!sessionContext.isActive) throw new Error("세션이 연결 중에 비활성화됨");
 
-      const publisher = await sessionContext.OV.initPublisher(undefined, {
+      const publisher = await sessionContext.OV.initPublisherAsync(undefined, {
         audioSource: undefined, videoSource: undefined,
         publishAudio: true, publishVideo: true,
         resolution: "640x480", frameRate: 30,
         insertMode: "APPEND", mirror: false,
       });
-
-      sessionContext.publisher = publisher;
       
+      sessionContext.publisher = publisher;
+
+      // 🔥 수정: Local Stream을 Zustand 스토어에 직접 설정합니다.
       const localStream = publisher.stream.getMediaStream();
-      startCall(localStream, null);
+      setLocalStream(localStream);
 
       await sessionContext.session.publish(publisher);
       setIsConnected(true);
@@ -204,9 +197,7 @@ export const useOpenVidu = ({
       setIsConnecting(false);
       operationLockRef.current = false;
     }
-  }, [
-    createSessionContext, setupEventListeners, getToken, startCall, endCall, handleError, ambulanceNumber, hospitalId
-  ]);
+  }, [createSessionContext, setupEventListeners, getToken, setLocalStream, endCall, handleError, ambulanceNumber, hospitalId]);
 
   const leaveSession = useCallback(async () => {
     if (operationLockRef.current) return;
@@ -227,19 +218,6 @@ export const useOpenVidu = ({
       operationLockRef.current = false;
     }
   }, [endCall]);
-  
-  // 🔥 삭제: 페이지 경로에 따라 PiP 모드를 자동으로 제어하던 로직을 제거합니다.
-  // 이제 각 페이지에서 직접 PiP 모드를 설정합니다.
-  // useEffect(() => {
-  //   if (togglePipMode) {
-  //     togglePipMode(location.pathname !== "/emergency/map");
-  //   }
-  // }, [location.pathname, togglePipMode]);
 
-  return {
-    joinSession,
-    leaveSession,
-    isConnecting,
-    isConnected,
-  };
+  return { joinSession, leaveSession, isConnecting, isConnected };
 };
