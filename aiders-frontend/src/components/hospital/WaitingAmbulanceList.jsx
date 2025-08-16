@@ -1,11 +1,22 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import useWaitingAmbulanceStore from '../../store/useWaitingAmbulanceStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import useHospitalAlarmRefresh from '../../hooks/useHospitalAlarmRefresh';
+import { getPatientInfo } from '../../api/api';
 
 const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = false }) => {
   const { ambulances, isLoading, error, fetchWaitingAmbulances } = useWaitingAmbulanceStore();
   const { user } = useAuthStore();
+  const [ambulanceDetails, setAmbulanceDetails] = useState({});
+
+  // 중복 제거된 구급차 목록 (sessionId 기준)
+  const uniqueAmbulances = useMemo(() => {
+    if (!ambulances || ambulances.length === 0) return [];
+    
+    return ambulances.filter((ambulance, index, arr) => 
+      arr.findIndex(a => a.sessionId === ambulance.sessionId) === index
+    );
+  }, [ambulances]);
   
   const handleCallStart = (ambulance) => {
     if (onStartCall) {
@@ -26,6 +37,37 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
     }
   }, ['MATCHING', 'REQUEST']); // 매칭 완료, 통화 요청 알람에만 반응
 
+  // 구급차 세부 정보 조회 (중복 제거된 목록 사용)
+  const fetchAmbulanceDetails = async (uniqueAmbulances) => {
+    if (!uniqueAmbulances || uniqueAmbulances.length === 0) {
+      setAmbulanceDetails({});
+      return;
+    }
+
+    const details = {};
+    
+    for (const ambulance of uniqueAmbulances) {
+      try {
+        // sessionId를 ambulanceId로 사용해서 환자 정보 조회
+        const patientInfo = await getPatientInfo(ambulance.sessionId);
+        details[ambulance.sessionId] = {
+          department: patientInfo?.department || "미기재",
+          ktas: patientInfo?.ktas || ambulance.ktas,
+          patientName: patientInfo?.name || ambulance.patientName
+        };
+      } catch (error) {
+        console.warn(`구급차 ${ambulance.sessionId} 환자 정보 조회 실패:`, error);
+        details[ambulance.sessionId] = {
+          department: "미기재",
+          ktas: ambulance.ktas,
+          patientName: ambulance.patientName
+        };
+      }
+    }
+    
+    setAmbulanceDetails(details);
+  };
+
   useEffect(() => {
     if (user?.userId) {
       fetchWaitingAmbulances(user.userId);
@@ -35,6 +77,13 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
       return () => clearInterval(intervalId);
     }
   }, [fetchWaitingAmbulances, user?.userId]);
+
+  // 중복 제거된 구급차 목록이 변경될 때마다 세부 정보 조회
+  useEffect(() => {
+    if (uniqueAmbulances.length > 0) {
+      fetchAmbulanceDetails(uniqueAmbulances);
+    }
+  }, [JSON.stringify(uniqueAmbulances?.map(amb => amb.sessionId))]);
 
   if (isLoading) {
     return <div>로딩 중...</div>;
@@ -75,7 +124,7 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
             textAlign: "center",
           }}
         >
-          대기중인 구급차
+          이송중인 구급차
         </h3>
       </div>
 
@@ -98,14 +147,14 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
           >
             오류가 발생했습니다: {error}
           </div>
-        ) : ambulances.length === 0 ? (
+        ) : uniqueAmbulances.length === 0 ? (
           <div
             style={{ textAlign: "center", padding: "20px", color: "#6b7280" }}
           >
-            현재 대기중인 구급차가 없습니다.
+            현재 이송중인 구급차가 없습니다.
           </div>
         ) : (
-          ambulances.map((ambulance) => (
+          uniqueAmbulances.map((ambulance) => (
             <div
               key={ambulance.sessionId || ambulance.ambulanceId || ambulance.id}
               style={{
@@ -136,12 +185,12 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
               >
                 <span
                   style={{
-                    fontWeight: "600",
+                    fontWeight: "700",
                     color: "#1f2937",
-                    fontSize: compact ? "13px" : "14px",
+                    fontSize: compact ? "18px" : "20px",
                   }}
                 >
-                  구급차 : {ambulance.ambulanceNumber}
+{ambulance.ambulanceNumber}
                 </span>
                 <div
                   style={{
@@ -150,21 +199,15 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
                     gap: "6px",
                   }}
                 >
-                  <div
-                    style={{
-                      width: compact ? "6px" : "8px",
-                      height: compact ? "6px" : "8px",
-                      backgroundColor: ambulance.isInCall
-                        ? "#10b981"
-                        : "#f59e0b",
-                      borderRadius: "50%",
-                    }}
-                  ></div>
                   <span
                     style={{
-                      fontSize: compact ? "10px" : "12px",
-                      color: ambulance.isInCall ? "#10b981" : "#f59e0b",
+                      fontSize: compact ? "18px" : "20px",
+                      padding: "4px 8px",
+                      borderRadius: "4px",
+                      backgroundColor: ambulance.isInCall ? "#dcfce7" : "#fef3c7",
+                      color: ambulance.isInCall ? "#166534" : "#92400e",
                       fontWeight: "600",
+                      border: `1px solid ${ambulance.isInCall ? "#bbf7d0" : "#fde68a"}`,
                     }}
                   >
                     {ambulance.isInCall ? "연결중" : "대기중"}
@@ -175,7 +218,7 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
               <div
                 onClick={() => handleCallStart(ambulance)}
                 style={{
-                  fontSize: compact ? "11px" : "12px",
+                  fontSize: compact ? "16px" : "18px",
                   color: "#6b7280",
                   marginBottom: "8px",
                   cursor: "pointer",
@@ -190,21 +233,36 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
                 }}
               >
                 <div style={{ marginBottom: "2px" }}>
-                  <strong>환자명:</strong>{" "}
-                  {ambulance.patientName || (
-                    <span style={{ color: "#9ca3af" }}>DB에서 조회 필요</span>
-                  )}
+                  <span style={{ color: "#9ca3af", fontWeight: "bold" }}>진료과목:</span>{" "}
+                  <strong>{ambulanceDetails[ambulance.sessionId]?.department || "조회중..."}</strong>
                 </div>
-                <div style={{ marginBottom: "2px" }}>
-                  <strong>KTAS:</strong>{" "}
-                  {ambulance.ktas ? (
-                    `${ambulance.ktas}등급`
-                  ) : (
-                    <span style={{ color: "#9ca3af" }}>DB에서 조회 필요</span>
-                  )}
-                </div>
-                <div>
-                  <strong>세션:</strong> {ambulance.sessionId || "생성중"}
+                <div style={{ marginBottom: "8px" }}>
+                  <span style={{ color: "#9ca3af", fontWeight: "bold" }}>KTAS:</span>{" "}
+                  <span
+                    style={{
+                      marginLeft: "4px",
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      fontSize: compact ? "16px" : "18px",
+                      backgroundColor:
+                        (ambulanceDetails[ambulance.sessionId]?.ktas || ambulance.ktas) <= 2
+                          ? "#fee2e2"
+                          : (ambulanceDetails[ambulance.sessionId]?.ktas || ambulance.ktas) <= 3
+                          ? "#fef3c7"
+                          : "#f3f4f6",
+                      color:
+                        (ambulanceDetails[ambulance.sessionId]?.ktas || ambulance.ktas) <= 2
+                          ? "#991b1b"
+                          : (ambulanceDetails[ambulance.sessionId]?.ktas || ambulance.ktas) <= 3
+                          ? "#92400e"
+                          : "#374151",
+                      fontWeight: "600",
+                    }}
+                  >
+                    {ambulanceDetails[ambulance.sessionId]?.ktas || ambulance.ktas ? 
+                      `${ambulanceDetails[ambulance.sessionId]?.ktas || ambulance.ktas}등급` : 
+                      "미기재"}
+                  </span>
                 </div>
               </div>
 
@@ -218,9 +276,6 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
                 <div
                   onClick={() => handleCallStart(ambulance)}
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "4px",
                     cursor: "pointer",
                     padding: "4px",
                     borderRadius: "4px",
@@ -235,7 +290,7 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
                 >
                   <span
                     style={{
-                      fontSize: compact ? "10px" : "11px",
+                      fontSize: compact ? "12px" : "14px",
                       color: "#9ca3af",
                     }}
                   >
@@ -243,29 +298,6 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
                     {ambulance.createdAt
                       ? new Date(ambulance.createdAt).toLocaleString("ko-KR")
                       : "방금전"}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: compact ? "10px" : "11px",
-                      padding: "2px 6px",
-                      borderRadius: "4px",
-                      backgroundColor:
-                        ambulance.ktas <= 2
-                          ? "#fee2e2"
-                          : ambulance.ktas <= 3
-                          ? "#fef3c7"
-                          : "#f3f4f6",
-                      color:
-                        ambulance.ktas <= 2
-                          ? "#991b1b"
-                          : ambulance.ktas <= 3
-                          ? "#92400e"
-                          : "#374151",
-                      fontWeight: "600",
-                      alignSelf: "flex-start",
-                    }}
-                  >
-                    {ambulance.ktas ? `KTAS ${ambulance.ktas}` : "미분류"}
                   </span>
                 </div>
                 {showCallButton && (
@@ -281,7 +313,7 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
                       border: "none",
                       borderRadius: "6px",
                       padding: compact ? "6px 8px" : "8px 12px",
-                      fontSize: compact ? "10px" : "12px",
+                      fontSize: compact ? "14px" : "16px",
                       fontWeight: "600",
                       cursor: ambulance.isInCall ? "not-allowed" : "pointer",
                       transition: "all 0.2s",
