@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import HospitalHeader from "../../components/hospital/HospitalHeader";
 import VideoCallManager from "../../components/hospital/VideoCallManager";
 import WebRtcCall from "../../components/webRTC/WebRtcCall";
 import useEmergencyStore from "../../store/useEmergencyStore";
 import useWaitingAmbulanceStore from "../../store/useWaitingAmbulanceStore";
 import { useAuthStore } from "../../store/useAuthStore";
-import { startVideoCall, endVideoCall } from "../../api/api";
+import { startVideoCall, endVideoCall, getPatientInfo } from "../../api/api";
 import useHospitalAlarmRefresh from "../../hooks/useHospitalAlarmRefresh";
 
 const DraggablePipVideoContainer = ({ webRtcComponent }) => {
@@ -247,11 +247,82 @@ const DraggablePipVideo = ({ webRtcSessionId, hospitalId, onLeave, patientName, 
   );
 };
 
-const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) => {
+const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall, onAmbulanceDetailsChange }) => {
   const { ambulances, isLoading, error, fetchWaitingAmbulances } =
     useWaitingAmbulanceStore();
 
   const { user } = useAuthStore();
+  const [ambulanceDetails, setAmbulanceDetails] = useState({});
+
+  // 중복 제거된 구급차 목록 (sessionId 기준)
+  const uniqueAmbulances = useMemo(() => {
+    if (!ambulances || ambulances.length === 0) return [];
+    
+    return ambulances.filter((ambulance, index, arr) => 
+      arr.findIndex(a => a.sessionId === ambulance.sessionId) === index
+    );
+  }, [ambulances]);
+
+  // 구급차 세부 정보 조회 (중복 제거된 목록 사용)
+  const fetchAmbulanceDetails = async (uniqueAmbulances) => {
+    if (!uniqueAmbulances || uniqueAmbulances.length === 0) {
+      setAmbulanceDetails({});
+      return;
+    }
+
+    const details = {};
+    
+    for (const ambulance of uniqueAmbulances) {
+      try {
+        // sessionId를 ambulanceId로 사용해서 환자 정보 조회
+        const patientInfo = await getPatientInfo(ambulance.sessionId);
+        details[ambulance.sessionId] = {
+          // 기본 정보
+          department: patientInfo?.department || "미기재",
+          ktas: patientInfo?.ktas || ambulance.ktas,
+          patientName: patientInfo?.name || ambulance.patientName,
+          
+          // 추가 환자 정보
+          sex: patientInfo?.sex,
+          ageRange: patientInfo?.ageRange,
+          rrn: patientInfo?.rrn,
+          nationality: patientInfo?.nationality,
+          
+          // 의료 정보
+          vitalSigns: patientInfo?.vitalSigns,
+          medicine: patientInfo?.medicine,
+          
+          // 병력 정보
+          pastHistory: patientInfo?.pastHistory,
+          familyHistory: patientInfo?.familyHistory,
+          medicalRecord: patientInfo?.medicalRecord
+        };
+      } catch (error) {
+        console.warn(`구급차 ${ambulance.sessionId} 환자 정보 조회 실패:`, error);
+        details[ambulance.sessionId] = {
+          department: "미기재",
+          ktas: ambulance.ktas,
+          patientName: ambulance.patientName,
+          sex: null,
+          ageRange: null,
+          rrn: null,
+          nationality: null,
+          vitalSigns: null,
+          medicine: null,
+          pastHistory: null,
+          familyHistory: null,
+          medicalRecord: null
+        };
+      }
+    }
+    
+    setAmbulanceDetails(details);
+    
+    // 부모 컴포넌트로 details 전달
+    if (onAmbulanceDetailsChange) {
+      onAmbulanceDetailsChange(details);
+    }
+  };
 
   // WebSocket 알람 수신 시 자동 새로고침
   useHospitalAlarmRefresh(() => {
@@ -272,10 +343,17 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
     }
   }, [fetchWaitingAmbulances, user?.userId]);
 
+  // 중복 제거된 구급차 목록이 변경될 때마다 세부 정보 조회
+  useEffect(() => {
+    if (uniqueAmbulances.length > 0) {
+      fetchAmbulanceDetails(uniqueAmbulances);
+    }
+  }, [JSON.stringify(uniqueAmbulances?.map(amb => amb.sessionId))]);
+
   return (
     <div
       style={{
-        width: "320px",
+        width: "400px",
         backgroundColor: "white",
         borderRight: "2px solid #e5e7eb",
         padding: "20px",
@@ -286,29 +364,23 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
       <div
         style={{
           display: "flex",
+          justifyContent: "center",
           alignItems: "center",
           marginBottom: "20px",
           paddingBottom: "16px",
           borderBottom: "2px solid #e5e7eb",
         }}
       >
-        <div
-          style={{
-            fontSize: "20px",
-            marginRight: "8px",
-          }}
-        >
-          🚑
-        </div>
         <h3
           style={{
-            fontSize: "18px",
+            fontSize: "30px",
             fontWeight: "bold",
             color: "#1f2937",
             margin: 0,
+            textAlign: "center",
           }}
         >
-          대기중인 구급차
+          이송중인 구급차
         </h3>
       </div>
 
@@ -331,16 +403,16 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
           >
             오류가 발생했습니다: {error}
           </div>
-        ) : ambulances.length === 0 ? (
+        ) : uniqueAmbulances.length === 0 ? (
           <div
             style={{ textAlign: "center", padding: "20px", color: "#6b7280" }}
           >
-            현재 대기중인 구급차가 없습니다.
+            현재 이송중인 구급차가 없습니다.
           </div>
         ) : (
-          ambulances.map((ambulance) => (
+          uniqueAmbulances.map((ambulance) => (
             <div
-              key={`ambulance-item-${ambulance.ambulanceNumber}-${ambulance.sessionId || ambulance.ambulanceId || ambulance.id}`}
+              key={ambulance.sessionId || ambulance.ambulanceId || ambulance.id}
               style={{
                 padding: "16px",
                 backgroundColor: "#f8fafc",
@@ -369,12 +441,12 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
               >
                 <span
                   style={{
-                    fontWeight: "600",
+                    fontWeight: "700",
                     color: "#1f2937",
-                    fontSize: "14px",
+                    fontSize: "20px",
                   }}
                 >
-                  구급차 : {ambulance.ambulanceNumber}
+{ambulance.ambulanceNumber}
                 </span>
                 <div
                   style={{
@@ -383,21 +455,15 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
                     gap: "6px",
                   }}
                 >
-                  <div
-                    style={{
-                      width: "8px",
-                      height: "8px",
-                      backgroundColor: ambulance.isInCall
-                        ? "#10b981"
-                        : "#f59e0b",
-                      borderRadius: "50%",
-                    }}
-                  ></div>
                   <span
                     style={{
-                      fontSize: "12px",
-                      color: ambulance.isInCall ? "#10b981" : "#f59e0b",
+                      fontSize: "20px",
+                      padding: "4px 8px",
+                      borderRadius: "4px",
+                      backgroundColor: ambulance.isInCall ? "#dcfce7" : "#fef3c7",
+                      color: ambulance.isInCall ? "#166534" : "#92400e",
                       fontWeight: "600",
+                      border: `1px solid ${ambulance.isInCall ? "#bbf7d0" : "#fde68a"}`,
                     }}
                   >
                     {ambulance.isInCall ? "연결중" : "대기중"}
@@ -408,7 +474,7 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
               <div
                 onClick={() => onSelectAmbulance(ambulance)}
                 style={{
-                  fontSize: "12px",
+                  fontSize: "18px",
                   color: "#6b7280",
                   marginBottom: "8px",
                   cursor: "pointer",
@@ -423,21 +489,36 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
                 }}
               >
                 <div style={{ marginBottom: "2px" }}>
-                  <strong>환자명:</strong>{" "}
-                  {ambulance.patientName || (
-                    <span style={{ color: "#9ca3af" }}>DB에서 조회 필요</span>
-                  )}
+                  <span style={{ color: "#9ca3af", fontWeight: "bold" }}>진료과목:</span>{" "}
+                  <strong>{ambulanceDetails[ambulance.sessionId]?.department || "조회중..."}</strong>
                 </div>
-                <div style={{ marginBottom: "2px" }}>
-                  <strong>KTAS:</strong>{" "}
-                  {ambulance.ktas ? (
-                    `${ambulance.ktas}등급`
-                  ) : (
-                    <span style={{ color: "#9ca3af" }}>DB에서 조회 필요</span>
-                  )}
-                </div>
-                <div>
-                  <strong>세션:</strong> {ambulance.sessionId || "생성중"}
+                <div style={{ marginBottom: "8px" }}>
+                  <span style={{ color: "#9ca3af", fontWeight: "bold" }}>KTAS:</span>{" "}
+                  <span
+                    style={{
+                      marginLeft: "4px",
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      fontSize: "18px",
+                      backgroundColor:
+                        (ambulanceDetails[ambulance.sessionId]?.ktas || ambulance.ktas) <= 2
+                          ? "#fee2e2"
+                          : (ambulanceDetails[ambulance.sessionId]?.ktas || ambulance.ktas) <= 3
+                          ? "#fef3c7"
+                          : "#f3f4f6",
+                      color:
+                        (ambulanceDetails[ambulance.sessionId]?.ktas || ambulance.ktas) <= 2
+                          ? "#991b1b"
+                          : (ambulanceDetails[ambulance.sessionId]?.ktas || ambulance.ktas) <= 3
+                          ? "#92400e"
+                          : "#374151",
+                      fontWeight: "600",
+                    }}
+                  >
+                    {ambulanceDetails[ambulance.sessionId]?.ktas || ambulance.ktas ? 
+                      `${ambulanceDetails[ambulance.sessionId]?.ktas || ambulance.ktas}등급` : 
+                      "미기재"}
+                  </span>
                 </div>
               </div>
 
@@ -451,9 +532,6 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
                 <div
                   onClick={() => onSelectAmbulance(ambulance)}
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "4px",
                     cursor: "pointer",
                     padding: "4px",
                     borderRadius: "4px",
@@ -468,7 +546,7 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
                 >
                   <span
                     style={{
-                      fontSize: "11px",
+                      fontSize: "14px",
                       color: "#9ca3af",
                     }}
                   >
@@ -476,29 +554,6 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
                     {ambulance.createdAt
                       ? new Date(ambulance.createdAt).toLocaleString("ko-KR")
                       : "방금전"}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      padding: "2px 6px",
-                      borderRadius: "4px",
-                      backgroundColor:
-                        ambulance.ktas <= 2
-                          ? "#fee2e2"
-                          : ambulance.ktas <= 3
-                          ? "#fef3c7"
-                          : "#f3f4f6",
-                      color:
-                        ambulance.ktas <= 2
-                          ? "#991b1b"
-                          : ambulance.ktas <= 3
-                          ? "#92400e"
-                          : "#374151",
-                      fontWeight: "600",
-                      alignSelf: "flex-start",
-                    }}
-                  >
-                    {ambulance.ktas ? `KTAS ${ambulance.ktas}` : "미분류"}
                   </span>
                 </div>
                 <button
@@ -513,7 +568,7 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
                     border: "none",
                     borderRadius: "6px",
                     padding: "8px 12px",
-                    fontSize: "12px",
+                    fontSize: "16px",
                     fontWeight: "600",
                     cursor: ambulance.isInCall ? "not-allowed" : "pointer",
                     transition: "all 0.2s",
@@ -530,7 +585,7 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
                     }
                   }}
                 >
-                  {ambulance.isInCall ? "통화중" : "통화 시작"}
+                  {ambulance.isInCall ? "통화중" : "통화"}
                 </button>
               </div>
             </div>
@@ -541,25 +596,198 @@ const AmbulanceList = ({ selectedAmbulance, onSelectAmbulance, onStartCall }) =>
   );
 };
 
-const DetailInfoTab = () => {
+const DetailInfoTab = ({ selectedAmbulance, ambulanceDetails }) => {
+  if (!selectedAmbulance) {
+    return (
+      <div
+        style={{
+          height: "calc(100% - 160px)",
+          padding: "20px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <div style={{ textAlign: "center", color: "#6b7280" }}>
+          <div style={{ fontSize: "48px", marginBottom: "16px" }}>🚑</div>
+          <h3 style={{ fontSize: "20px", fontWeight: "bold" }}>구급차를 선택하세요</h3>
+          <p style={{ fontSize: "16px", marginTop: "8px" }}>왼쪽 목록에서 구급차를 클릭하여 환자 상세정보를 확인하세요.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const details = ambulanceDetails[selectedAmbulance.sessionId] || {};
+
   return (
     <div
       style={{
         height: "calc(100% - 160px)",
         padding: "20px",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
+        overflow: "auto",
       }}
     >
-      <div style={{ textAlign: "center", color: "#6b7280" }}>
-        <div style={{ fontSize: "24px", marginBottom: "12px" }}>🚧</div>
-        <h3 style={{ fontSize: "18px", fontWeight: "bold" }}>제작전</h3>
-        <p style={{ fontSize: "14px", marginTop: "4px" }}>해당 기능은 현재 준비 중입니다.</p>
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          backgroundColor: "white",
+          borderRadius: "12px",
+          padding: "24px",
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+          overflow: "auto",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: "24px",
+            paddingBottom: "16px",
+            borderBottom: "2px solid #e5e7eb",
+          }}
+        >
+          <div style={{ fontSize: "24px", marginRight: "12px" }}>👤</div>
+          <h3
+            style={{
+              fontSize: "24px",
+              fontWeight: "bold",
+              color: "#1f2937",
+              margin: 0,
+            }}
+          >
+            구급차 {selectedAmbulance.ambulanceNumber} 환자 상세정보
+          </h3>
+        </div>
+
+        <div
+          style={{
+            padding: "24px",
+            backgroundColor: "#f8fafc",
+            borderRadius: "8px",
+            border: "1px solid #e2e8f0",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {/* 환자 기본 정보 */}
+            <div>
+              <h4 style={{ fontSize: "18px", fontWeight: "600", color: "#1f2937", marginBottom: "12px", borderBottom: "1px solid #e2e8f0", paddingBottom: "8px" }}>
+                환자 기본 정보
+              </h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div>
+                  <span style={{ fontWeight: "600", color: "#374151" }}>환자명:</span>
+                  <span style={{ marginLeft: "8px", color: "#6b7280" }}>
+                    {details.patientName || selectedAmbulance.patientName || "미기재"}
+                  </span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: "600", color: "#374151" }}>성별:</span>
+                  <span style={{ marginLeft: "8px", color: "#6b7280" }}>
+                    {details.sex === 0 ? "남성" : details.sex === 1 ? "여성" : "미기재"}
+                  </span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: "600", color: "#374151" }}>연령대:</span>
+                  <span style={{ marginLeft: "8px", color: "#6b7280" }}>
+                    {details.ageRange === "NEWBORN" ? "신생아" :
+                     details.ageRange === "INFANT" ? "영유아" :
+                     details.ageRange === "CHILD" ? "아동" :
+                     details.ageRange === "ADULT" ? "성인" :
+                     details.ageRange === "ELDERLY" ? "고령자" :
+                     details.ageRange || "미기재"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 의료 정보 */}
+            <div>
+              <h4 style={{ fontSize: "18px", fontWeight: "600", color: "#1f2937", marginBottom: "12px", borderBottom: "1px solid #e2e8f0", paddingBottom: "8px" }}>
+                의료 정보
+              </h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div>
+                  <span style={{ fontWeight: "600", color: "#374151" }}>진료과목:</span>
+                  <span style={{ marginLeft: "8px", color: "#6b7280" }}>
+                    {details.department || "미기재"}
+                  </span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: "600", color: "#374151" }}>KTAS 등급:</span>
+                  <span
+                    style={{
+                      marginLeft: "8px",
+                      padding: "4px 8px",
+                      borderRadius: "4px",
+                      fontSize: "14px",
+                      backgroundColor:
+                        (details.ktas || selectedAmbulance.ktas) <= 2
+                          ? "#fee2e2"
+                          : (details.ktas || selectedAmbulance.ktas) <= 3
+                          ? "#fef3c7"
+                          : "#f3f4f6",
+                      color:
+                        (details.ktas || selectedAmbulance.ktas) <= 2
+                          ? "#991b1b"
+                          : (details.ktas || selectedAmbulance.ktas) <= 3
+                          ? "#92400e"
+                          : "#374151",
+                      fontWeight: "600",
+                    }}
+                  >
+                    {details.ktas || selectedAmbulance.ktas ? 
+                      `KTAS ${details.ktas || selectedAmbulance.ktas}등급` : 
+                      "미분류"}
+                  </span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: "600", color: "#374151" }}>생체징후:</span>
+                  <span style={{ marginLeft: "8px", color: "#6b7280" }}>
+                    {details.vitalSigns || "미기재"}
+                  </span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: "600", color: "#374151" }}>복용약물:</span>
+                  <span style={{ marginLeft: "8px", color: "#6b7280" }}>
+                    {details.medicine || "미기재"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 병력 정보 */}
+            <div>
+              <h4 style={{ fontSize: "18px", fontWeight: "600", color: "#1f2937", marginBottom: "12px", borderBottom: "1px solid #e2e8f0", paddingBottom: "8px" }}>
+                병력 정보
+              </h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div>
+                  <span style={{ fontWeight: "600", color: "#374151" }}>과거병력:</span>
+                  <span style={{ marginLeft: "8px", color: "#6b7280" }}>
+                    {details.pastHistory || "미기재"}
+                  </span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: "600", color: "#374151" }}>가족력:</span>
+                  <span style={{ marginLeft: "8px", color: "#6b7280" }}>
+                    {details.familyHistory || "미기재"}
+                  </span>
+                </div>
+                <div>
+                  <span style={{ fontWeight: "600", color: "#374151" }}>의료기록:</span>
+                  <span style={{ marginLeft: "8px", color: "#6b7280" }}>
+                    {details.medicalRecord || "미기재"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
-};;
+};
 
 export default function EmergencyPatientPage() {
   const [activeTab, setActiveTab] = useState("video");
@@ -574,6 +802,7 @@ export default function EmergencyPatientPage() {
   const [currentCallAmbulance, setCurrentCallAmbulance] = useState(null);
   const [webRtcSessionId, setWebRtcSessionId] = useState(null);
   const [webRtcComponent, setWebRtcComponent] = useState(null);
+  const [ambulanceDetails, setAmbulanceDetails] = useState({});
   const { user } = useAuthStore();
 
   const handleCallStatusChange = (isActive, ambulance) => {
@@ -684,6 +913,7 @@ export default function EmergencyPatientPage() {
           selectedAmbulance={selectedAmbulance}
           onSelectAmbulance={handleSelectAmbulance}
           onStartCall={handleStartCall}
+          onAmbulanceDetailsChange={setAmbulanceDetails}
         />
 
         {/* PIP 모드 - 상세정보 탭일 때만 표시 */}
@@ -713,15 +943,6 @@ export default function EmergencyPatientPage() {
             >
               구급환자 관리
             </h1>
-            <p
-              style={{
-                color: "#6b7280",
-                fontSize: "16px",
-                marginBottom: "16px",
-              }}
-            >
-              구급차와의 화상통화 및 환자 상세 정보를 관리합니다.
-            </p>
           </div>
 
           <div
@@ -796,6 +1017,7 @@ export default function EmergencyPatientPage() {
                   display: "flex",
                   flexDirection: "column",
                   boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                  minHeight: "500px",
                 }}
               >
                 <div
@@ -819,30 +1041,13 @@ export default function EmergencyPatientPage() {
                     구급차 화상통화
                     {currentCallAmbulance && (
                       <span style={{ fontSize: "14px", color: "#6b7280", marginLeft: "10px" }}>
-                        (구급차 ID: {currentCallAmbulance.ambulanceId})
+                        ({currentCallAmbulance.ambulanceNumber || currentCallAmbulance.ambulanceId})
                       </span>
                     )}
                   </h3>
-                  {isCallActive && (
-                    <button
-                      onClick={handleEndCall}
-                      style={{
-                        backgroundColor: "#ef4444",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        padding: "8px 16px",
-                        fontSize: "14px",
-                        cursor: "pointer",
-                        fontWeight: "600",
-                      }}
-                    >
-                      통화 종료
-                    </button>
-                  )}
                 </div>
 
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minHeight: "400px" }}>
                   {isCallActive && webRtcComponent ? (
                     webRtcComponent
                   ) : (
@@ -879,7 +1084,10 @@ export default function EmergencyPatientPage() {
             </div>
           )}
           {activeTab === "detail" && (
-            <DetailInfoTab />
+            <DetailInfoTab
+              selectedAmbulance={selectedAmbulance}
+              ambulanceDetails={ambulanceDetails}
+            />
           )}
         </div>
       </main>

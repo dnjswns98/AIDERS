@@ -5,6 +5,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team1234.aiders.application.ambulance.entity.Ambulance;
+import team1234.aiders.application.ambulance.repository.AmbulanceRepository;
 import team1234.aiders.application.firestation.entity.Firestation;
 import team1234.aiders.application.hospital.entity.Hospital;
 import team1234.aiders.application.location.dto.DistanceMessage;
@@ -17,12 +18,16 @@ import static team1234.aiders.common.util.DistanceUtils.calculateDistance;
 public class LocationSocketService {
 
     private final SimpMessagingTemplate messagingTemplate;
+    private final AmbulanceRepository ambulanceRepository;
 
     /**
      * 하나의 트랜잭션에서 병원 정보, 소방서 정보까지 접근 가능
      */
     @Transactional(readOnly = true)
-    public void handleLocationUpdate(Ambulance ambulance, LocationUpdateRequest request) {
+    public void handleLocationUpdate(Long ambulanceId, LocationUpdateRequest request) {
+        Ambulance ambulance = ambulanceRepository.findById(ambulanceId)
+                .orElseThrow(() -> new IllegalArgumentException("구급차를 찾을 수 없습니다."));
+
         processLocationUpdate(ambulance, request);
         sendLocationToFireStation(ambulance, request);
     }
