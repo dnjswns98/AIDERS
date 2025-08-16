@@ -18,7 +18,7 @@ public class LocationSocketController {
      */
     @MessageMapping("/location/update")
     public void receiveAmbulanceLocation(LocationUpdateRequest request) {
-        System.out.println("🚑 위치 업데이트 요청 수신: " + request);
+
         locationSocketService.handleLocationUpdate(request.ambulanceId(), request);
     }
 }
