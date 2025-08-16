@@ -21,10 +21,7 @@ export default function AmbulanceMapPage() {
     const [directHospitalInfo, setDirectHospitalInfo] = useState(null);
     const [isLoadingDirectHospital, setIsLoadingDirectHospital] = useState(false);
 
-    useEffect(() => {
-        setPipMode(true);
-        return () => setPipMode(false);
-    }, [setPipMode]);
+    
 
     // 🔽 수정: useLiveAmbulanceLocation 훅을 호출하여 실시간 위치 추적
     const {
