@@ -59,6 +59,8 @@ export default function AmbulanceDispatchInProgressPage() {
           <div className="md:col-span-1 h-96">
             <MapDisplay
                 hospital={patientLocation}
+                destinationType="patient"
+                destinationIconSrc="/public/icon/patient.png"
                 ambulanceLocation={ambulanceLocation}
                 distanceInfo={hospitalDistanceInfo}
                 showControls={true}
