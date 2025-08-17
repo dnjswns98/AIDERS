@@ -725,11 +725,12 @@ const useEmergencyStore = create((set, get) => ({
       const hospitalId = matchedHospitals[0]?.id || callInfo?.hospitalId;
 
       if (sessionId && hospitalId) {
-        console.log(`[이송완료] API 호출: sessionId=${sessionId}, hospitalId=${hospitalId}`);
+        console.log(`🚀 [이송완료] API 호출 시작: sessionId=${sessionId}, hospitalId=${hospitalId}`);
+        console.log(`📡 [이송완료] 백엔드에서 다음 토픽으로 COMPLETE 알람 전송 예상: /topic/alarm/${hospitalId}`);
         await completeTransportApi(String(sessionId), hospitalId);
-        console.log("✅ 서버 세션 정리 완료");
+        console.log("✅ [이송완료] 서버 세션 정리 완료");
       } else {
-        console.warn("[이송완료] 세션 또는 병원 ID가 없어 서버 세션 정리를 건너뜁니다.");
+        console.warn("⚠️ [이송완료] 세션 또는 병원 ID가 없어 서버 세션 정리를 건너뜁니다.", {sessionId, hospitalId});
       }
 
       if (callInfo) {

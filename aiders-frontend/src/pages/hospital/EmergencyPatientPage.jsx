@@ -432,6 +432,37 @@ export default function EmergencyPatientPage() {
     }
   }, [currentCallAmbulance, user?.userId, webRtcSessionId]);
 
+  useEffect(() => {
+    const handleAlarmReceived = (event) => {
+      const alarmData = event.detail;
+      console.log('🔔 [EmergencyPatientPage] 알람 수신:', { 
+        type: alarmData.type, 
+        ambulanceKey: alarmData.ambulanceKey,
+        isCallActive,
+        currentCallSessionId: webRtcSessionId || currentCallAmbulance?.sessionId
+      });
+      
+      if (alarmData.type === 'COMPLETE' && alarmData.ambulanceKey && isCallActive && currentCallAmbulance) {
+        const currentSessionId = webRtcSessionId || currentCallAmbulance.sessionId || currentCallAmbulance.ambulanceId;
+        console.log('🚨 [EmergencyPatientPage] 이송완료 알람 처리 체크:', {
+          alarmAmbulanceKey: alarmData.ambulanceKey,
+          currentSessionId: currentSessionId,
+          match: alarmData.ambulanceKey === currentSessionId
+        });
+        
+        if (alarmData.ambulanceKey === currentSessionId) {
+          console.log('✅ [EmergencyPatientPage] 현재 통화중인 구급차가 이송완료됨 - 화상통화 자동 종료');
+          handleEndCall();
+        }
+      }
+    };
+
+    window.addEventListener('hospitalAlarmReceived', handleAlarmReceived);
+    return () => {
+      window.removeEventListener('hospitalAlarmReceived', handleAlarmReceived);
+    };
+  }, [isCallActive, currentCallAmbulance, webRtcSessionId, handleEndCall]);
+
   return (
     <>
       <HospitalHeader />
