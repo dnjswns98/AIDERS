@@ -12,7 +12,7 @@ const AmbulanceLayout = forwardRef(({ children, showHeader = true, disableHeader
     <div className="h-screen flex flex-col overflow-hidden bg-gray-100">
       {showHeader && <AmbulanceHeader />}
       <main ref={ref} className="flex-1 -full overflow-y-auto w-full relative">
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="min-h-[100dvh] pb-[calc(env(safe-area-inset-bottom)+96px)]">
           {children}
         </div>
       </main>
