@@ -64,30 +64,25 @@ const getCurrentLocationFromDashboard = () => {
   });
 };
 
-const ageRangeMap = {
-  '영아': 'NEWBORN',
-  '유아': 'INFANT',
-  '아동': 'KIDS',
-  '청소년': 'TEENAGER',
-  '청년': 'ADULT',
-  '중년': 'ADULT',
-  '노년': 'ELDERLY'
-};
-
 const convertFormDataForApi = (formData) => {
   console.log('🔥🔥🔥 [convertFormDataForApi] 입력:', formData);
- 
-  let processedAgeRange = null;
-  if (formData.ageRange) {
-    const ageKey = formData.ageRange.split(' ')[0].replace(/[^가-힣]/g, '');
-    processedAgeRange = ageRangeMap[ageKey] || null;
-  }
+
+  // 안전 보정: gender는 0/1/2 숫자만 허용, ageRange는 허용 코드만 허용
+  const normalizedSex = [0, 1, 2].includes(Number(formData.gender))
+    ? Number(formData.gender)
+    : 0;
+  const VALID_AGE = new Set([
+    "NEWBORN","INFANT","KIDS","TEENAGER","ADULT","ELDERLY","UNDECIDED"
+  ]);
+  const normalizedAgeRange = VALID_AGE.has(formData.ageRange)
+    ? formData.ageRange
+    : "UNDECIDED";
 
   const apiData = {
     ktas: formData.ktasLevel ? parseInt(formData.ktasLevel) : null,
     department: formData.department || null,
-    sex: formData.gender,
-    ageRange: processedAgeRange,
+    sex: normalizedSex,
+    ageRange: normalizedAgeRange,
     medicalRecord: formData.chiefComplaint || null,
     familyHistory: formData.familyHistory || null,
     pastHistory: formData.pastHistory || null,
@@ -175,14 +170,11 @@ const useEmergencyStore = create((set, get) => ({
       if (dbPatientInfo) {
         console.log("✅ DB에서 환자 정보 조회 성공:", dbPatientInfo);
         
-        const ageRangeLabel = Object.entries(ageRangeMap).find(([key, value]) => value === dbPatientInfo.ageRange)?.[0] || '';
-        const ageRangeOptions = [ "영아 (0-1세)", "유아 (2-7세)", "아동 (8-13세)", "청소년 (14-19세)", "청년 (20-39세)", "중년 (40-64세)", "노년 (65세 이상)"];
-        const fullAgeRangeLabel = ageRangeOptions.find(opt => opt.startsWith(ageRangeLabel)) || '';
-
+        const normSex = [0,1,2].includes(dbPatientInfo?.sex) ? dbPatientInfo.sex : 0;
         const patientInfo = {
           name: dbPatientInfo.name || '',
-          gender: dbPatientInfo.sex === 1 ? '남성' : dbPatientInfo.sex === 0 ? '여성' : '',
-          ageRange: fullAgeRangeLabel,
+          gender: normSex,                              // ✅ 숫자(0/1/2)
+          ageRange: dbPatientInfo.ageRange || 'UNDECIDED', // ✅ 코드 그대로
         };
 
         const patientDetails = {
@@ -483,8 +475,8 @@ const useEmergencyStore = create((set, get) => ({
     }
   },
 
-  quickHospitalMatch: async (ktasLevel, department) => {
-    if (!ktasLevel || !department) {
+  quickHospitalMatch: async (form) => {
+    if (!form?.ktasLevel || !form?.department) {
       const errorMsg = "병원 매칭을 위해 KTAS와 진료과는 필수입니다.";
       alert(errorMsg);
       throw new Error(errorMsg);
@@ -497,20 +489,7 @@ const useEmergencyStore = create((set, get) => ({
     });
 
     try {
-      const apiPayload = {
-        ktas: parseInt(ktasLevel),
-        department: department,
-        sex: null,
-        ageRange: null,
-        medicalRecord: null,
-        familyHistory: null,
-        pastHistory: null,
-        medicine: null,
-        name: null,
-        rrn: null,
-        nationality: null,
-        vitalSigns: null,
-      };
+      const apiPayload = convertFormDataForApi(form);
 
       await saveOptionalPatientInfoApi(apiPayload);
       await get()._fetchAndSetPatientInfo();

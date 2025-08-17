@@ -17,17 +17,6 @@ import { useCRNNModel } from "../../hooks/useCRNNModel";
 import Stomp from "stompjs";
 import SockJS from "sockjs-client";
 
-const ageRangeMap = {
-  신생아: "NEWBORN",
-  영아: "INFANT",
-  어린이: "KIDS",
-  청소년: "TEENAGER",
-  청년: "ADULT",
-  노년: "ELDERLY",
-  미정: "UNDECIDED",
-};
-
-
 export default function AmbulancePatientInputPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -62,7 +51,7 @@ export default function AmbulancePatientInputPage() {
     ktasLevel: "",
     department: "",
     gender: 0,
-    ageRange: "",
+    ageRange: "UNDECIDED",
     name: "",
     chiefComplaint: "",
     treatmentDetails: "",
@@ -99,9 +88,14 @@ export default function AmbulancePatientInputPage() {
   ];
 
   const ageRangeOptions = [
-    "영아 (0-1세)", "유아 (2-7세)", "아동 (8-13세)", "청소년 (14-19세)",
-    "청년 (20-39세)", "중년 (40-64세)", "노년 (65세 이상)",
+    { label: "신생아", value: "NEWBORN" },
+    { label: "영아", value: "INFANT" },
+    { label: "어린이", value: "KIDS" },
+    { label: "청소년", value: "TEENAGER" },
+    { label: "성인", value: "ADULT" },
+    { label: "노인", value: "ELDERLY" },
   ];
+
 
   const sendWebSocketAlarms = useCallback((type = 'MATCHING') => {
     return new Promise((resolve, reject) => {
@@ -181,8 +175,8 @@ export default function AmbulancePatientInputPage() {
       setFormData({
         ktasLevel: patientDetails.ktasLevel || "",
         department: patientDetails.department || "",
-        gender: patientInfo.gender || "",
-        ageRange: patientInfo.ageRange || "",
+        gender: (typeof patientInfo.gender === 'number' ? patientInfo.gender : 0),
+        ageRange: (patientInfo.ageRange || 'UNDECIDED'),
         name: patientInfo.name || "",
         chiefComplaint: patientDetails.chiefComplaint || "",
         treatmentDetails: patientDetails.treatmentDetails || "",
@@ -195,7 +189,7 @@ export default function AmbulancePatientInputPage() {
     } else if (!isEditMode && !isDataLoaded) {
        console.log("Input Page (New Entry Mode): 폼을 비운 상태로 시작합니다.");
        setFormData({
-        ktasLevel: "", department: "", gender: "", ageRange: "", name: "",
+        ktasLevel: "", department: "", gender: 0, ageRange: "UNDECIDED", name: "",
         chiefComplaint: "", treatmentDetails: "", familyHistory: "",
         pastHistory: "", medications: "", vitalSigns: "",
       });
@@ -251,7 +245,7 @@ export default function AmbulancePatientInputPage() {
     }
     setSaveStatus("saving");
     try {
-      await quickHospitalMatch(formData.ktasLevel, formData.department);
+      await quickHospitalMatch(formData);
       setSaveStatus("success");
     } catch (error) {
       setSaveStatus("error");
@@ -442,24 +436,25 @@ export default function AmbulancePatientInputPage() {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             연령대
           </label>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-            {ageRangeOptions.map((age) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {ageRangeOptions.map((option) => (
               <button
-                key={age}
+                key={option.value}
                 type="button"
                 onClick={() =>
-                  setFormData((prev) => ({ ...prev, ageRange: prev.ageRange === age ? "" : age }))
+                  setFormData((prev) => ({ ...prev, ageRange: prev.ageRange === option.value ? "UNDECIDED" : option.value, }))
                 }
                 className={`
-                  p-2 rounded-lg border transition-all duration-200 text-xs font-medium
+                  w-full
+                  p-4 rounded-lg border-2 transition-all duration-200 font-medium
                   ${
-                    formData.ageRange === age
+                    formData.ageRange === option.value
                       ? "bg-blue-600 text-white border-blue-600 shadow-lg"
                       : "bg-white text-gray-700 border-gray-300 hover:border-blue-300 hover:bg-blue-50"
                   }
                 `}
               >
-                {age}
+                {option.label}
               </button>
             ))}
           </div>
@@ -579,7 +574,10 @@ export default function AmbulancePatientInputPage() {
 
     if (index === 2) {
       // 기본정보 단계: name, gender, ageRange 중 하나라도 입력 시 완료
-      return !!(formData.name || formData.gender || formData.ageRange);
+      const hasName = !!(formData.name && formData.name.trim());
+      const hasGender = formData.gender === 1 || formData.gender === 2; // 숫자 1/2만 선택으로 인정
+      const hasAgeRange = typeof formData.ageRange === 'string' && formData.ageRange !== 'UNDECIDED';
+      return hasName || hasGender || hasAgeRange;
     }
 
     if (index === 3) {
