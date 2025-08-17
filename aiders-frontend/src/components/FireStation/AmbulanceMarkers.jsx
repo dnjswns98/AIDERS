@@ -35,6 +35,10 @@ const AmbulanceMarkers = ({ map, ambulances = [], selectedAmbulance, firestation
       const amb = normalizeAmbulance(raw);
       if (!isFinite(amb.lat) || !isFinite(amb.lng)) return;
 
+      if ((amb.status ?? '').toString().toUpperCase() === 'WAIT') {
+        return;
+      }
+      
       const isSelected = isSameId(selectedAmbulance, amb.id);
       const position = new window.kakao.maps.LatLng(amb.lat, amb.lng);
       const image = getAmbulanceMarkerImage(amb.status, isSelected);
