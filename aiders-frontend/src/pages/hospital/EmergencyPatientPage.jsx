@@ -163,26 +163,19 @@ function AmbulanceList({ onSelectAmbulance, onStartCall, onAmbulanceDetailsChang
   const { user } = useAuthStore();
   const [details, setDetails] = useState({});
 
-  const uniqueAmbulances = useMemo(() => {
-    if (!ambulances?.length) return [];
-    const seen = new Set();
-    return ambulances.filter((a) => {
-      const key = a.sessionId ?? a.ambulanceId ?? a.id;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+  const displayAmbulances = useMemo(() => {
+    return ambulances || [];
   }, [ambulances]);
 
   const fetchAmbulanceDetails = useCallback(async () => {
-    if (!uniqueAmbulances.length) {
+    if (!displayAmbulances.length) {
       setDetails({});
       onAmbulanceDetailsChange?.({});
       return;
     }
 
     const next = {};
-    for (const a of uniqueAmbulances) {
+    for (const a of displayAmbulances) {
       const key = a.sessionId ?? a.ambulanceId ?? a.id;
       try {
         const p = await getPatientInfo(a.sessionId);
@@ -220,22 +213,22 @@ function AmbulanceList({ onSelectAmbulance, onStartCall, onAmbulanceDetailsChang
     }
     setDetails(next);
     onAmbulanceDetailsChange?.(next);
-  }, [uniqueAmbulances, onAmbulanceDetailsChange]);
+  }, [displayAmbulances, onAmbulanceDetailsChange]);
 
   useHospitalAlarmRefresh(() => {
     if (user?.userId) fetchWaitingAmbulances(user.userId);
-  }, ["MATCHING", "REQUEST"]);
+  }, ["MATCHING", "REQUEST", "COMPLETE"]);
 
   useEffect(() => {
     if (!user?.userId) return;
     fetchWaitingAmbulances(user.userId);
-    const id = setInterval(() => fetchWaitingAmbulances(user.userId), 30000);
+    const id = setInterval(() => fetchWaitingAmbulances(user.userId), 15000);
     return () => clearInterval(id);
   }, [fetchWaitingAmbulances, user?.userId]);
 
   useEffect(() => {
     fetchAmbulanceDetails();
-  }, [fetchAmbulanceDetails, uniqueAmbulances.length]);
+  }, [fetchAmbulanceDetails, displayAmbulances.length]);
 
   return (
     <aside className="h-full w-[400px] overflow-auto border-r-2 border-gray-200 bg-white p-5">
@@ -245,12 +238,12 @@ function AmbulanceList({ onSelectAmbulance, onStartCall, onAmbulanceDetailsChang
 
       {isLoading && <div className="py-5 text-center text-gray-500">로딩 중...</div>}
       {error && <div className="py-5 text-center text-red-500">오류가 발생했습니다: {error}</div>}
-      {!isLoading && !error && uniqueAmbulances.length === 0 && (
+      {!isLoading && !error && displayAmbulances.length === 0 && (
         <div className="py-5 text-center text-gray-500">현재 이송중인 구급차가 없습니다.</div>
       )}
 
       <div className="flex flex-col gap-3">
-        {uniqueAmbulances.map((a) => (
+        {displayAmbulances.map((a) => (
           <AmbulanceCard
             key={a.sessionId ?? a.ambulanceId ?? a.id}
             ambulance={a}
