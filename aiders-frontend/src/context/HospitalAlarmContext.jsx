@@ -121,6 +121,7 @@ export const HospitalAlarmProvider = ({ children }) => {
       case 'MATCHING': return '매칭 완료';
       case 'REQUEST': return '통화 요청';
       case 'EDIT': return '정보 수정';
+      case 'COMPLETE': return '이송 완료';
       default: return type;
     }
   };
@@ -131,6 +132,7 @@ export const HospitalAlarmProvider = ({ children }) => {
       case 'MATCHING': return '🎯';
       case 'REQUEST': return '📞';
       case 'EDIT': return '✏️';
+      case 'COMPLETE': return '✅';
       default: return '🔔';
     }
   };
@@ -141,6 +143,7 @@ export const HospitalAlarmProvider = ({ children }) => {
       case 'MATCHING': return '#10b981';
       case 'REQUEST': return '#f59e0b';
       case 'EDIT': return '#3b82f6';
+      case 'COMPLETE': return '#059669';
       default: return '#6b7280';
     }
   };
