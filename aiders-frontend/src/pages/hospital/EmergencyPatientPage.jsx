@@ -288,6 +288,7 @@ function DetailInfoTab({ selectedAmbulance, ambulanceDetails }) {
     CHILD: "아동",
     ADULT: "성인",
     ELDERLY: "고령자",
+    UNDECIDED: "미기재",
   };
 
   return (
@@ -311,11 +312,11 @@ function DetailInfoTab({ selectedAmbulance, ambulanceDetails }) {
                 </li>
                 <li>
                   <span className="font-semibold text-gray-800">성별:</span>
-                  <span className="ml-2">{d.sex === 0 ? "남성" : d.sex === 1 ? "여성" : "미기재"}</span>
+                  <span className="ml-2">{d.sex === 0 ? "미기재" : d.sex === 1 ? "남성" : "여성"}</span>
                 </li>
                 <li>
                   <span className="font-semibold text-gray-800">연령대:</span>
-                  <span className="ml-2">{ageDict[d.ageRange] || d.ageRange || "미기재"}</span>
+                  <span className="ml-2">{d.ageRange ? (ageDict[d.ageRange] || d.ageRange) : "미기재"}</span>
                 </li>
               </ul>
             </section>
@@ -356,7 +357,7 @@ function DetailInfoTab({ selectedAmbulance, ambulanceDetails }) {
                   <span className="ml-2">{d.familyHistory || "미기재"}</span>
                 </li>
                 <li>
-                  <span className="font-semibold text-gray-800">의료기록:</span>
+                  <span className="font-semibold text-gray-800">주증상:</span>
                   <span className="ml-2">{d.medicalRecord || "미기재"}</span>
                 </li>
               </ul>
