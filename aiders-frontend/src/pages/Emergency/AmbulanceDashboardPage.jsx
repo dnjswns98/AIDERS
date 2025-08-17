@@ -278,6 +278,7 @@ export default function AmbulanceDashboardPage() {
     };
   }, [cleanupWebSocket]);
 
+  
   // 강력한 클릭 핸들러
   const handleButtonClick = useCallback(
     (event) => {
@@ -357,12 +358,15 @@ export default function AmbulanceDashboardPage() {
     );
   }
 
+  
+
   return (
     <AmbulanceLayout>
       <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 환자 정보 섹션 */}
+        {/* 왼쪽 컬럼: 환자 정보 + 병원 매칭 + 지도 */}
         <div className="lg:col-span-1 flex flex-col gap-6">
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          {/* 환자 정보 섹션 */}
+          <div className="bg-white p-4 rounded-lg shadow-md min-h-[120px]">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">환자 정보</h2>
               <button
@@ -373,57 +377,53 @@ export default function AmbulanceDashboardPage() {
               </button>
             </div>
             <div className="text-sm space-y-2">
-              <p>
-                <strong>이름:</strong> {patientInfo?.name || "-"}
-              </p>
-              <p>
-                <strong>KTAS:</strong> {patientDetails?.ktasLevel || "-"}
-              </p>
+              <p><strong>이름:</strong> {patientInfo?.name || "-"}</p>
+              <p><strong>KTAS:</strong> {patientDetails?.ktasLevel || "-"}</p>
               <p>
                 <strong>주요 증상:</strong>{" "}
-                {patientDetails?.chiefComplaint ||
-                  patientDetails?.medicalRecord ||
-                  "-"}
+                {patientDetails?.chiefComplaint || patientDetails?.medicalRecord || "-"}
               </p>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-bold mb-4">병원 매칭</h2>
+          {/* 병원 매칭 섹션 */}
+          <div className="bg-white p-4 rounded-lg shadow-md min-h-[120px]">
+            <h2 className="text-xl font-bold mb-4">매칭 병원</h2>
             {matchedHospital ? (
               <HospitalCard hospital={matchedHospital} simple />
             ) : (
               <p className="text-gray-500">매칭 대기 중...</p>
             )}
           </div>
+
+          {/* 지도 섹션 (← 여기로 이동) */}
+          <div className="bg-white p-4 rounded-lg shadow-md flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">실시간 위치</h2>
+              <button
+                onClick={() => navigate("/emergency/map")}
+                className="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-xs hover:bg-gray-300 transition-colors"
+              >
+                전체화면
+              </button>
+            </div>
+
+            {/* ⬇️ 높이 부여 (핵심) */}
+            <div className="w-full h-64 sm:h-72 lg:h-[280px]">
+              <MapDisplay
+                hospital={matchedHospital}
+                ambulanceLocation={ambulanceLocation}
+                distanceInfo={hospitalDistanceInfo}
+              />
+            </div>
+          </div>
         </div>
 
-        {/* 지도 섹션 */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md flex flex-col">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">실시간 위치</h2>
-            <button
-              onClick={() => navigate("/emergency/map")}
-              className="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-xs hover:bg-gray-300 transition-colors"
-            >
-              전체화면
-            </button>
-          </div>
-          <div className="flex-grow">
-            <MapDisplay
-              hospital={matchedHospital}
-              ambulanceLocation={ambulanceLocation}
-              distanceInfo={hospitalDistanceInfo}
-            />
-          </div>
-        </div>
-
-        {/* 화상 통화 섹션 */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md flex flex-col">
+        {/* 오른쪽 확장: 화상 통화 (2컬럼 차지) */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md flex flex-col min-h-[480px] lg:min-h-[640px]">
           <h2 className="text-xl font-bold mb-4">화상 통화</h2>
-          <div className="flex-grow h-full min-h-[300px] bg-gray-200 rounded-lg flex items-center justify-center">
+          <div className="flex-grow h-full bg-gray-200 rounded-lg flex items-center justify-center">
             {isCallActive && callInfo ? (
-              // 화상통화가 활성화된 경우
               <div className="w-full h-full relative">
                 <WebRtcCall
                   sessionId={String(callInfo.sessionId)}
@@ -432,27 +432,19 @@ export default function AmbulanceDashboardPage() {
                   patientName={callInfo.patientName}
                   ktas={callInfo.ktas}
                   onLeave={endCall}
-                  // 🔥 추가 props 전달
                   onRequestCall={handleRequestCall}
                   isRequestInProgress={isRequestInProgress}
                   userRole="ambulance"
                   showRequestButton={true}
                 />
-
-                {/* 🔥 통화 중 하단 컨트롤 패널 */}
               </div>
             ) : (
-              // 화상통화가 비활성화된 경우 - 기존 버튼 표시
               <div className="text-center space-y-4 w-full relative">
-                <p className="text-gray-500 mb-4">
-                  병원과 화상 통화가 필요하신가요?
-                </p>
-
-                {/* 개발자 도구 */}
+                <p className="text-gray-500 mb-4">병원과 화상 통화가 필요하신가요?</p>
+                {/* 필요 시 버튼/개발자 도구 영역 */}
               </div>
             )}
           </div>
-          {/* 현재 UI 상태를 명확히 표시 */}{" "}
         </div>
       </div>
     </AmbulanceLayout>
