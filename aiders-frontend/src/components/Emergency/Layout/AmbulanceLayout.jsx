@@ -9,9 +9,9 @@ const AmbulanceLayout = forwardRef(({ children, showHeader = true, disableHeader
   useLiveAmbulanceLocationSender();
 
   return (
-    <div className="bg-gray-100 h-screen flex flex-col">
-      {showHeader && <AmbulanceHeader disableInteraction={disableHeaderInteraction} />}
-      <main ref={ref} className="flex-grow overflow-y-auto w-full relative">
+    <div className="h-screen flex flex-col overflow-hidden bg-gray-100">
+      {showHeader && <AmbulanceHeader />}
+      <main ref={ref} className="flex-1 -full overflow-y-auto w-full relative">
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           {children}
         </div>
