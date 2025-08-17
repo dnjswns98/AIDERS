@@ -27,7 +27,7 @@ const MapDisplay = ({
   const [isMapReady, setIsMapReady] = useState(false);
 
   // 자동 따라가기 상태 (true면 내 위치 따라감, false면 안 따라감)
-  const [isFollowing, setIsFollowing] = useState(true);
+  const [isFollowing, setIsFollowing] = useState(false);
 
   useEffect(() => {
     isMountedRef.current = true;
