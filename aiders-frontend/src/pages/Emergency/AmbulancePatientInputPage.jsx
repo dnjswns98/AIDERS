@@ -573,6 +573,47 @@ export default function AmbulancePatientInputPage() {
     </div>
   );
 
+  const isStepCompleted = useCallback((index) => {
+    if (index === 0) return !!formData.ktasLevel; // KTAS
+    if (index === 1) return !!formData.department; // 진료과
+
+    if (index === 2) {
+      // 기본정보 단계: name, gender, ageRange 중 하나라도 입력 시 완료
+      return !!(formData.name || formData.gender || formData.ageRange);
+    }
+
+    if (index === 3) {
+      // 상세정보 단계: chiefComplaint, treatmentDetails, pastHistory, familyHistory, medications, vitalSigns 중 하나라도 입력 시 완료
+      return !!(
+        formData.chiefComplaint ||
+        formData.treatmentDetails ||
+        formData.pastHistory ||
+        formData.familyHistory ||
+        formData.medications ||
+        formData.vitalSigns
+      );
+    }
+
+    return false;
+  }, [formData]);
+
+  // 현재 단계에서 특정 단계로 이동 가능한지 판단
+  const canGoToStep = useCallback((targetIndex) => {
+    if (targetIndex <= currentStep) return true;         // 뒤로 가기는 항상 허용
+    if (targetIndex >= 1 && !formData.ktasLevel) return false;   // 1단계(진료과)로 가려면 KTAS 필요
+    if (targetIndex >= 2 && !formData.department) return false;  // 2단계(기본정보)로 가려면 진료과 필요
+    // 3단계(상세정보)는 추가 요구조건 없음 (필요 시 확장)
+    return true;
+  }, [currentStep, formData.ktasLevel, formData.department]);
+
+  const handleStepClick = useCallback((index) => {
+    if (canGoToStep(index)) {
+      setCurrentStep(index);
+    } else {
+      alert("이 단계로 이동하려면 앞 단계의 필수 항목을 먼저 완료해 주세요. (KTAS, 진료과)");
+    }
+  }, [canGoToStep]);
+
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 0:
@@ -626,35 +667,45 @@ export default function AmbulancePatientInputPage() {
                 <div className="flex space-x-4">
                   {["KTAS", "진료과", "기본정보", "상세정보"].map((step, index) => {
                     const isActive = index === currentStep;
-                    const isDone = index < currentStep;
-                    const containerClasses = isActive
-                      ? "bg-blue-600 text-white"
-                      : isDone
+                    const completed = isStepCompleted(index);
+                    const disabled = !canGoToStep(index);
+
+                    // 기본 배경/글씨색: 완료면 초록, 아니면 회색
+                    const baseClasses = completed
                       ? "bg-green-600 text-white"
                       : "bg-gray-200 text-gray-600";
 
-                    const bulletClasses =
-                      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold";
-                    const bulletStateClasses = isActive || isDone
+                    // 활성 단계면 “완료색 유지 + 활성 강조” (테두리/링/살짝 음영)
+                    const activeAccent = isActive
+                      ? "ring-2 ring-offset-2 ring-blue-300 shadow"
+                      : "";
+
+                    const bulletClasses = "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold";
+                    const bulletStateClasses = completed
                       ? "bg-white/20 text-white ring-1 ring-white/30"
                       : "bg-white text-gray-700 ring-1 ring-gray-300";
 
                     return (
-                      <div
+                      <button
                         key={step}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium ${containerClasses}`}
+                        type="button"
+                        onClick={() => handleStepClick(index)}
+                        disabled={disabled}
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium ${baseClasses} ${activeAccent}
+                                    ${disabled ? "opacity-60 cursor-not-allowed" : "hover:opacity-90 cursor-pointer"}`}
                         aria-current={isActive ? "step" : undefined}
+                        title={disabled ? "이전 단계의 필수 항목을 먼저 완료하세요" : `${step} 단계로 이동`}
                       >
                         <span className={`${bulletClasses} ${bulletStateClasses}`}>
-                          {isDone ? "✓" : index + 1}
+                          {completed ? "✓" : index + 1}
                         </span>
                         <span>{step}</span>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
-
               </div>
+
               {!isEditMode && (
                 <button
                   type="button"
