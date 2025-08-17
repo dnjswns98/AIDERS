@@ -83,17 +83,10 @@ const convertFormDataForApi = (formData) => {
     processedAgeRange = ageRangeMap[ageKey] || null;
   }
 
-  let processedSex = null;
-  if (formData.gender === '남성') {
-    processedSex = 1;
-  } else if (formData.gender === '여성') {
-    processedSex = 0;
-  }
-
   const apiData = {
     ktas: formData.ktasLevel ? parseInt(formData.ktasLevel) : null,
     department: formData.department || null,
-    sex: processedSex,
+    sex: formData.gender,
     ageRange: processedAgeRange,
     medicalRecord: formData.chiefComplaint || null,
     familyHistory: formData.familyHistory || null,
@@ -120,11 +113,6 @@ const getAmbulanceStatusText = (status) => {
     WAIT: "대기중",
     DISPATCH: "출동중",
     TRANSFER: "이송중",
-    standby: "대기중",
-    dispatched: "출동중",
-    transporting: "이송중",
-    completed: "완료",
-    maintenance: "정비중",
   };
   return statusMap[status] || "알 수 없음";
 };

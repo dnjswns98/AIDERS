@@ -61,7 +61,7 @@ export default function AmbulancePatientInputPage() {
   const [formData, setFormData] = useState({
     ktasLevel: "",
     department: "",
-    gender: "",
+    gender: 0,
     ageRange: "",
     name: "",
     chiefComplaint: "",
@@ -89,13 +89,13 @@ export default function AmbulancePatientInputPage() {
   ];
 
   const departmentOptions = [
-    "응급의학과", "내과", "외과", "정형외과", "신경외과", "흉부외과", "산부인과", "소아청소년과",
-    "신경과", "정신건강의학과", "안과", "이비인후과", "피부과", "비뇨의학과", "영상의학과", "마취통증의학과", "기타",
+    "내과", "외과", "신경과", "신경외과", "정형외과", "흉부외과", "성형외과", "산부인과", "소아청소년과",
+    "안과", "이비인후과", "피부과", "비뇨의학과", "정신건강의학과", "치과"
   ];
 
   const genderOptions = [
-    { value: "남성", label: "남성", icon: "👨" },
-    { value: "여성", label: "여성", icon: "👩" },
+    { value: 1, label: "남성", icon: "👨" },
+    { value: 2, label: "여성", icon: "👩" },
   ];
 
   const ageRangeOptions = [
@@ -420,7 +420,7 @@ export default function AmbulancePatientInputPage() {
                 key={option.value}
                 type="button"
                 onClick={() =>
-                  setFormData((prev) => ({ ...prev, gender: prev.gender === option.value ? "" : option.value }))
+                  setFormData((prev) => ({ ...prev, gender: prev.gender === option.value ? 0 : option.value }))
                 }
                 className={`
                   p-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-center space-x-2
