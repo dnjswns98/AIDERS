@@ -1,4 +1,6 @@
+![mark](./image/mark.png)
 # 🚑 [AIDERS](https://i13d107.p.ssafy.io/) – AI 지원 응급환자 이송·병원 매칭 시스템
+
 
 > **A**I-assisted    
 > **I**ntegrated    
@@ -39,21 +41,50 @@ WebRTC를 통해 환자의 상태를 **영상·음성**으로 공유할 수 있�
 ---
 
 ## 🛠 기술 스택
-- **Backend**: Java 24, Spring Boot, Spring Data JPA, QueryDSL, Redis, MySQL
-- **Frontend**: React, TailwindCSS, WebRTC
-- **AI/OCR**: CRNN (PyTorch), ONNX Runtime, OpenCV
-- **Infra**: AWS EC2, SSL, Docker, Nginx
-- **실시간 통신**: WebSocket, OpenVidu
 
----
+### **Backend**
+![Java](https://img.shields.io/badge/Java_24-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
+![Spring Data JPA](https://img.shields.io/badge/Spring_Data_JPA-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
+![Spring Security](https://img.shields.io/badge/Spring_Security-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white)
+![Spring AI](https://img.shields.io/badge/Spring_AI-6DB33F?style=for-the-badge&logo=&logoColor=white)
+![QueryDSL](https://img.shields.io/badge/QueryDSL-4479A1?style=for-the-badge&logo=java&logoColor=white)
+![Hibernate](https://img.shields.io/badge/Hibernate-59666C?style=for-the-badge&logo=hibernate&logoColor=white)
+![Gradle](https://img.shields.io/badge/gradle-02303A?style=for-the-badge&logo=gradle&logoColor=white)
 
-## 🤝 협업 툴
+### **Database & Cache**
+![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 
-- Gitlab
-- Notion
-- JIRA
-- MatterMost
-- Webex
+### **Frontend**
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![WebRTC](https://img.shields.io/badge/WebRTC-333333?style=for-the-badge&logo=webrtc&logoColor=white)
+![STOMP](https://img.shields.io/badge/Stomp-D83A15?style=for-the-badge&logo=stomp&logoColor=white)
+
+
+### **AI/OCR**
+![CRNN](https://img.shields.io/badge/CRNN-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)
+![ONNX Runtime](https://img.shields.io/badge/ONNX_Runtime-005CED?style=for-the-badge&logo=onnx&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-27338e?style=for-the-badge&logo=OpenCV&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
+
+### **실시간 통신**
+![WebSocket](https://img.shields.io/badge/WebSocket-010101?style=for-the-badge&logo=socketdotio&logoColor=white)
+![OpenVidu](https://img.shields.io/badge/OpenVidu-06D85F?style=for-the-badge&logo=webrtc&logoColor=white)
+
+### **Infrastructure & DevOps**
+![AWS EC2](https://img.shields.io/badge/AWS_EC2-FF9900?style=for-the-badge&logo=amazonec2&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)
+![SSL](https://img.shields.io/badge/SSL-0066CC?style=for-the-badge&logo=letsencrypt&logoColor=white)
+
+### **Communication**
+![GitLab](https://img.shields.io/badge/GitLab-330F63?style=for-the-badge&logo=gitlab&logoColor=white)
+![Notion](https://img.shields.io/badge/Notion-000000?style=for-the-badge&logo=notion&logoColor=white)
+![JIRA](https://img.shields.io/badge/JIRA-0052CC?style=for-the-badge&logo=jira&logoColor=white)
+![Mattermost](https://img.shields.io/badge/Mattermost-0058CC?style=for-the-badge&logo=mattermost&logoColor=white)
 
 ## 📂 폴더 구조
 ```
