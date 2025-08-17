@@ -19,7 +19,7 @@ public class OpenViduService {
     private final OpenVidu openVidu;
     private final RedisService redisService;
 
-    private static final long SESSION_TTL_SECONDS = 1500;
+    private static final long SESSION_TTL_SECONDS = 3600;
 
     /**
      * 세션이 존재하지 않으면 새로 생성하고, 세션 토큰을 발급한다.
