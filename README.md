@@ -1,7 +1,6 @@
 ![mark](./image/mark.png)
+
 # 🚑 [AIDERS](https://i13d107.p.ssafy.io/) – AI 지원 응급환자 이송·병원 매칭 시스템
-
-
 > **A**I-assisted    
 > **I**ntegrated    
 > **D**ispatch &     
