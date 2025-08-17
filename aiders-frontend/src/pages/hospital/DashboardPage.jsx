@@ -249,7 +249,7 @@ export default function DashboardPage() {
         console.error("자동 새로고침 - 병상 정보 조회 실패:", error);
       }
     }
-  }, ['MATCHING', 'REQUEST', 'EDIT']); // 매칭, 통화 요청, 정보 수정 알람에 반응
+  }, ['MATCHING', 'REQUEST', 'EDIT', 'COMPLETE']); // 매칭, 통화 요청, 정보 수정, 이송 완료 알람에 반응
 
   useEffect(() => {}, [hospitalInfo]);
 

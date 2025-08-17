@@ -4,9 +4,9 @@ import AdminPage from "../pages/AdminPage";
 import DashboardPage from "../pages/hospital/DashboardPage";
 import EmergencyPatientPage from "../pages/hospital/EmergencyPatientPage";
 import BedManagementPage from "../pages/hospital/BedManagementPage";
-import NotificationPage from "../pages/hospital/NotificationPage";
 import TestPage from "../pages/hospital/TestPage";
 import DepartmentsPage from "../pages/hospital/DepartmentsPage";
+import NotificationPage from "../pages/hospital/NotificationPage";
 import { Route, Routes } from "react-router-dom";
 import TestHospitalCallPage from "../pages/hospital/TestHospitalCallPage";
 import { useHospitalStore } from '../store/useHospitalStore';
@@ -28,8 +28,8 @@ function HospitalRouters() {
         <Route path="/emergency" element={<EmergencyPatientPage />} />
         <Route path="/beds" element={<BedManagementPage />} />
         <Route path="/departments" element={<DepartmentsPage />} />
-        <Route path="/webrtc-test" element={<TestPage />} />
         <Route path="/notifications" element={<NotificationPage />} />
+        <Route path="/webrtc-test" element={<TestPage />} />
         <Route path="/main" element={<DashboardPage />} />
         <Route path="/test/hospital-call" element={<TestHospitalCallPage />} />
       </Routes>

@@ -34,12 +34,14 @@ export const useHospitalAlarmStore = create((set, get) => ({
     
     try {
       const data = await getAllAlarms(id);
+      // 최신순으로 정렬 (createdAt 기준 내림차순)
+      const sortedData = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       set({ 
-        allAlarms: data,
+        allAlarms: sortedData,
         loading: false 
       });
       
-      return { success: true, data };
+      return { success: true, data: sortedData };
     } catch (error) {
       set({ 
         error: error.message,
@@ -58,12 +60,14 @@ export const useHospitalAlarmStore = create((set, get) => ({
     
     try {
       const data = await getMatchingAlarms(id);
+      // 최신순으로 정렬 (createdAt 기준 내림차순)
+      const sortedData = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       set({ 
-        matchingAlarms: data,
+        matchingAlarms: sortedData,
         loading: false 
       });
       
-      return { success: true, data };
+      return { success: true, data: sortedData };
     } catch (error) {
       set({ 
         error: error.message,
@@ -82,12 +86,14 @@ export const useHospitalAlarmStore = create((set, get) => ({
     
     try {
       const data = await getRequestAlarms(id);
+      // 최신순으로 정렬 (createdAt 기준 내림차순)
+      const sortedData = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       set({ 
-        requestAlarms: data,
+        requestAlarms: sortedData,
         loading: false 
       });
       
-      return { success: true, data };
+      return { success: true, data: sortedData };
     } catch (error) {
       set({ 
         error: error.message,
@@ -106,12 +112,14 @@ export const useHospitalAlarmStore = create((set, get) => ({
     
     try {
       const data = await getEditAlarms(id);
+      // 최신순으로 정렬 (createdAt 기준 내림차순)
+      const sortedData = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       set({ 
-        editAlarms: data,
+        editAlarms: sortedData,
         loading: false 
       });
       
-      return { success: true, data };
+      return { success: true, data: sortedData };
     } catch (error) {
       set({ 
         error: error.message,

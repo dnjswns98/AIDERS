@@ -17,17 +17,6 @@ import { useCRNNModel } from "../../hooks/useCRNNModel";
 import Stomp from "stompjs";
 import SockJS from "sockjs-client";
 
-const ageRangeMap = {
-  영아: "INFANT",
-  유아: "KIDS",
-  아동: "KIDS",
-  청소년: "TEENAGER",
-  청년: "ADULT",
-  중년: "ADULT",
-  노년: "ELDERLY",
-};
-
-
 export default function AmbulancePatientInputPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -61,8 +50,8 @@ export default function AmbulancePatientInputPage() {
   const [formData, setFormData] = useState({
     ktasLevel: "",
     department: "",
-    gender: "",
-    ageRange: "",
+    gender: 0,
+    ageRange: "UNDECIDED",
     name: "",
     chiefComplaint: "",
     treatmentDetails: "",
@@ -89,19 +78,24 @@ export default function AmbulancePatientInputPage() {
   ];
 
   const departmentOptions = [
-    "응급의학과", "내과", "외과", "정형외과", "신경외과", "흉부외과", "산부인과", "소아청소년과",
-    "신경과", "정신건강의학과", "안과", "이비인후과", "피부과", "비뇨의학과", "영상의학과", "마취통증의학과", "기타",
+    "내과", "외과", "신경과", "신경외과", "정형외과", "흉부외과", "성형외과", "산부인과", "소아청소년과",
+    "안과", "이비인후과", "피부과", "비뇨의학과", "정신건강의학과", "치과"
   ];
 
   const genderOptions = [
-    { value: "남성", label: "남성", icon: "👨" },
-    { value: "여성", label: "여성", icon: "👩" },
+    { value: 1, label: "남성", icon: "👨" },
+    { value: 2, label: "여성", icon: "👩" },
   ];
 
   const ageRangeOptions = [
-    "영아 (0-1세)", "유아 (2-7세)", "아동 (8-13세)", "청소년 (14-19세)",
-    "청년 (20-39세)", "중년 (40-64세)", "노년 (65세 이상)",
+    { label: "신생아", value: "NEWBORN" },
+    { label: "영아", value: "INFANT" },
+    { label: "어린이", value: "KIDS" },
+    { label: "청소년", value: "TEENAGER" },
+    { label: "성인", value: "ADULT" },
+    { label: "노인", value: "ELDERLY" },
   ];
+
 
   const sendWebSocketAlarms = useCallback((type = 'MATCHING') => {
     return new Promise((resolve, reject) => {
@@ -181,8 +175,8 @@ export default function AmbulancePatientInputPage() {
       setFormData({
         ktasLevel: patientDetails.ktasLevel || "",
         department: patientDetails.department || "",
-        gender: patientInfo.gender || "",
-        ageRange: patientInfo.ageRange || "",
+        gender: (typeof patientInfo.gender === 'number' ? patientInfo.gender : 0),
+        ageRange: (patientInfo.ageRange || 'UNDECIDED'),
         name: patientInfo.name || "",
         chiefComplaint: patientDetails.chiefComplaint || "",
         treatmentDetails: patientDetails.treatmentDetails || "",
@@ -195,7 +189,7 @@ export default function AmbulancePatientInputPage() {
     } else if (!isEditMode && !isDataLoaded) {
        console.log("Input Page (New Entry Mode): 폼을 비운 상태로 시작합니다.");
        setFormData({
-        ktasLevel: "", department: "", gender: "", ageRange: "", name: "",
+        ktasLevel: "", department: "", gender: 0, ageRange: "UNDECIDED", name: "",
         chiefComplaint: "", treatmentDetails: "", familyHistory: "",
         pastHistory: "", medications: "", vitalSigns: "",
       });
@@ -251,7 +245,7 @@ export default function AmbulancePatientInputPage() {
     }
     setSaveStatus("saving");
     try {
-      await quickHospitalMatch(formData.ktasLevel, formData.department);
+      await quickHospitalMatch(formData);
       setSaveStatus("success");
     } catch (error) {
       setSaveStatus("error");
@@ -312,7 +306,7 @@ export default function AmbulancePatientInputPage() {
             key={option.level}
             type="button"
             onClick={() =>
-              setFormData((prev) => ({ ...prev, ktasLevel: option.level }))
+              setFormData((prev) => ({ ...prev, ktasLevel: prev.ktasLevel === option.level ? "" : option.level }))
             }
             className={`
               p-6 rounded-xl border-2 transition-all duration-200 text-white font-bold
@@ -357,7 +351,7 @@ export default function AmbulancePatientInputPage() {
             key={dept}
             type="button"
             onClick={() =>
-              setFormData((prev) => ({ ...prev, department: dept }))
+              setFormData((prev) => ({ ...prev, department: prev.department === dept ? "" : dept }))
             }
             className={`
               p-4 rounded-lg border-2 transition-all duration-200 text-sm font-medium
@@ -420,7 +414,7 @@ export default function AmbulancePatientInputPage() {
                 key={option.value}
                 type="button"
                 onClick={() =>
-                  setFormData((prev) => ({ ...prev, gender: option.value }))
+                  setFormData((prev) => ({ ...prev, gender: prev.gender === option.value ? 0 : option.value }))
                 }
                 className={`
                   p-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-center space-x-2
@@ -442,24 +436,25 @@ export default function AmbulancePatientInputPage() {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             연령대
           </label>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-            {ageRangeOptions.map((age) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {ageRangeOptions.map((option) => (
               <button
-                key={age}
+                key={option.value}
                 type="button"
                 onClick={() =>
-                  setFormData((prev) => ({ ...prev, ageRange: age }))
+                  setFormData((prev) => ({ ...prev, ageRange: prev.ageRange === option.value ? "UNDECIDED" : option.value, }))
                 }
                 className={`
-                  p-2 rounded-lg border transition-all duration-200 text-xs font-medium
+                  w-full
+                  p-4 rounded-lg border-2 transition-all duration-200 font-medium
                   ${
-                    formData.ageRange === age
+                    formData.ageRange === option.value
                       ? "bg-blue-600 text-white border-blue-600 shadow-lg"
                       : "bg-white text-gray-700 border-gray-300 hover:border-blue-300 hover:bg-blue-50"
                   }
                 `}
               >
-                {age}
+                {option.label}
               </button>
             ))}
           </div>
@@ -573,6 +568,50 @@ export default function AmbulancePatientInputPage() {
     </div>
   );
 
+  const isStepCompleted = useCallback((index) => {
+    if (index === 0) return !!formData.ktasLevel; // KTAS
+    if (index === 1) return !!formData.department; // 진료과
+
+    if (index === 2) {
+      // 기본정보 단계: name, gender, ageRange 중 하나라도 입력 시 완료
+      const hasName = !!(formData.name && formData.name.trim());
+      const hasGender = formData.gender === 1 || formData.gender === 2; // 숫자 1/2만 선택으로 인정
+      const hasAgeRange = typeof formData.ageRange === 'string' && formData.ageRange !== 'UNDECIDED';
+      return hasName || hasGender || hasAgeRange;
+    }
+
+    if (index === 3) {
+      // 상세정보 단계: chiefComplaint, treatmentDetails, pastHistory, familyHistory, medications, vitalSigns 중 하나라도 입력 시 완료
+      return !!(
+        formData.chiefComplaint ||
+        formData.treatmentDetails ||
+        formData.pastHistory ||
+        formData.familyHistory ||
+        formData.medications ||
+        formData.vitalSigns
+      );
+    }
+
+    return false;
+  }, [formData]);
+
+  // 현재 단계에서 특정 단계로 이동 가능한지 판단
+  const canGoToStep = useCallback((targetIndex) => {
+    if (targetIndex <= currentStep) return true;         // 뒤로 가기는 항상 허용
+    if (targetIndex >= 1 && !formData.ktasLevel) return false;   // 1단계(진료과)로 가려면 KTAS 필요
+    if (targetIndex >= 2 && !formData.department) return false;  // 2단계(기본정보)로 가려면 진료과 필요
+    // 3단계(상세정보)는 추가 요구조건 없음 (필요 시 확장)
+    return true;
+  }, [currentStep, formData.ktasLevel, formData.department]);
+
+  const handleStepClick = useCallback((index) => {
+    if (canGoToStep(index)) {
+      setCurrentStep(index);
+    } else {
+      alert("이 단계로 이동하려면 앞 단계의 필수 항목을 먼저 완료해 주세요. (KTAS, 진료과)");
+    }
+  }, [canGoToStep]);
+
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 0:
@@ -607,205 +646,227 @@ export default function AmbulancePatientInputPage() {
 
   return (
     <AmbulanceLayout ref={mainContentRef} showHeader={isEditMode}>
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {isEditMode ? "환자 정보 수정" : "환자 정보 입력"}
-            </h1>
-            <div className="flex justify-center space-x-4 text-sm text-gray-600">
-              <span>구급차: {selectedAmbulance?.carNumber || "정보 없음"}</span>
-              <span>•</span>
-              <span>상태: {selectedAmbulance?.currentStatus || "대기중"}</span>
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <div className="flex justify-between items-center">
-              <div className="flex-grow flex justify-center">
-                <div className="flex space-x-4">
-                  {["KTAS", "진료과", "기본정보", "상세정보"].map(
-                    (step, index) => (
-                      <div
-                        key={step}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium ${
-                          index === currentStep
-                            ? "bg-blue-600 text-white"
-                            : index < currentStep
-                            ? "bg-green-600 text-white"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
-                      >
-                        <span className="w-6 h-6 rounded-full bg-white bg-opacity-20 flex items-center justify-center text-xs font-bold">
-                          {index + 1}
-                        </span>
-                        <span>{step}</span>
-                      </div>
-                    )
-                  )}
-                </div>
+      <div className="h-full bg-gray-50">
+        <div className="h-full overflow-y-auto py-8">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 ">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {isEditMode ? "환자 정보 수정" : "환자 정보 입력"}
+              </h1>
+              <div className="flex justify-center space-x-4 text-sm text-gray-600">
+                <span>구급차: {selectedAmbulance?.carNumber || "정보 없음"}</span>
+                <span>•</span>
+                <span>상태: {selectedAmbulance?.currentStatus || "대기중"}</span>
               </div>
-              {!isEditMode && (
-                <button
-                  type="button"
-                  onClick={handleQuickMatch}
-                  disabled={!isEssentialDataComplete || isHospitalMatching}
-                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg hover:from-green-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-md whitespace-nowrap"
-                >
-                  ⚡ 병원 매칭
-                </button>
-              )}
             </div>
-          </div>
 
-          {(saveStatus || isPatientDataSaving || patientDataError) && (
-            <div className="mb-6">
-              {(saveStatus === "saving" || isPatientDataSaving) && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
-                    <span className="text-blue-700 font-medium">
-                      저장 중...
-                    </span>
-                  </div>
-                </div>
-              )}
-              {saveStatus === "success" && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center">
-                    <span className="text-green-600 font-medium">
-                      ✅ 저장 완료
-                    </span>
-                  </div>
-                </div>
-              )}
-              {(saveStatus === "error" || patientDataError) && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <div className="flex items-center">
-                    <span className="text-red-600 font-medium">
-                      ❌ 저장 실패: {patientDataError || "알 수 없는 오류"}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+            <div className="mb-8">
+              <div className="flex justify-between items-center">
+                <div className="flex-grow flex justify-center">
+                  <div className="flex space-x-4">
+                    {["KTAS", "진료과", "기본정보", "상세정보"].map((step, index) => {
+                      const isActive = index === currentStep;
+                      const completed = isStepCompleted(index);
+                      const disabled = !canGoToStep(index);
 
-          <form
-            onSubmit={handleSubmit}
-            className="bg-white rounded-2xl shadow-lg p-8"
-          >
-            {renderCurrentStep()}
-            <div className="flex justify-between items-center mt-8 pt-6 border-t">
-              <button
-                type="button"
-                onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-                disabled={currentStep === 0}
-                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                이전
-              </button>
-              <div className="flex space-x-3">
-                {isEditMode ? (
-                  <>
-                    {!isLastStep && (
-                       <button
+                      // 기본 배경/글씨색: 완료면 초록, 아니면 회색
+                      const baseClasses = completed
+                        ? "bg-green-600 text-white"
+                        : "bg-gray-200 text-gray-600";
+
+                      // 활성 단계면 “완료색 유지 + 활성 강조” (테두리/링/살짝 음영)
+                      const activeAccent = isActive
+                        ? "ring-2 ring-offset-2 ring-blue-300 shadow"
+                        : "";
+
+                      const bulletClasses = "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold";
+                      const bulletStateClasses = completed
+                        ? "bg-white/20 text-white ring-1 ring-white/30"
+                        : "bg-white text-gray-700 ring-1 ring-gray-300";
+
+                      return (
+                        <button
+                          key={step}
                           type="button"
-                          onClick={() => setCurrentStep(Math.min(3, currentStep + 1))}
-                          className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-                       >
-                         다음
-                       </button>
-                    )}
-                    <button
-                      type="submit"
-                      disabled={isPatientDataSaving || saveStatus === "saving"}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isPatientDataSaving || saveStatus === "saving" ? "저장 중..." : "수정 완료"}
-                    </button>
-                  </>
-                ) : isLastStep ? (
+                          onClick={() => handleStepClick(index)}
+                          disabled={disabled}
+                          className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium ${baseClasses} ${activeAccent}
+                                      ${disabled ? "opacity-60 cursor-not-allowed" : "hover:opacity-90 cursor-pointer"}`}
+                          aria-current={isActive ? "step" : undefined}
+                          title={disabled ? "이전 단계의 필수 항목을 먼저 완료하세요" : `${step} 단계로 이동`}
+                        >
+                          <span className={`${bulletClasses} ${bulletStateClasses}`}>
+                            {completed ? "✓" : index + 1}
+                          </span>
+                          <span>{step}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {!isEditMode && (
                   <button
                     type="button"
-                    onClick={handleMatchHospital}
+                    onClick={handleQuickMatch}
                     disabled={!isEssentialDataComplete || isHospitalMatching}
-                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg hover:from-green-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-md whitespace-nowrap"
                   >
-                    {isHospitalMatching ? "매칭 중..." : "병원 매칭"}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setCurrentStep(Math.min(3, currentStep + 1))}
-                    disabled={!canProceedToNext()}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    다음
+                    ⚡ 병원 매칭
                   </button>
                 )}
               </div>
             </div>
-          </form>
 
-          {isLastStep && !isEditMode && (
-            <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl border border-blue-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                💡 다음 단계 안내
-              </h3>
-              {isEssentialDataComplete ? (
-                <p className="text-green-700">
-                  ✅ 필수 정보(KTAS, 진료과)가 입력되었습니다. 이제 병원 매칭을
-                  진행하거나, 환자의 상세 정보를 추가로 입력할 수 있습니다.
-                </p>
-              ) : (
-                <p className="text-orange-700">
-                  ⚠️ 병원 매칭을 위해서는 KTAS 등급과 진료과 선택이 필수입니다.
-                </p>
-              )}
-              <div className="mt-3 text-sm text-gray-600">
-                <p>• <strong>저장</strong>: 입력된 정보를 저장합니다.</p>
-                <p>• <strong>병원 매칭</strong>: KTAS와 진료과 기준으로 최적의 병원을 찾습니다.</p>
+            {(saveStatus || isPatientDataSaving || patientDataError) && (
+              <div className="mb-6">
+                {(saveStatus === "saving" || isPatientDataSaving) && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
+                      <span className="text-blue-700 font-medium">
+                        저장 중...
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {saveStatus === "success" && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center">
+                      <span className="text-green-600 font-medium">
+                        ✅ 저장 완료
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {(saveStatus === "error" || patientDataError) && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center">
+                      <span className="text-red-600 font-medium">
+                        ❌ 저장 실패: {patientDataError || "알 수 없는 오류"}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            )}
 
-          {currentStep >= 2 && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <p className="text-sm text-gray-600">
-                💡 <strong>필기 인식 기능</strong>: 필요한 경우, 아래 항목에
-                필기 또는 타이핑으로 {isEditMode ? "정보를 수정하세요" : "추가 정보를 입력하세요"}.
-                {!isModelLoaded && " (AI 모델 로딩 중...)"}
-              </p>
-            </div>
-          )}
-
-          {isHospitalMatching && !isEditMode && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    병원 매칭 중
-                  </h3>
-                  <p className="text-gray-600">
-                    최적의 병원을 찾고 있습니다...
-                  </p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    잠시만 기다려주세요.
-                  </p>
+            <form
+              onSubmit={handleSubmit}
+              className="bg-white rounded-2xl shadow-lg p-8"
+            >
+              {renderCurrentStep()}
+              <div className="flex justify-between items-center mt-8 pt-6 border-t">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                  disabled={currentStep === 0}
+                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  이전
+                </button>
+                <div className="flex space-x-3">
+                  {isEditMode ? (
+                    <>
+                      {!isLastStep && (
+                        <button
+                            type="button"
+                            onClick={() => setCurrentStep(Math.min(3, currentStep + 1))}
+                            className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                        >
+                          다음
+                        </button>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={isPatientDataSaving || saveStatus === "saving"}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isPatientDataSaving || saveStatus === "saving" ? "저장 중..." : "수정 완료"}
+                      </button>
+                    </>
+                  ) : isLastStep ? (
+                    <button
+                      type="button"
+                      onClick={handleMatchHospital}
+                      disabled={!isEssentialDataComplete || isHospitalMatching}
+                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isHospitalMatching ? "매칭 중..." : "병원 매칭"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(Math.min(3, currentStep + 1))}
+                      disabled={!canProceedToNext()}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      다음
+                    </button>
+                  )}
                 </div>
               </div>
-            </div>
-          )}
+            </form>
 
-          {hospitalMatchingError && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-700">
-                ❌ 병원 매칭 실패: {hospitalMatchingError}
-              </p>
-            </div>
-          )}
+            {isLastStep && !isEditMode && (
+              <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl border border-blue-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  💡 다음 단계 안내
+                </h3>
+                {isEssentialDataComplete ? (
+                  <p className="text-green-700">
+                    ✅ 필수 정보(KTAS, 진료과)가 입력되었습니다. 이제 병원 매칭을
+                    진행하거나, 환자의 상세 정보를 추가로 입력할 수 있습니다.
+                  </p>
+                ) : (
+                  <p className="text-orange-700">
+                    ⚠️ 병원 매칭을 위해서는 KTAS 등급과 진료과 선택이 필수입니다.
+                  </p>
+                )}
+                <div className="mt-3 text-sm text-gray-600">
+                  <p>• <strong>저장</strong>: 입력된 정보를 저장합니다.</p>
+                  <p>• <strong>병원 매칭</strong>: KTAS와 진료과 기준으로 최적의 병원을 찾습니다.</p>
+                </div>
+              </div>
+            )}
+
+            {currentStep >= 2 && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-600">
+                  💡 <strong>필기 인식 기능</strong>: 필요한 경우, 아래 항목에
+                  필기 또는 타이핑으로 {isEditMode ? "정보를 수정하세요" : "추가 정보를 입력하세요"}.
+                  {!isModelLoaded && " (AI 모델 로딩 중...)"}
+                </p>
+              </div>
+            )}
+
+            {isHospitalMatching && !isEditMode && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      병원 매칭 중
+                    </h3>
+                    <p className="text-gray-600">
+                      최적의 병원을 찾고 있습니다...
+                    </p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      잠시만 기다려주세요.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {hospitalMatchingError && (
+              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700">
+                  ❌ 병원 매칭 실패: {hospitalMatchingError}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </AmbulanceLayout>

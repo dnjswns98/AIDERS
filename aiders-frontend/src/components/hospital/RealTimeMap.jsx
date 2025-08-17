@@ -210,10 +210,7 @@ const RealTimeMap = ({ hospitalLocation, className }) => {
       removable: false
     });
 
-    // 마커 클릭 이벤트
-    window.kakao.maps.event.addListener(marker, 'click', () => {
-      infoWindow.open(mapInstanceRef.current, marker);
-    });
+    // 마커 클릭 이벤트 제거 - 정보창이 뜨지 않도록 함
 
     // 마커 정보 저장
     ambulanceMarkersRef.current.set(ambulanceId, {

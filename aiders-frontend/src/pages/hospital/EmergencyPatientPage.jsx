@@ -163,26 +163,19 @@ function AmbulanceList({ onSelectAmbulance, onStartCall, onAmbulanceDetailsChang
   const { user } = useAuthStore();
   const [details, setDetails] = useState({});
 
-  const uniqueAmbulances = useMemo(() => {
-    if (!ambulances?.length) return [];
-    const seen = new Set();
-    return ambulances.filter((a) => {
-      const key = a.sessionId ?? a.ambulanceId ?? a.id;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+  const displayAmbulances = useMemo(() => {
+    return ambulances || [];
   }, [ambulances]);
 
   const fetchAmbulanceDetails = useCallback(async () => {
-    if (!uniqueAmbulances.length) {
+    if (!displayAmbulances.length) {
       setDetails({});
       onAmbulanceDetailsChange?.({});
       return;
     }
 
     const next = {};
-    for (const a of uniqueAmbulances) {
+    for (const a of displayAmbulances) {
       const key = a.sessionId ?? a.ambulanceId ?? a.id;
       try {
         const p = await getPatientInfo(a.sessionId);
@@ -220,22 +213,22 @@ function AmbulanceList({ onSelectAmbulance, onStartCall, onAmbulanceDetailsChang
     }
     setDetails(next);
     onAmbulanceDetailsChange?.(next);
-  }, [uniqueAmbulances, onAmbulanceDetailsChange]);
+  }, [displayAmbulances, onAmbulanceDetailsChange]);
 
   useHospitalAlarmRefresh(() => {
     if (user?.userId) fetchWaitingAmbulances(user.userId);
-  }, ["MATCHING", "REQUEST"]);
+  }, ["MATCHING", "REQUEST", "COMPLETE"]);
 
   useEffect(() => {
     if (!user?.userId) return;
     fetchWaitingAmbulances(user.userId);
-    const id = setInterval(() => fetchWaitingAmbulances(user.userId), 30000);
+    const id = setInterval(() => fetchWaitingAmbulances(user.userId), 15000);
     return () => clearInterval(id);
   }, [fetchWaitingAmbulances, user?.userId]);
 
   useEffect(() => {
     fetchAmbulanceDetails();
-  }, [fetchAmbulanceDetails, uniqueAmbulances.length]);
+  }, [fetchAmbulanceDetails, displayAmbulances.length]);
 
   return (
     <aside className="h-full w-[400px] overflow-auto border-r-2 border-gray-200 bg-white p-5">
@@ -245,12 +238,12 @@ function AmbulanceList({ onSelectAmbulance, onStartCall, onAmbulanceDetailsChang
 
       {isLoading && <div className="py-5 text-center text-gray-500">로딩 중...</div>}
       {error && <div className="py-5 text-center text-red-500">오류가 발생했습니다: {error}</div>}
-      {!isLoading && !error && uniqueAmbulances.length === 0 && (
+      {!isLoading && !error && displayAmbulances.length === 0 && (
         <div className="py-5 text-center text-gray-500">현재 이송중인 구급차가 없습니다.</div>
       )}
 
       <div className="flex flex-col gap-3">
-        {uniqueAmbulances.map((a) => (
+        {displayAmbulances.map((a) => (
           <AmbulanceCard
             key={a.sessionId ?? a.ambulanceId ?? a.id}
             ambulance={a}
@@ -392,8 +385,64 @@ export default function EmergencyPatientPage() {
     selectAmbulance(a);
   }, [selectAmbulance]);
 
+  const handleEndCall = useCallback(async () => {
+    try {
+      if (currentCallAmbulance && user?.userId) {
+        const sessionId = webRtcSessionId || currentCallAmbulance.sessionId || currentCallAmbulance.ambulanceId;
+        await endVideoCall({ sessionId, hospitalId: parseInt(user.userId) });
+
+        // 로컬 상태만 업데이트하고 서버 재조회는 하지 않음 (깜빡임 방지)
+        const { updateAmbulanceCallStatus } = useWaitingAmbulanceStore.getState();
+        updateAmbulanceCallStatus(sessionId, false);
+        console.log(`[EmergencyPatient] 구급차 ${sessionId} 통화 상태를 false로 업데이트`);
+      }
+    } catch (e) {
+      console.error("[EmergencyPatient] 통화 종료 처리 실패:", e);
+    } finally {
+      // 현재 통화 중인 구급차가 있다면 상태 업데이트
+      if (currentCallAmbulance) {
+        const sessionId = webRtcSessionId || currentCallAmbulance.sessionId || currentCallAmbulance.ambulanceId;
+        const { updateAmbulanceCallStatus } = useWaitingAmbulanceStore.getState();
+        updateAmbulanceCallStatus(sessionId, false);
+        console.log(`[EmergencyPatient] finally 블록에서 구급차 ${sessionId} 통화 상태를 false로 업데이트`);
+      }
+      
+      setWebRtcSessionId(null);
+      setIsCallActive(false);
+      setCurrentCallAmbulance(null);
+      setWebRtcComponent(null);
+    }
+  }, [currentCallAmbulance, user?.userId, webRtcSessionId]);
+
   const handleStartCall = useCallback(async (ambulance) => {
     try {
+      // 기존 통화가 있다면 먼저 종료
+      if (isCallActive && currentCallAmbulance) {
+        console.log('[EmergencyPatient] 기존 통화 종료 후 새 통화 시작');
+        
+        // 기존 통화 종료 처리 (handleEndCall과 동일한 로직)
+        const currentSessionId = webRtcSessionId || currentCallAmbulance.sessionId || currentCallAmbulance.ambulanceId;
+        try {
+          await endVideoCall({ sessionId: currentSessionId, hospitalId: parseInt(user.userId) });
+        } catch (endError) {
+          console.error("[EmergencyPatient] 기존 통화 종료 실패:", endError);
+        }
+        
+        // 기존 구급차 상태를 반드시 false로 업데이트
+        const { updateAmbulanceCallStatus } = useWaitingAmbulanceStore.getState();
+        updateAmbulanceCallStatus(currentSessionId, false);
+        console.log(`[EmergencyPatient] 기존 통화 종료: 구급차 ${currentSessionId} 상태를 false로 업데이트`);
+        
+        // 상태 초기화
+        setWebRtcSessionId(null);
+        setIsCallActive(false);
+        setCurrentCallAmbulance(null);
+        setWebRtcComponent(null);
+        
+        // 상태 초기화가 완료될 때까지 잠시 대기
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
       const sessionId = ambulance.sessionId || ambulance.ambulanceId;
       await startVideoCall({ sessionId, hospitalId: parseInt(user?.userId) });
 
@@ -409,35 +458,54 @@ export default function EmergencyPatientPage() {
           onLeave={handleEndCall}
           patientName={ambulance.patientName || ""}
           ktas={ambulance.ktas || ""}
+          userRole="hospital"
         />
       );
 
       const { updateAmbulanceCallStatus } = useWaitingAmbulanceStore.getState();
       updateAmbulanceCallStatus(sessionId, true);
+      console.log(`[EmergencyPatient] 새 통화 시작: 구급차 ${sessionId} 상태를 true로 업데이트`);
     } catch (e) {
       console.error("[EmergencyPatient] 통화 시작 실패:", e);
-    }
-  }, [handleSelectAmbulance, user?.userId]);
-
-  const handleEndCall = useCallback(async () => {
-    try {
-      if (currentCallAmbulance && user?.userId) {
-        const sessionId = webRtcSessionId || currentCallAmbulance.sessionId || currentCallAmbulance.ambulanceId;
-        await endVideoCall({ sessionId, hospitalId: parseInt(user.userId) });
-
-        const { updateAmbulanceCallStatus, fetchWaitingAmbulances } = useWaitingAmbulanceStore.getState();
-        updateAmbulanceCallStatus(sessionId, false);
-        fetchWaitingAmbulances(user.userId);
+      // 통화 시작 실패 시 상태를 원래대로 되돌림
+      const { updateAmbulanceCallStatus } = useWaitingAmbulanceStore.getState();
+      if (ambulance?.sessionId) {
+        updateAmbulanceCallStatus(ambulance.sessionId, false);
+        console.log(`[EmergencyPatient] 통화 시작 실패로 구급차 ${ambulance.sessionId} 상태를 false로 되돌림`);
       }
-    } catch (e) {
-      console.error("[EmergencyPatient] 통화 종료 처리 실패:", e);
-    } finally {
-      setWebRtcSessionId(null);
-      setIsCallActive(false);
-      setCurrentCallAmbulance(null);
-      setWebRtcComponent(null);
     }
-  }, [currentCallAmbulance, user?.userId, webRtcSessionId]);
+  }, [handleSelectAmbulance, user?.userId, isCallActive, currentCallAmbulance, webRtcSessionId]);
+
+  useEffect(() => {
+    const handleAlarmReceived = (event) => {
+      const alarmData = event.detail;
+      console.log('🔔 [EmergencyPatientPage] 알람 수신:', { 
+        type: alarmData.type, 
+        ambulanceKey: alarmData.ambulanceKey,
+        isCallActive,
+        currentCallSessionId: webRtcSessionId || currentCallAmbulance?.sessionId
+      });
+      
+      if (alarmData.type === 'COMPLETE' && alarmData.ambulanceKey && isCallActive && currentCallAmbulance) {
+        const currentSessionId = webRtcSessionId || currentCallAmbulance.sessionId || currentCallAmbulance.ambulanceId;
+        console.log('🚨 [EmergencyPatientPage] 이송완료 알람 처리 체크:', {
+          alarmAmbulanceKey: alarmData.ambulanceKey,
+          currentSessionId: currentSessionId,
+          match: alarmData.ambulanceKey === currentSessionId
+        });
+        
+        if (alarmData.ambulanceKey === currentSessionId) {
+          console.log('✅ [EmergencyPatientPage] 현재 통화중인 구급차가 이송완료됨 - 화상통화 자동 종료');
+          handleEndCall();
+        }
+      }
+    };
+
+    window.addEventListener('hospitalAlarmReceived', handleAlarmReceived);
+    return () => {
+      window.removeEventListener('hospitalAlarmReceived', handleAlarmReceived);
+    };
+  }, [isCallActive, currentCallAmbulance, webRtcSessionId, handleEndCall]);
 
   return (
     <>

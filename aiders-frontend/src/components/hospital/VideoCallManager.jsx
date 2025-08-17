@@ -45,8 +45,12 @@ const VideoCallManager = ({
       setIsConnecting(true);
       setError(null);
 
-      // 세션 ID 생성 (구급차 ID 기반)
-      const sessionId = `hospital_${hospitalId}_ambulance_${selectedAmbulance.id}_${Date.now()}`;
+      // 구급차가 이미 생성한 세션 ID 사용
+      const sessionId = selectedAmbulance.sessionId;
+      
+      if (!sessionId) {
+        throw new Error('구급차의 세션 ID를 찾을 수 없습니다.');
+      }
       
       // 백엔드에 통화 시작 알림
       await startVideoCall({

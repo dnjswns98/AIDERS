@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getAllAlarms, getMatchingAlarms, getRequestAlarms, getEditAlarms, deleteMatchingAlarm, deleteRequestAlarm, deleteEditAlarm, deleteAllAlarms } from '../../api/alarmAPI';
+import useHospitalAlarmRefresh from '../../hooks/useHospitalAlarmRefresh';
 
 const NotificationModal = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('all');
@@ -12,6 +13,7 @@ const NotificationModal = ({ isOpen, onClose }) => {
   const loadAlarms = async (type = 'all') => {
     if (!user?.userId) return;
     
+    console.log(`📡 [API] 알람 로드 시작 - type: ${type}, userId: ${user.userId}`);
     setLoading(true);
     try {
       let data = [];
@@ -31,14 +33,50 @@ const NotificationModal = ({ isOpen, onClose }) => {
         default:
           data = await getAllAlarms(user.userId);
       }
-      setAlarms(data);
+      // 최신순으로 정렬 (createdAt 기준 내림차순)
+      const sortedData = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      console.log(`📊 [API] 알람 로드 완료 - 총 ${sortedData.length}개:`, sortedData.map(a => `${a.ambulanceKey}-${a.type}`));
+      setAlarms(sortedData);
     } catch (error) {
-      console.error('알람 로드 실패:', error);
+      console.error('❌ [API] 알람 로드 실패:', error);
       setAlarms([]);
     } finally {
       setLoading(false);
     }
   };
+
+  // 모든 알람 수신 시 자동 새로고침 (COMPLETE 포함)
+  useHospitalAlarmRefresh(() => {
+    if (isOpen) {
+      console.log('🔄 알람 모달 새로고침 - activeTab:', activeTab);
+      loadAlarms(activeTab);
+    } else {
+      console.log('⚠️ 모달이 닫혀있어서 새로고침 생략');
+    }
+  }, ['MATCHING', 'REQUEST', 'EDIT', 'COMPLETE']);
+
+  // COMPLETE 알람 디버깅용 추가 리스너
+  useEffect(() => {
+    const handleDebugAlarm = (event) => {
+      const alarmData = event.detail;
+      console.log('🐛 [DEBUG] 모달에서 알람 수신:', {
+        type: alarmData.type,
+        ambulanceKey: alarmData.ambulanceKey,
+        modalOpen: isOpen,
+        activeTab: activeTab
+      });
+      
+      if (alarmData.type === 'COMPLETE') {
+        console.log('🎯 COMPLETE 알람 수신됨 - 모달 상태:', isOpen ? '열림' : '닫힘');
+      }
+    };
+
+    window.addEventListener('hospitalAlarmReceived', handleDebugAlarm);
+    
+    return () => {
+      window.removeEventListener('hospitalAlarmReceived', handleDebugAlarm);
+    };
+  }, [isOpen, activeTab]);
 
   // 모달이 열릴 때와 탭이 변경될 때 데이터 로드
   useEffect(() => {

@@ -17,7 +17,7 @@ export default function WebRtcCall({
   onRequestCall,
   isRequestInProgress = false,
   userRole = "ambulance",
-  showRequestButton = true,
+  showRequestButton,
 }) {
   const { isPipMode } = useWebRtc();
   const location = useLocation();
@@ -51,7 +51,8 @@ export default function WebRtcCall({
     onLeave?.();
   };
 
-  const isAmbulanceUser = !!ambulanceNumber;
+  const isAmbulanceUser = userRole === 'ambulance';
+  const shouldShowRequestButton = showRequestButton === undefined ? isAmbulanceUser : showRequestButton;
 
   // PIP 모드에서는 렌더 안 함
   if (isPipMode) return null;
@@ -102,7 +103,7 @@ export default function WebRtcCall({
               isFullScreen={isFullScreen}
               canEndCall={true}
               onRequestCall={onRequestCall}
-              showRequestButton={showRequestButton}
+              showRequestButton={shouldShowRequestButton}
               isRequestInProgress={isRequestInProgress}
               userRole={userRole}
               ambulanceNumber={ambulanceNumber}
