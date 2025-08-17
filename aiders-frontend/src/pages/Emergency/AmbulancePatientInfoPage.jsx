@@ -137,6 +137,29 @@ export default function AmbulancePatientInfoPage() {
   const displayPatientInfo = isHospitalView ? (dataSource.patientInfo || dataSource) : patientInfo;
   const displayPatientDetails = isHospitalView ? (dataSource.patientDetails || dataSource) : patientDetails;
 
+  const renderGender = (value) => {
+    if (value === null || value === undefined) return '-';
+    const num = Number(value);
+    if (num === 0) return '미상';
+    if (num === 1) return '남성';
+    if (num === 2) return '여성';
+    return '-';
+  };
+
+  const renderAgeRange = (value) => {
+    if (!value) return '-';
+    const mapping = {
+      "UNDECIDED": '미상',
+      "NEWBORN": '신생아',
+      "INFANT": '영아',
+      "KIDS": '어린이',
+      "TEENAGER": '청소년',
+      "ADULT": '성인',
+      "ELDERLY": '노인',
+    };
+    return mapping[value] || '-';
+  };
+
   return (
     <AmbulanceLayout>
       <div className="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
@@ -165,11 +188,15 @@ export default function AmbulancePatientInfoPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">성별</label>
-              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{displayPatientInfo?.gender || displayPatientInfo?.sex || '-'}</p>
+              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">
+                {renderGender(displayPatientInfo?.gender ?? displayPatientInfo?.sex)}
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">연령대</label>
-              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{displayPatientDetails?.ageRange || '-'}</p>
+              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">
+                {renderAgeRange(displayPatientInfo?.ageRange)}
+              </p>
             </div>
           </div>
         </div>
