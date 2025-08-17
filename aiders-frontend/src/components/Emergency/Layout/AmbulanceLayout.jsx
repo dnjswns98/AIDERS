@@ -11,7 +11,7 @@ const AmbulanceLayout = forwardRef(({ children, showHeader = true }, ref) => {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-gray-100">
       {showHeader && <AmbulanceHeader />}
-      <main ref={ref} className="flex-grow w-full relative">
+      <main ref={ref} className="flex-1 min-h-0 overflow-y-auto w-full relative">
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           {children}
         </div>
