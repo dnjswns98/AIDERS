@@ -4,15 +4,41 @@ const useWebRtcStore = create((set) => ({
   isCallActive: false,
   callInfo: null, // { sessionId, ambulanceNumber, hospitalId, patientName, ktas }
   isPipMode: false,
+  localStream: null,
+  remoteStream: null,
+  session: null,
+  publisher: null,
+
+
 
   // 화상 통화 시작 액션
-  startCall: (info) => set({ isCallActive: true, callInfo: info }),
+  startCall: (info) => set({ 
+    isCallActive: true, 
+    callInfo: info,
+    isPipMode: false, 
+  }),
 
   // 화상 통화 종료 액션
-  endCall: () => set({ isCallActive: false, callInfo: null }),
+  endCall: () => set({
+    isCallActive: false,
+    callInfo: null,
+    isPipMode: false,
+    localStream: null,
+    remoteStream: null,
+    session: null,
+    publisher: null,
+  }),
 
   // PIP 모드 설정 액션
   setPipMode: (isPip) => set({ isPipMode: isPip }),
+
+  setLocalStream: (stream) => set({ localStream: stream }),
+  setRemoteStream: (stream) => set({ remoteStream: stream }),
+  setSession: (session) => set({ session }),
+  setPublisher: (publisher) => set({ publisher }),
+
+
+
 }));
 
 export default useWebRtcStore;

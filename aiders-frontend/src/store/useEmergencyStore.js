@@ -15,8 +15,12 @@ import {
   getMyAmbulanceStatus,
   getMyAmbulancePatientInfo,
   generateReport,
+  // ✅ 1. 이송 완료 API 함수를 import 합니다.
+  completeTransport as completeTransportApi,
 } from "../api/api";
 import { useAuthStore } from "./useAuthStore";
+// ✅ 2. WebRTC 스토어를 import 합니다.
+import useWebRtcStore from "./useWebRtcStore";
 
 // === 유틸리티 함수들 ===
 const getCurrentLocationFromDashboard = () => {
@@ -72,7 +76,7 @@ const ageRangeMap = {
 
 const convertFormDataForApi = (formData) => {
   console.log('🔥🔥🔥 [convertFormDataForApi] 입력:', formData);
-  
+ 
   let processedAgeRange = null;
   if (formData.ageRange) {
     const ageKey = formData.ageRange.split(' ')[0].replace(/[^가-힣]/g, '');
@@ -433,7 +437,6 @@ const useEmergencyStore = create((set, get) => ({
       const apiPayload = convertFormDataForApi(optionalData);
       const result = await saveOptionalPatientInfoApi(apiPayload);
       
-      // 🔽 수정된 부분: 저장 성공 후에는 모드와 관계없이 항상 최신 정보를 다시 불러옵니다.
       console.log("✅ 정보 저장 성공. 최신 정보를 다시 불러와 상태를 동기화합니다.");
       await get()._fetchAndSetPatientInfo();
       
@@ -657,67 +660,87 @@ const useEmergencyStore = create((set, get) => ({
     });
   },
 
+  // ✅✅✅ 병합 및 수정된 최종 함수 ✅✅✅
   completeTransport: async (navigate = null) => {
-    const { selectedAmbulance } = get();
+    const { selectedAmbulance, matchedHospitals } = get();
+    // WebRTC 스토어에서 상태와 함수를 가져옵니다.
+    const { callInfo, endCall } = useWebRtcStore.getState();
+
     if (!selectedAmbulance) {
       alert("구급차 정보가 없습니다.");
       return;
     }
 
-    alert("✅ 이송 완료 처리되었습니다. 잠시 후 대기 상태로 전환됩니다.");
-
-    const initialPatientInfo = {
-      name: "",
-      gender: "",
-      ageRange: "",
-    };
-
-    const initialPatientDetails = {
-      ktasLevel: "",
-      department: "",
-      medicalRecord: "",
-      familyHistory: "",
-      pastHistory: "",
-      medicine: "",
-      vitalSigns: "",
-      rrn: "",
-      nationality: "",
-    };
-
-    set((state) => ({
-      selectedAmbulance: {
-        ...state.selectedAmbulance,
-        currentStatus: "WAIT",
-        status: "wait",
-        patientInfo: initialPatientInfo,
-        patientDetails: initialPatientDetails,
-      },
-      patientInfo: initialPatientInfo,
-      patientDetails: initialPatientDetails,
-      matchedHospitals: [],
-      hospitalMatchingStatus: "idle",
-      isEditMode: false,
-    }));
-
-    if (navigate) {
-      navigate("/emergency/waiting", { replace: true });
-    }
-
+    // 함수 전체를 try...catch로 감싸서 안정성을 높입니다.
     try {
+      // 1. 서버에 이송 완료 API를 먼저 호출하여 세션을 정리합니다.
+      const sessionId = callInfo?.sessionId || selectedAmbulance.id;
+      const hospitalId = matchedHospitals[0]?.id || callInfo?.hospitalId;
+
+      if (sessionId && hospitalId) {
+        console.log(`[이송완료] API 호출: sessionId=${sessionId}, hospitalId=${hospitalId}`);
+        await completeTransportApi(String(sessionId), hospitalId);
+        console.log("✅ 서버 세션 정리 완료");
+      } else {
+        console.warn("[이송완료] 세션 또는 병원 ID가 없어 서버 세션 정리를 건너뜁니다.");
+      }
+
+      // 2. WebRTC 통화가 활성화 상태이면 종료하여 PIP 모드를 끕니다.
+      if (callInfo) {
+        endCall();
+        console.log("📞 WebRTC 통화 종료 및 PIP 모드 해제");
+      }
+
+      // 3. 보고서를 생성합니다.
+      // 이 작업은 로컬 상태가 초기화되기 전에 수행되어야 합니다.
       try {
         console.log("📝 AI 보고서 생성을 시작합니다...");
         const report = await generateReport();
         console.log(`✅ 보고서 생성 완료: ${report.reportId}`);
       } catch (reportError) {
         console.error("⚠️ 보고서 생성 실패:", reportError);
+        // 보고서 생성 실패가 전체 프로세스를 막지 않도록 alert만 띄웁니다.
         alert(`⚠️ 보고서 생성에 실패했습니다: ${reportError.message}`);
       }
-
+      
+      // 4. 구급차 상태를 서버에 'wait'으로 업데이트합니다.
       await updateAmbulanceStatus(selectedAmbulance.id, "wait");
       console.log('✅ 구급차 상태가 서버에 "대기"로 업데이트되었습니다.');
+
+      // 5. 모든 비동기 작업이 끝난 후 사용자에게 알리고 로컬 상태를 초기화합니다.
+      alert("✅ 이송 완료 처리되었습니다. 잠시 후 대기 상태로 전환됩니다.");
+
+      const initialPatientInfo = { name: "", gender: "", ageRange: "" };
+      const initialPatientDetails = {
+        ktasLevel: "", department: "", medicalRecord: "", familyHistory: "",
+        pastHistory: "", medicine: "", vitalSigns: "", rrn: "", nationality: "",
+      };
+
+      set({
+        selectedAmbulance: {
+          ...selectedAmbulance,
+          currentStatus: "WAIT", status: "wait",
+          patientInfo: initialPatientInfo, patientDetails: initialPatientDetails,
+        },
+        patientInfo: initialPatientInfo,
+        patientDetails: initialPatientDetails,
+        matchedHospitals: [],
+        hospitalMatchingStatus: "idle",
+        isEditMode: false,
+      });
+
+      // 6. 마지막으로 대기 페이지로 이동합니다.
+      if (navigate) {
+        navigate("/emergency/waiting", { replace: true });
+      }
+
     } catch (error) {
-      console.error("❌ 이송 완료 백그라운드 처리 실패:", error);
-      alert("❌ 서버에 이송 완료 상태를 저장하는 데 실패했습니다: " + error.message);
+      console.error("❌ 이송 완료 처리 중 심각한 오류 발생:", error);
+      alert("❌ 이송 완료 처리에 실패했습니다: " + error.message);
+      // 실패하더라도 사용자가 다음 행동을 할 수 있도록 대기 화면으로 이동시킵니다.
+      if (navigate) {
+        navigate("/emergency/waiting", { replace: true });
+      }
     }
   },
 

@@ -25,7 +25,3 @@ const VitalSignsForm = ({ vitalSigns, handleInputChange }) => {
 };
 
 export default VitalSignsForm;
-
-export default VitalSignsForm;
-
-export default VitalSignsForm;

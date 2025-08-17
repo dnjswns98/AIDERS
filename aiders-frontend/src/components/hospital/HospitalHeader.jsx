@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 import useHospitalStore from "../../store/useHospitalStore";
 import NotificationModal from "./NotificationModal";
@@ -60,7 +60,9 @@ export default function HospitalHeader() {
       <div className={styles.headerContent}>
         <div className={styles.logoSection}>
           <h1 className={styles.logoTitle}>
-            🏥 AIDERS
+            <Link to="/hospital" className={styles.logoTitle}>
+              🏥 AIDERS
+            </Link>
           </h1>
         </div>
 

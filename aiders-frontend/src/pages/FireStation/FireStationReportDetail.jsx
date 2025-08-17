@@ -100,7 +100,7 @@ const FireStationReportDetail = () => {
 
     return (
         // 🔽 수정된 부분: p-8 -> px-8 pt-8 pb-16 으로 변경하여 하단 여백 추가
-        <div className="px-8 pt-8 pb-16 bg-gray-50 min-h-full">
+        <div className="h-full overflow-auto px-8 pt-8 pb-16 bg-gray-50">
             <div className="max-w-4xl mx-auto">
                 <div className="mb-6">
                     <Link to="/firestation/reports-list" className="text-blue-600 hover:underline">

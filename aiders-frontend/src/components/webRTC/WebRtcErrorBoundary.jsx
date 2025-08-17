@@ -1,3 +1,5 @@
+import React from 'react';
+
 // components/WebRtcErrorBoundary.jsx
 class WebRtcErrorBoundary extends React.Component {
   constructor(props) {
@@ -15,7 +17,7 @@ class WebRtcErrorBoundary extends React.Component {
         <div className="flex flex-col items-center justify-center h-full p-8 bg-gray-100 rounded-lg">
           <div className="text-red-500 text-xl mb-4">⚠️ WebRTC 연결 오류</div>
           <p className="text-gray-600 mb-4">화상통화 연결에 문제가 발생했습니다.</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           >
@@ -27,3 +29,5 @@ class WebRtcErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+
+export default WebRtcErrorBoundary;
