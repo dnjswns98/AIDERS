@@ -113,7 +113,6 @@ export default function AmbulancePatientInfoPage() {
   const { selectedAmbulance, ambulanceDetails, patientInfo, patientDetails, setEditMode } = useEmergencyStore();
   const { setPipMode } = useWebRtcStore();
 
-  
 
   const dataSource = ambulanceDetails || selectedAmbulance;
   const isHospitalView = !!ambulanceDetails;
@@ -136,6 +135,29 @@ export default function AmbulancePatientInfoPage() {
 
   const displayPatientInfo = isHospitalView ? (dataSource.patientInfo || dataSource) : patientInfo;
   const displayPatientDetails = isHospitalView ? (dataSource.patientDetails || dataSource) : patientDetails;
+
+  const renderGender = (value) => {
+    if (value === null || value === undefined) return '-';
+    const num = Number(value);
+    if (num === 0) return '미상';
+    if (num === 1) return '남성';
+    if (num === 2) return '여성';
+    return '-';
+  };
+
+  const renderAgeRange = (value) => {
+    if (!value) return '-';
+    const mapping = {
+      "UNDECIDED": '미상',
+      "NEWBORN": '신생아',
+      "INFANT": '영아',
+      "KIDS": '어린이',
+      "TEENAGER": '청소년',
+      "ADULT": '성인',
+      "ELDERLY": '노인',
+    };
+    return mapping[value] || '-';
+  };
 
   return (
     <AmbulanceLayout>
@@ -165,11 +187,15 @@ export default function AmbulancePatientInfoPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">성별</label>
-              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{displayPatientInfo?.gender || displayPatientInfo?.sex || '-'}</p>
+              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">
+                {renderGender(displayPatientInfo?.gender ?? displayPatientInfo?.sex)}
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">연령대</label>
-              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{displayPatientDetails?.ageRange || '-'}</p>
+              <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">
+                {renderAgeRange(displayPatientInfo?.ageRange)}
+              </p>
             </div>
           </div>
         </div>
@@ -187,7 +213,7 @@ export default function AmbulancePatientInfoPage() {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500">바이탈 사인 (혈압)</label>
+                <label className="block text-sm font-medium text-gray-500">바이탈 사인</label>
                 {displayPatientDetails?.vitalSigns?.bloodPressure && displayPatientDetails.vitalSigns.bloodPressure.startsWith('data:image') ? (
                   <img src={displayPatientDetails.vitalSigns.bloodPressure} alt="바이탈 사인 필기" className="mt-1 w-full border rounded-md" />
                 ) : (
@@ -197,10 +223,10 @@ export default function AmbulancePatientInfoPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">주요 증상 (상세)</label>
-              {displayPatientDetails?.chiefComplaint && displayPatientDetails.chiefComplaint.startsWith('data:image') ? (
-                <img src={displayPatientDetails.chiefComplaint} alt="주요 증상 필기" className="mt-1 w-full border rounded-md" />
+              {displayPatientDetails?.symptom && typeof displayPatientDetails.symptom === 'string' && displayPatientDetails.symptom.startsWith('data:image') ? (
+                <img src={displayPatientDetails.symptom} alt="주요 증상 필기" className="mt-1 w-full border rounded-md" />
               ) : (
-                <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{displayPatientDetails?.chiefComplaint || displayPatientDetails?.medicalRecord || '-'}</p>
+                <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{displayPatientDetails?.symptom || '-'}</p>
               )}
             </div>
             <div>

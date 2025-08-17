@@ -13,6 +13,7 @@ public class PatientOptionalInfoRequestDto {
     private Optional<Integer> sex = Optional.empty();
     private Optional<PatientAgeRange> ageRange = Optional.empty();
 
+    private Optional<String> symptom = Optional.empty();
     private Optional<String> medicalRecord = Optional.empty();
     private Optional<String> familyHistory = Optional.empty();
     private Optional<String> pastHistory = Optional.empty();
