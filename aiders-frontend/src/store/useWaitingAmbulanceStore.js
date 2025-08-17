@@ -19,6 +19,22 @@ const useWaitingAmbulanceStore = create((set, get) => ({
       set({ error: error.message, isLoading: false });
     }
   },
+
+  updateAmbulanceCallStatus: (sessionId, isInCall) => {
+    set((state) => ({
+      ambulances: state.ambulances.map((ambulance) =>
+        ambulance.sessionId === sessionId ? { ...ambulance, isInCall } : ambulance
+      ),
+    }));
+  },
+
+  updateAmbulanceCallStatus: (sessionId, isInCall) => {
+    set((state) => ({
+      ambulances: state.ambulances.map((ambulance) =>
+        ambulance.sessionId === sessionId ? { ...ambulance, isInCall } : ambulance
+      ),
+    }));
+  },
 }));
 
 export default useWaitingAmbulanceStore;

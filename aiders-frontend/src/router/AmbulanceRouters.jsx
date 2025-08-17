@@ -1,5 +1,5 @@
 import React, { useEffect, useState, lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import useEmergencyStore from '../store/useEmergencyStore';
 import { useAuthStore } from '../store/useAuthStore';
 // 🔥 추가: WebRTC 컨텍스트 프로바이더와 글로벌 매니저를 임포트합니다.
@@ -14,6 +14,7 @@ const AmbulanceMapPage = lazy(() => import('../pages/Emergency/AmbulanceMapPage'
 const AmbulancePatientInfoPage = lazy(() => import('../pages/Emergency/AmbulancePatientInfoPage'));
 const AmbulanceDispatchWaitingPage = lazy(() => import('../pages/Emergency/AmbulanceDispatchWaitingPage'));
 const AmbulanceDispatchInProgressPage = lazy(() => import('../pages/Emergency/AmbulanceDispatchInProgressPage'));
+const ReportWritePage = lazy(() => import('../pages/Emergency/ReportWritePage'));
 
 // 로딩 중에 보여줄 스피너 컴포넌트
 const LoadingSpinner = () => (
@@ -28,8 +29,18 @@ const LoadingSpinner = () => (
 /**
  * 구급차의 현재 상태에 따라 적절한 페이지로 리디렉션하는 컴포넌트
  */
-const AmbulanceRouteGuard = () => {
+    const AmbulanceRouteGuard = () => {
     const status = useEmergencyStore(state => state.selectedAmbulance?.status?.toLowerCase());
+    const location = useLocation(); // Get current location
+
+    console.log(`[RouteGuard Debug] Current Pathname: ${location.pathname}`);
+    console.log(`[RouteGuard Debug] Ambulance Status: ${status}`);
+
+    // If the current path is the report writing page, don't redirect
+    if (location.pathname.startsWith('/emergency/report/write/')) {
+        console.log('[RouteGuard Debug] On report write page, preventing redirect.');
+        return null; // Render nothing, allowing the ReportWritePage to render
+    }
 
     console.log(`[RouteGuard] 현재 상태(${status}) 확인하여 경로를 결정합니다.`);
 
@@ -98,6 +109,7 @@ const AmbulanceRouters = () => {
                     <Route path="map" element={<AmbulanceMapPage />} />
                     <Route path="patient-input" element={<AmbulancePatientInputPage />} />
                     <Route path="patient-info" element={<AmbulancePatientInfoPage />} />
+                    <Route path="report/write/:reportId" element={<ReportWritePage />} />
                 </Routes>
             </Suspense>
         </WebRtcProvider>
