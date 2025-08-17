@@ -187,6 +187,7 @@ function AmbulanceList({ onSelectAmbulance, onStartCall, onAmbulanceDetailsChang
           ageRange: p?.ageRange,
           rrn: p?.rrn,
           nationality: p?.nationality,
+          symptom: p?.symptom,
           vitalSigns: p?.vitalSigns,
           medicine: p?.medicine,
           pastHistory: p?.pastHistory,
@@ -203,6 +204,7 @@ function AmbulanceList({ onSelectAmbulance, onStartCall, onAmbulanceDetailsChang
           ageRange: null,
           rrn: null,
           nationality: null,
+          symptom: null,
           vitalSigns: null,
           medicine: null,
           pastHistory: null,
@@ -335,6 +337,10 @@ function DetailInfoTab({ selectedAmbulance, ambulanceDetails }) {
                   </span>
                 </li>
                 <li>
+                  <span className="font-semibold text-gray-800">주증상:</span>
+                  <span className="ml-2">{d.symptom || "미기재"}</span>
+                </li>
+                <li>
                   <span className="font-semibold text-gray-800">생체징후:</span>
                   <span className="ml-2">{d.vitalSigns || "미기재"}</span>
                 </li>
@@ -357,7 +363,7 @@ function DetailInfoTab({ selectedAmbulance, ambulanceDetails }) {
                   <span className="ml-2">{d.familyHistory || "미기재"}</span>
                 </li>
                 <li>
-                  <span className="font-semibold text-gray-800">주증상:</span>
+                  <span className="font-semibold text-gray-800">처치내역:</span>
                   <span className="ml-2">{d.medicalRecord || "미기재"}</span>
                 </li>
               </ul>
@@ -387,41 +393,56 @@ export default function EmergencyPatientPage() {
   }, [selectAmbulance]);
 
   const handleEndCall = useCallback(async () => {
+    // 상태가 초기화되기 전에 미리 정보 저장
+    const currentSession = webRtcSessionId || currentCallAmbulance?.sessionId || currentCallAmbulance?.ambulanceId;
+    const currentUserId = user?.userId;
+    
+    console.log('[EmergencyPatient] 통화 종료 버튼 클릭됨', {
+      currentCallAmbulance,
+      webRtcSessionId,
+      isCallActive,
+      savedSessionId: currentSession
+    });
+    
     try {
-      if (currentCallAmbulance && user?.userId) {
-        const sessionId = webRtcSessionId || currentCallAmbulance.sessionId || currentCallAmbulance.ambulanceId;
-        await endVideoCall({ sessionId, hospitalId: parseInt(user.userId) });
+      if (currentSession && currentUserId) {
+        console.log(`[EmergencyPatient] 서버 통화 종료 호출: ${currentSession}`);
+        await endVideoCall({ sessionId: currentSession, hospitalId: parseInt(currentUserId) });
 
         // 로컬 상태만 업데이트하고 서버 재조회는 하지 않음 (깜빡임 방지)
         const { updateAmbulanceCallStatus } = useWaitingAmbulanceStore.getState();
-        updateAmbulanceCallStatus(sessionId, false);
-        console.log(`[EmergencyPatient] 구급차 ${sessionId} 통화 상태를 false로 업데이트`);
+        updateAmbulanceCallStatus(currentSession, false);
+        console.log(`[EmergencyPatient] 구급차 ${currentSession} 통화 상태를 false로 업데이트`);
       }
     } catch (e) {
       console.error("[EmergencyPatient] 통화 종료 처리 실패:", e);
     } finally {
-      // 현재 통화 중인 구급차가 있다면 상태 업데이트
-      if (currentCallAmbulance) {
-        const sessionId = webRtcSessionId || currentCallAmbulance.sessionId || currentCallAmbulance.ambulanceId;
+      // 저장된 세션 정보로 상태 업데이트 (sessionDisconnected에서 상태가 초기화되어도 실행)
+      if (currentSession) {
         const { updateAmbulanceCallStatus } = useWaitingAmbulanceStore.getState();
-        updateAmbulanceCallStatus(sessionId, false);
-        console.log(`[EmergencyPatient] finally 블록에서 구급차 ${sessionId} 통화 상태를 false로 업데이트`);
+        updateAmbulanceCallStatus(currentSession, false);
+        console.log(`[EmergencyPatient] finally 블록에서 구급차 ${currentSession} 통화 상태를 false로 업데이트`);
       }
       
+      console.log('[EmergencyPatient] 로컬 상태 초기화 시작');
       setWebRtcSessionId(null);
       setIsCallActive(false);
       setCurrentCallAmbulance(null);
       setWebRtcComponent(null);
+      console.log('[EmergencyPatient] 통화 종료 완료');
     }
   }, [currentCallAmbulance, user?.userId, webRtcSessionId]);
 
   const handleStartCall = useCallback(async (ambulance) => {
     try {
-      // 기존 통화가 있다면 먼저 종료
+      // 기존 통화가 있다면 먼저 완전히 종료
       if (isCallActive && currentCallAmbulance) {
         console.log('[EmergencyPatient] 기존 통화 종료 후 새 통화 시작');
         
-        // 기존 통화 종료 처리 (handleEndCall과 동일한 로직)
+        // 1. 먼저 WebRTC 컴포넌트 제거하여 useOpenVidu 훅 정리 시작
+        setWebRtcComponent(null);
+        
+        // 2. 기존 통화 종료 처리
         const currentSessionId = webRtcSessionId || currentCallAmbulance.sessionId || currentCallAmbulance.ambulanceId;
         try {
           await endVideoCall({ sessionId: currentSessionId, hospitalId: parseInt(user.userId) });
@@ -429,19 +450,19 @@ export default function EmergencyPatientPage() {
           console.error("[EmergencyPatient] 기존 통화 종료 실패:", endError);
         }
         
-        // 기존 구급차 상태를 반드시 false로 업데이트
+        // 3. 기존 구급차 상태를 반드시 false로 업데이트
         const { updateAmbulanceCallStatus } = useWaitingAmbulanceStore.getState();
         updateAmbulanceCallStatus(currentSessionId, false);
         console.log(`[EmergencyPatient] 기존 통화 종료: 구급차 ${currentSessionId} 상태를 false로 업데이트`);
         
-        // 상태 초기화
+        // 4. 상태 초기화
         setWebRtcSessionId(null);
         setIsCallActive(false);
         setCurrentCallAmbulance(null);
-        setWebRtcComponent(null);
         
-        // 상태 초기화가 완료될 때까지 잠시 대기
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // 5. WebRTC 세션 완전 정리를 위한 충분한 대기 시간
+        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log('[EmergencyPatient] 기존 세션 정리 완료, 새 통화 시작');
       }
 
       const sessionId = ambulance.sessionId || ambulance.ambulanceId;
@@ -520,10 +541,6 @@ export default function EmergencyPatientPage() {
           onAmbulanceDetailsChange={setAmbulanceDetails}
         />
 
-        {/* PIP 모드 - 상세정보 탭일 때만 표시 */}
-        {isCallActive && activeTab === "detail" && webRtcComponent && (
-          <DraggablePip title="화상통화 (PIP)">{webRtcComponent}</DraggablePip>
-        )}
 
         <section className="flex flex-1 flex-col min-h-0 overflow-hidden">
           <div className="px-6 pt-6 shrink-0">
@@ -597,7 +614,25 @@ export default function EmergencyPatientPage() {
               </div>
             </div>
           ) : (
-            <DetailInfoTab selectedAmbulance={selectedAmbulance} ambulanceDetails={ambulanceDetails} />
+            <>
+              <DetailInfoTab selectedAmbulance={selectedAmbulance} ambulanceDetails={ambulanceDetails} />
+              
+              {/* PIP 모드 - 상세정보 탭일 때만 표시 (별도 인스턴스로 렌더링) */}
+              {isCallActive && webRtcSessionId && currentCallAmbulance && (
+                <DraggablePip title="화상통화 (PIP)">
+                  <WebRtcCall
+                    key={`pip-${webRtcSessionId}`}
+                    sessionId={webRtcSessionId}
+                    hospitalId={parseInt(user?.userId)}
+                    onLeave={handleEndCall}
+                    patientName={currentCallAmbulance.patientName || ""}
+                    ktas={currentCallAmbulance.ktas || ""}
+                    userRole="hospital"
+                    isPipMode={true}
+                  />
+                </DraggablePip>
+              )}
+            </>
           )}
         </section>
       </main>
