@@ -19,15 +19,18 @@ const useWebRtcStore = create((set) => ({
   }),
 
   // 화상 통화 종료 액션
-  endCall: () => set({
-    isCallActive: false,
-    callInfo: null,
-    isPipMode: false,
-    localStream: null,
-    subscriber: null,
-    session: null,
-    publisher: null,
-  }),
+  endCall: () => {
+    console.log("[WebRtcStore] endCall 호출 - 모든 상태 초기화");
+    set({
+      isCallActive: false,
+      callInfo: null,
+      isPipMode: false,
+      localStream: null,
+      subscriber: null,
+      session: null,
+      publisher: null,
+    });
+  },
 
   // PIP 모드 설정 액션
   setPipMode: (isPip) => set({ isPipMode: isPip }),

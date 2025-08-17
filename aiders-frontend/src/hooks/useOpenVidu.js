@@ -74,29 +74,81 @@ export const useOpenVidu = ({
   }, [onError]);
 
   const leaveSession = useCallback(async () => {
-    if (session) {
-      await session.disconnect();
+    console.log("[leaveSession] 세션 종료 시작");
+    
+    try {
+      // Publisher 정리
+      if (publisher) {
+        console.log("[leaveSession] Publisher 정리 중");
+        if (publisher.stream) {
+          publisher.stream.getMediaStream().getTracks().forEach(track => {
+            track.stop();
+            console.log("[leaveSession] 미디어 트랙 정지:", track.kind);
+          });
+        }
+        setPublisher(null);
+      }
+      
+      // Subscribers 정리
+      if (subscribers.length > 0) {
+        console.log("[leaveSession] Subscribers 정리 중");
+        subscribers.forEach(sub => {
+          if (sub.stream) {
+            sub.stream.getMediaStream().getTracks().forEach(track => {
+              track.stop();
+            });
+          }
+        });
+        setSubscribers([]);
+      }
+      
+      // 세션 연결 해제
+      if (session) {
+        console.log("[leaveSession] 세션 연결 해제 중");
+        await session.disconnect();
+        setSession(null);
+      }
+      
+      // OpenVidu 객체 정리
+      OVRef.current = null;
+      setIsConnected(false);
+      setIsConnecting(false);
+      
+      // WebRTC 스토어 정리
+      endCall();
+      
+      console.log("[leaveSession] 세션 종료 완료");
+    } catch (error) {
+      console.error("[leaveSession] 세션 종료 중 오류:", error);
+      // 오류가 발생해도 상태 초기화는 진행
+      OVRef.current = null;
+      setSession(null);
+      setPublisher(null);
+      setSubscribers([]);
+      setIsConnected(false);
+      setIsConnecting(false);
+      endCall();
     }
-    
-    OVRef.current = null;
-    setSession(null);
-    setPublisher(null);
-    setSubscribers([]);
-    setIsConnected(false);
-    setIsConnecting(false);
-    
-    endCall();
-
-    console.log("[leaveSession] 세션이 종료되었습니다.");
-  }, [session, endCall]);
+  }, [session, publisher, subscribers, endCall]);
 
 
   const joinSession = useCallback(async () => {
     if (isConnecting || isConnected) return;
     
+    console.log("[joinSession] 새 세션 참여 시작");
+    
+    // 기존 세션이 있다면 먼저 정리
+    if (session || publisher || OVRef.current) {
+      console.log("[joinSession] 기존 세션 감지 - 먼저 정리");
+      await leaveSession();
+      // 정리 완료 대기
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
     setIsConnecting(true);
     
     OVRef.current = new OpenVidu();
+    console.log("[joinSession] 새 OpenVidu 인스턴스 생성");
     const newSession = OVRef.current.initSession();
 
     newSession.on("streamCreated", (event) => {

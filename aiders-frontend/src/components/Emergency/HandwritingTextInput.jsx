@@ -533,45 +533,7 @@ const HandwritingTextInput = ({
         </div>
       )}
 
-      {process.env.NODE_ENV === "development" && (
-        <details className="text-xs bg-gray-100 rounded p-2">
-          <summary className="cursor-pointer font-medium">
-            **🔧 디버깅 정보 (globalModelManager 수정 버전):**
-          </summary>
-          <div className="mt-2 space-y-1">
-            <div>**모드:** {mode}</div>
-            <div>**모델 로드:** {isModelLoaded ? "✅" : "❌"}</div>
-            <div>**변환 중:** {isProcessing ? "✅" : "❌"}</div>
-            <div>**비활성화:** {isInputDisabled ? "✅" : "❌"}</div>
-            <div>**모델 시스템:** globalModelManager (수정됨)</div>
-            <div>
-              **타이핑 텍스트:** "{typingText}" ({typingText.length}자)
-            </div>
-            <div>
-              **인식 텍스트:** "{recognizedText}" ({recognizedText.length}자)
-            </div>
-            <div>
-              **필기 데이터:** {handwritingBase64 ? "✅ 있음" : "❌ 없음"}
-            </div>
-            <div>
-              **캔버스 크기:** {canvasSize.width}×{canvasSize.height}px
-            </div>
-            <div>
-              **필기 데이터(base64):**{" "}
-              {handwritingBase64 ? "✅ 있음" : "❌ 없음"}
-            </div>
-            <div>**인식된 텍스트:** "{recognizedText}"</div>
-            {modelError && (
-              <div className="text-red-600">**모델 오류:** {modelError}</div>
-            )}
-            {conversionError && (
-              <div className="text-red-600">
-                **변환 오류:** {conversionError}
-              </div>
-            )}
-          </div>
-        </details>
-      )}
+      
     </div>
   );
 };

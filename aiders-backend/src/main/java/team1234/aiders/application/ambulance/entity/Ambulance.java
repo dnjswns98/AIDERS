@@ -43,6 +43,7 @@ public class Ambulance extends User {
     @Column(columnDefinition = "varchar(20) default 'UNDECIDED'")
     private PatientAgeRange pAgeRange = PatientAgeRange.UNDECIDED;
 
+    private String pSymptom;
     private String pMedicalRecord;
     private String pFamilyHistory;
     private String pPastHistory;
@@ -91,6 +92,7 @@ public class Ambulance extends User {
         dto.getDepartment().ifPresent(v -> this.pDepartment = v);
         dto.getSex().ifPresent(v -> this.pSex = v);
         dto.getAgeRange().ifPresent(v -> this.pAgeRange = v);
+        dto.getSymptom().ifPresent(v -> this.pSymptom = v);
         dto.getMedicalRecord().ifPresent(v -> this.pMedicalRecord = v);
         dto.getFamilyHistory().ifPresent(v -> this.pFamilyHistory = v);
         dto.getPastHistory().ifPresent(v -> this.pPastHistory = v);
@@ -129,6 +131,7 @@ public class Ambulance extends User {
         this.pDepartment = null;
         this.pSex = null;
         this.pAgeRange = PatientAgeRange.UNDECIDED;
+        this.pSymptom = null;
         this.pMedicalRecord = null;
         this.pFamilyHistory = null;
         this.pPastHistory = null;

@@ -73,7 +73,7 @@ export default function SituationMap({
       );
 
       const markerImage = new window.kakao.maps.MarkerImage(
-        '/src/assets/icon/free-icon-fire-station-9922138.png',
+        '/icon/free-icon-fire-station-9922138.png',
         new window.kakao.maps.Size(50, 50)
       );
 

@@ -112,7 +112,11 @@ export default function AmbulanceDispatchInProgressPage() {
         </div>
 
         {/* 오버레이: 우측 하단 이송 시작 버튼 */}
-        <div className="absolute bottom-6 right-6 z-50">
+        <div className="
+          fixed right-4 md:right-6
+          bottom-[calc(env(safe-area-inset-bottom)+16px)]
+          md:bottom-[calc(env(safe-area-inset-bottom)+24px)]
+          z-50 rounded-2xl px-5 py-3">
           <button
             onClick={handlePatientTransfer}
             className="px-6 py-4 bg-blue-600 text-white font-semibold rounded-lg shadow-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-transform hover:scale-[1.02]"
