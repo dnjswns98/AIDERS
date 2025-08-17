@@ -53,7 +53,7 @@ export default function AmbulancePatientInputPage() {
     gender: 0,
     ageRange: "UNDECIDED",
     name: "",
-    chiefComplaint: "",
+    symptom: "",
     treatmentDetails: "",
     familyHistory: "",
     pastHistory: "",
@@ -178,7 +178,7 @@ export default function AmbulancePatientInputPage() {
         gender: (typeof patientInfo.gender === 'number' ? patientInfo.gender : 0),
         ageRange: (patientInfo.ageRange || 'UNDECIDED'),
         name: patientInfo.name || "",
-        chiefComplaint: patientDetails.chiefComplaint || "",
+        symptom: patientDetails.symptom || "",
         treatmentDetails: patientDetails.treatmentDetails || "",
         familyHistory: patientDetails.familyHistory || "",
         pastHistory: patientDetails.pastHistory || "",
@@ -190,7 +190,7 @@ export default function AmbulancePatientInputPage() {
        console.log("Input Page (New Entry Mode): 폼을 비운 상태로 시작합니다.");
        setFormData({
         ktasLevel: "", department: "", gender: 0, ageRange: "UNDECIDED", name: "",
-        chiefComplaint: "", treatmentDetails: "", familyHistory: "",
+        symptom: "", treatmentDetails: "", familyHistory: "",
         pastHistory: "", medications: "", vitalSigns: "",
       });
       setIsDataLoaded(true);
@@ -480,9 +480,9 @@ export default function AmbulancePatientInputPage() {
             주 증상
           </label>
           <HandwritingTextInput
-            value={formData.chiefComplaint}
+            value={formData.symptom}
             onChange={(value) =>
-              handleHandwritingInputChange("chiefComplaint", value)
+              handleHandwritingInputChange("symptom", value)
             }
             placeholder="환자의 주 증상을 설명해주세요"
             label="주 증상"
@@ -583,7 +583,7 @@ export default function AmbulancePatientInputPage() {
     if (index === 3) {
       // 상세정보 단계: chiefComplaint, treatmentDetails, pastHistory, familyHistory, medications, vitalSigns 중 하나라도 입력 시 완료
       return !!(
-        formData.chiefComplaint ||
+        formData.symptom ||
         formData.treatmentDetails ||
         formData.pastHistory ||
         formData.familyHistory ||

@@ -394,7 +394,7 @@ export default function AmbulanceDashboardPage() {
               <p><strong>KTAS:</strong> {patientDetails?.ktasLevel || "-"}</p>
               <p>
                 <strong>주요 증상:</strong>{" "}
-                {patientDetails?.chiefComplaint || patientDetails?.medicalRecord || "-"}
+                {patientDetails?.symptom || "-"}
               </p>
             </div>
           </div>

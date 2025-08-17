@@ -11,6 +11,7 @@ public class PatientInfoResponseDto {
     private final String department;
     private final Integer sex;
     private final PatientAgeRange ageRange;
+    private final String symptom;
     private final String medicalRecord;
     private final String familyHistory;
     private final String pastHistory;
@@ -20,11 +21,12 @@ public class PatientInfoResponseDto {
     private final String nationality;
     private final String vitalSigns;
 
-    private PatientInfoResponseDto(Integer ktas, String department, Integer sex, PatientAgeRange ageRange, String medicalRecord, String familyHistory, String pastHistory, String medicine, String name, String rrn, String nationality, String vitalSigns) {
+    private PatientInfoResponseDto(Integer ktas, String department, Integer sex, PatientAgeRange ageRange, String symptom, String medicalRecord, String familyHistory, String pastHistory, String medicine, String name, String rrn, String nationality, String vitalSigns) {
         this.ktas = ktas;
         this.department = department;
         this.sex = sex;
         this.ageRange = ageRange;
+        this.symptom = symptom;
         this.medicalRecord = medicalRecord;
         this.familyHistory = familyHistory;
         this.pastHistory = pastHistory;
@@ -41,6 +43,7 @@ public class PatientInfoResponseDto {
                 entity.getPDepartment(),
                 entity.getPSex(),
                 entity.getPAgeRange(),
+                entity.getPSymptom(),
                 entity.getPMedicalRecord(),
                 entity.getPFamilyHistory(),
                 entity.getPPastHistory(),
