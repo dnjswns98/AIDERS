@@ -224,7 +224,7 @@ const MapDisplay = ({
           const ambulancePos = new window.kakao.maps.LatLng(stableAmbulanceCoords.lat, stableAmbulanceCoords.lng);
 
           // public/icon/ambulance.png 사용
-          const ambulanceImageSrc = "/public/icon/1f691_color.png";
+          const ambulanceImageSrc = "/icon/1f691_color.png";
           const ambulanceImageSize = new window.kakao.maps.Size(36, 36);
           const ambulanceImageOption = { offset: new window.kakao.maps.Point(18, 36) };
           const ambulanceMarkerImage = new window.kakao.maps.MarkerImage(
@@ -277,7 +277,7 @@ const MapDisplay = ({
           const headerEmoji = isPatient ? "🧍‍♂️" : "🏥";
           const headerColor = isPatient ? "#1d4ed8" : "#dc2626"; // blue-700 / red-600
 
-          const destIconSrc = destinationIconSrc || (isPatient ? "/public/icon/patient.png" : "/public/icon/hospital.png");
+          const destIconSrc = destinationIconSrc || (isPatient ? "/icon/patient.png" : "/icon/hospital.png");
           const destMarkerImage = getMarkerImage(destIconSrc, 36, 36);
 
           hospitalMarker.current = new window.kakao.maps.Marker({

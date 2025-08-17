@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AmbulanceLayout from '../../components/Emergency/Layout/AmbulanceLayout';
 import MapDisplay from '../../components/Emergency/MapDisplay';
@@ -6,21 +6,33 @@ import useEmergencyStore from '../../store/useEmergencyStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import useLiveAmbulanceLocation from '../../hooks/useLiveAmbulanceLocation';
 
-// 이 컴포넌트는 구급차가 출동 지시를 받고 환자에게 이동하는 동안의 화면을 담당합니다.
 export default function AmbulanceDispatchInProgressPage() {
   const navigate = useNavigate();
   const { selectedAmbulance, transferToHospital } = useEmergencyStore();
   const { user } = useAuthStore();
-  
-  // 구급차의 실시간 위치를 추적하는 커스텀 훅
+
   const { ambulanceLocation, hospitalDistanceInfo } = useLiveAmbulanceLocation(user?.userId);
 
-  // 환자 탑승 및 이송 시작 처리 핸들러
+  const [fsEnabled, setFsEnabled] = useState(false);
+
+  const handleToggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        setFsEnabled(true);
+      } else {
+        await document.exitFullscreen();
+        setFsEnabled(false);
+      }
+    } catch (e) {
+      console.error('전체화면 전환 실패:', e);
+    }
+  }, []);
+
   const handlePatientTransfer = async () => {
     if (window.confirm("환자 탑승을 완료하고 이송을 시작하시겠습니까? 구급차 상태가 '이송중'으로 변경됩니다.")) {
       try {
         await transferToHospital();
-        // 환자 정보 입력 페이지로 이동
         navigate('/emergency/patient-input', { state: { isEditMode: false } });
       } catch (error) {
         console.error("이송 시작 처리 실패:", error);
@@ -29,71 +41,84 @@ export default function AmbulanceDispatchInProgressPage() {
     }
   };
 
-  // 출동 정보가 없을 경우를 대비한 UI
   if (!selectedAmbulance?.pAddress) {
     return (
       <AmbulanceLayout>
         <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">출동 정보를 불러오는 중...</h1>
-            <p className="text-gray-600">배차 정보를 확인하고 있습니다. 잠시만 기다려주세요.</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">출동 정보를 불러오는 중...</h1>
+          <p className="text-gray-600">배차 정보를 확인하고 있습니다. 잠시만 기다려주세요.</p>
         </div>
       </AmbulanceLayout>
     );
   }
 
-  // 환자 위치 정보를 MapDisplay 컴포넌트가 이해할 수 있는 형식으로 가공
   const patientLocation = {
-      name: '환자 위치',
-      address: selectedAmbulance.pAddress,
-      latitude: selectedAmbulance.pLatitude,
-      longitude: selectedAmbulance.pLongitude,
+    name: '환자 위치',
+    address: selectedAmbulance.pAddress,
+    latitude: selectedAmbulance.pLatitude,
+    longitude: selectedAmbulance.pLongitude,
   };
-  
+
   return (
     <AmbulanceLayout>
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-        <div className="w-full max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-          
-          {/* 좌측: 지도 표시 */}
-          <div className="md:col-span-1 h-96">
-            <MapDisplay
-                hospital={patientLocation}
-                destinationType="patient"
-                destinationIconSrc="/public/icon/patient.png"
-                ambulanceLocation={ambulanceLocation}
-                distanceInfo={hospitalDistanceInfo}
-                showControls={true}
-                zoom={2}
-            />
-          </div>
+      {/* 전체 화면 지도: 브라우저 뷰포트에 고정 */}
+      <div className="fixed inset-0 w-screen h-screen bg-black">
+        {/* 지도 자체 */}
+        <MapDisplay
+          hospital={patientLocation}
+          destinationType="patient"
+          destinationIconSrc="/icon/patient.png"   // ✅ public/icon 하위 경로
+          ambulanceLocation={ambulanceLocation}
+          distanceInfo={hospitalDistanceInfo}
+          showControls={true}
+          isFullScreen={true}                        // ✅ 풀스크린 모드 UI
+          zoom={6}
+        />
 
-          {/* 우측: 출동 정보 및 버튼 */}
-          <div className="md:col-span-1 flex flex-col justify-center">
-            <div className="text-center mb-8">
-                <div className="animate-pulse text-6xl mb-4">🚨</div>
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">출동 중</h1>
-                <p className="text-gray-600 mb-6">환자에게 이동 중입니다. 현장 도착 후 아래 버튼을 눌러주세요.</p>
+        {/* 오버레이: 좌측 상단 출동 정보 카드 */}
+        <div className="absolute top-4 left-4 z-50 max-w-md">
+          <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl shadow-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-2xl">🚨</span>
+              <h2 className="text-xl font-bold text-gray-800">출동 중</h2>
             </div>
-            
-            <div className="text-left bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2 mb-8">
+            <p className="text-sm text-gray-600 mb-4">
+              환자에게 이동 중입니다. 현장 도착 후 오른쪽 아래 버튼을 눌러주세요.
+            </p>
+
+            <div className="text-left bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
               <div>
                 <span className="font-semibold text-gray-700">📍 출동 주소:</span>
-                <p className="text-gray-800">{selectedAmbulance.pAddress}</p>
+                <p className="text-gray-800 break-words">{selectedAmbulance.pAddress}</p>
               </div>
               <div>
                 <span className="font-semibold text-gray-700">📋 환자 상태:</span>
-                <p className="text-gray-800">{selectedAmbulance.pCondition || "정보 없음"}</p>
+                <p className="text-gray-800 break-words">
+                  {selectedAmbulance.pCondition || "정보 없음"}
+                </p>
               </div>
+              {hospitalDistanceInfo?.distance != null && (
+                <div className="text-sm text-gray-700">
+                  <span className="font-semibold">↔ 예상거리:</span>{" "}
+                  {(hospitalDistanceInfo.distance / 1000).toFixed(2)} km
+                  {hospitalDistanceInfo.timestamp && (
+                    <span className="text-gray-500"> · {new Date(hospitalDistanceInfo.timestamp).toLocaleTimeString()}</span>
+                  )}
+                </div>
+              )}
             </div>
-            
-            <button
-              onClick={handlePatientTransfer}
-              className="w-full px-6 py-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-transform transform hover:scale-105"
-            >
-              환자 탑승 완료 (이송 시작)
-            </button>
           </div>
+        </div>
+
+        {/* 오버레이: 우측 하단 이송 시작 버튼 */}
+        <div className="absolute bottom-6 right-6 z-50">
+          <button
+            onClick={handlePatientTransfer}
+            className="px-6 py-4 bg-blue-600 text-white font-semibold rounded-lg shadow-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-transform hover:scale-[1.02]"
+          >
+            환자 탑승 완료 (이송 시작)
+          </button>
         </div>
       </div>
     </AmbulanceLayout>
