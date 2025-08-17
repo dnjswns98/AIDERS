@@ -204,6 +204,18 @@ export const getReportById = withErrorHandling(async (reportId) => {
   return response.data;
 }, 'getReportById');
 
+/**
+ * 보고서 수정
+ */
+export const updateReport = withErrorHandling(async (reportId, reportData) => {
+  if (!reportId) {
+    throw new Error('보고서 ID가 필요합니다.');
+  }
+  logger.info(`보고서 수정: ID ${reportId}`);
+  const response = await apiClient.put(`/api/v1/report/${reportId}`, reportData);
+  return response.data;
+}, 'updateReport');
+
 // ======================================================================
 // 🚑 구급차 관련 API (기존과 동일)
 // ======================================================================

@@ -5,7 +5,7 @@ const useWebRtcStore = create((set) => ({
   callInfo: null, // { sessionId, ambulanceNumber, hospitalId, patientName, ktas }
   isPipMode: false,
   localStream: null,
-  remoteStream: null,
+  subscriber: null,
   session: null,
   publisher: null,
 
@@ -24,7 +24,7 @@ const useWebRtcStore = create((set) => ({
     callInfo: null,
     isPipMode: false,
     localStream: null,
-    remoteStream: null,
+    subscriber: null,
     session: null,
     publisher: null,
   }),
@@ -33,7 +33,7 @@ const useWebRtcStore = create((set) => ({
   setPipMode: (isPip) => set({ isPipMode: isPip }),
 
   setLocalStream: (stream) => set({ localStream: stream }),
-  setRemoteStream: (stream) => set({ remoteStream: stream }),
+  setSubscriber: (subscriber) => set({ subscriber: subscriber }),
   setSession: (session) => set({ session }),
   setPublisher: (publisher) => set({ publisher }),
 

@@ -15,11 +15,9 @@ import {
   getMyAmbulanceStatus,
   getMyAmbulancePatientInfo,
   generateReport,
-  // ✅ 1. 이송 완료 API 함수를 import 합니다.
   completeTransport as completeTransportApi,
 } from "../api/api";
 import { useAuthStore } from "./useAuthStore";
-// ✅ 2. WebRTC 스토어를 import 합니다.
 import useWebRtcStore from "./useWebRtcStore";
 
 // === 유틸리티 함수들 ===
@@ -180,6 +178,59 @@ const useEmergencyStore = create((set, get) => ({
   lastDispatchNotification: null,
   dispatchHistory: [],
   realtimeUpdates: new Map(),
+
+  // <<<<<<<< 추가된 함수 및 수정된 함수 >>>>>>>>
+  isCallActive: false,
+  callInfo: null,
+  isRequestInProgress: false,
+
+  // 오류 해결을 위해 추가된 함수
+  updateAmbulanceCallStatus: (ambulanceId, isCallActive) => {
+    set((state) => ({
+      ambulances: state.ambulances.map((amb) =>
+        amb.id === ambulanceId ? { ...amb, isCallActive } : amb
+      ),
+    }));
+  },
+
+  // 화상 통화 시작 함수
+  startVideoCall: async (ambulance) => {
+    if (get().isRequestInProgress) return;
+    set({ isRequestInProgress: true, error: null });
+    try {
+      set({
+        isCallActive: true,
+        callInfo: {
+          sessionId: ambulance.sessionId,
+          ambulanceNumber: ambulance.ambulanceNumber,
+          hospitalId: ambulance.hospitalId,
+          patientName: ambulance.patientName,
+          ktas: ambulance.ktas,
+        },
+        selectedAmbulance: ambulance,
+      });
+      get().updateAmbulanceCallStatus(ambulance.id, true);
+    } catch (error) {
+      console.error('[startVideoCall] Error starting video call:', error);
+      set({ error: 'Failed to start video call', isCallActive: false, callInfo: null });
+    } finally {
+      set({ isRequestInProgress: false });
+    }
+  },
+  
+  // 화상 통화 종료 함수
+  endVideoCall: () => {
+    const { selectedAmbulance } = get();
+    if (selectedAmbulance) {
+      get().updateAmbulanceCallStatus(selectedAmbulance.id, false);
+    }
+    set({
+      isCallActive: false,
+      callInfo: null,
+      selectedAmbulance: null,
+    });
+  },
+  // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
   _fetchAndSetPatientInfo: async () => {
     try {
@@ -660,10 +711,8 @@ const useEmergencyStore = create((set, get) => ({
     });
   },
 
-  // ✅✅✅ 병합 및 수정된 최종 함수 ✅✅✅
   completeTransport: async (navigate = null) => {
     const { selectedAmbulance, matchedHospitals } = get();
-    // WebRTC 스토어에서 상태와 함수를 가져옵니다.
     const { callInfo, endCall } = useWebRtcStore.getState();
 
     if (!selectedAmbulance) {
@@ -671,9 +720,7 @@ const useEmergencyStore = create((set, get) => ({
       return;
     }
 
-    // 함수 전체를 try...catch로 감싸서 안정성을 높입니다.
     try {
-      // 1. 서버에 이송 완료 API를 먼저 호출하여 세션을 정리합니다.
       const sessionId = callInfo?.sessionId || selectedAmbulance.id;
       const hospitalId = matchedHospitals[0]?.id || callInfo?.hospitalId;
 
@@ -685,29 +732,23 @@ const useEmergencyStore = create((set, get) => ({
         console.warn("[이송완료] 세션 또는 병원 ID가 없어 서버 세션 정리를 건너뜁니다.");
       }
 
-      // 2. WebRTC 통화가 활성화 상태이면 종료하여 PIP 모드를 끕니다.
       if (callInfo) {
         endCall();
         console.log("📞 WebRTC 통화 종료 및 PIP 모드 해제");
       }
 
-      // 3. 보고서를 생성합니다.
-      // 이 작업은 로컬 상태가 초기화되기 전에 수행되어야 합니다.
       try {
         console.log("📝 AI 보고서 생성을 시작합니다...");
         const report = await generateReport();
         console.log(`✅ 보고서 생성 완료: ${report.reportId}`);
       } catch (reportError) {
         console.error("⚠️ 보고서 생성 실패:", reportError);
-        // 보고서 생성 실패가 전체 프로세스를 막지 않도록 alert만 띄웁니다.
         alert(`⚠️ 보고서 생성에 실패했습니다: ${reportError.message}`);
       }
       
-      // 4. 구급차 상태를 서버에 'wait'으로 업데이트합니다.
       await updateAmbulanceStatus(selectedAmbulance.id, "wait");
       console.log('✅ 구급차 상태가 서버에 "대기"로 업데이트되었습니다.');
 
-      // 5. 모든 비동기 작업이 끝난 후 사용자에게 알리고 로컬 상태를 초기화합니다.
       alert("✅ 이송 완료 처리되었습니다. 잠시 후 대기 상태로 전환됩니다.");
 
       const initialPatientInfo = { name: "", gender: "", ageRange: "" };
@@ -729,7 +770,6 @@ const useEmergencyStore = create((set, get) => ({
         isEditMode: false,
       });
 
-      // 6. 마지막으로 대기 페이지로 이동합니다.
       if (navigate) {
         navigate("/emergency/waiting", { replace: true });
       }
@@ -737,7 +777,6 @@ const useEmergencyStore = create((set, get) => ({
     } catch (error) {
       console.error("❌ 이송 완료 처리 중 심각한 오류 발생:", error);
       alert("❌ 이송 완료 처리에 실패했습니다: " + error.message);
-      // 실패하더라도 사용자가 다음 행동을 할 수 있도록 대기 화면으로 이동시킵니다.
       if (navigate) {
         navigate("/emergency/waiting", { replace: true });
       }
