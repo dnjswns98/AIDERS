@@ -6,13 +6,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
+import team1234.aiders.application.alarm.dto.AlarmMessage;
+import team1234.aiders.application.alarm.dto.AlarmType;
 import team1234.aiders.application.openvidu.dto.EndCallRequest;
 import team1234.aiders.application.openvidu.dto.StartCallRequest;
 import team1234.aiders.application.openvidu.dto.TokenRequest;
 import team1234.aiders.application.openvidu.dto.TokenResponse;
 import team1234.aiders.application.openvidu.service.OpenViduService;
 import team1234.aiders.redis.service.RedisService;
+
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/v1/video-call")
@@ -22,6 +27,7 @@ import team1234.aiders.redis.service.RedisService;
 public class VideoCallController {
     private final OpenViduService openViduService;
     private final RedisService redisService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Operation(summary = "구급차용 세션 생성 + 토큰 발급 + Redis 등록", description = "구급차가 화상 통화 세션을 생성하고 병원 대기열에 등록합니다.")
     @PostMapping("/ambulance/token")
@@ -71,6 +77,17 @@ public class VideoCallController {
 
         // OpenVidu 세션 삭제
         openViduService.closeSessionIfExists(sessionId);
+
+        // 병원에 COMPLETE 알람 전송
+        AlarmMessage completeAlarm = AlarmMessage.builder()
+                .type(AlarmType.COMPLETE)
+                .ambulanceKey(sessionId)
+                .createdAt(LocalDateTime.now())
+                .message("환자 이송이 완료되었습니다.")
+                .build();
+
+        String destination = "/topic/alarm/" + hospitalId;
+        messagingTemplate.convertAndSend(destination, completeAlarm);
 
         return removed ? ResponseEntity.ok().build() : ResponseEntity.status(500).build();
     }

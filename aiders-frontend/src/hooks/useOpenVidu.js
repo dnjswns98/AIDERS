@@ -1,7 +1,8 @@
-import { useRef, useCallback, useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { OpenVidu } from "openvidu-browser";
 import { useWebRtc } from "../context/WebRtcContext";
 import { createAmbulanceToken, getHospitalToken } from "../api/api";
+import { useAuthStore } from "../store/useAuthStore";
 
 export const useOpenVidu = ({
   sessionId,
@@ -11,19 +12,23 @@ export const useOpenVidu = ({
   patientName,
   onError,
 }) => {
-  const sessionContextRef = useRef(null);
-  // 🔥 수정: Zustand 스토어와 직접 상호작용하는 액션들을 가져옵니다.
-  const { setLocalStream, setRemoteStream, endCall } = useWebRtc();
+  const { setLocalStream, setSubscriber, endCall } = useWebRtc();
+  const { user } = useAuthStore();
+
+  // useRef 대신 useState를 사용하여 React가 상태 변화를 감지하도록 수정
+  const [session, setSession] = useState(null);
+  const [publisher, setPublisher] = useState(null);
+  const [subscribers, setSubscribers] = useState([]);
+
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const operationLockRef = useRef(false);
+  
+  // OpenVidu 객체는 ref로 유지하여 불필요한 재생성을 방지
+  const OVRef = useRef(null);
 
   const getToken = useCallback(async () => {
     try {
-      const isValidAmbulanceId =
-        (typeof ambulanceNumber === "string" && ambulanceNumber.trim() !== "");
-
-      if (isValidAmbulanceId) {
+      if (user.role === 'ambulance') {
         const response = await createAmbulanceToken({
           sessionId,
           ambulanceNumber,
@@ -35,53 +40,20 @@ export const useOpenVidu = ({
           throw new Error("앰뷸런스 토큰 응답에 토큰 값이 없습니다.");
         }
         return response.token;
-      } else if (hospitalId) {
+      } else if (user.role === 'hospital') {
         const response = await getHospitalToken({ sessionId, hospitalId });
         if (!response?.token) {
           throw new Error("병원 토큰 응답에 토큰 값이 없습니다.");
         }
         return response.token;
       } else {
-        throw new Error("Ambulance ID와 Hospital ID가 모두 유효하지 않습니다.");
+        throw new Error("알 수 없는 사용자 역할입니다.");
       }
     } catch (error) {
       console.error("[getToken] 토큰 발급 에러:", error);
       throw error;
     }
-  }, [sessionId, ambulanceNumber, hospitalId, ktas, patientName]);
-
-  const createSessionContext = useCallback(() => {
-    return {
-      OV: null,
-      session: null,
-      publisher: null,
-      subscribers: [],
-      isActive: true,
-      hasEventListeners: false,
-      cleanup: async function () {
-        if (!this.isActive) return;
-        this.isActive = false;
-
-        try {
-          if (this.session) {
-            this.session.off('streamCreated');
-            this.session.off('streamDestroyed');
-            this.session.off('exception');
-            this.session.off('sessionDisconnected');
-            await this.session.disconnect();
-          }
-        } catch (error) {
-          console.error("[cleanup] 세션 disconnect 중 오류:", error);
-        } finally {
-          this.publisher = null;
-          this.subscribers = [];
-          this.session = null;
-          this.OV = null;
-          this.hasEventListeners = false;
-        }
-      },
-    };
-  }, []);
+  }, [sessionId, ambulanceNumber, hospitalId, ktas, patientName, user.role]);
 
   const handleError = useCallback((error) => {
     let errorType = "GENERAL_ERROR";
@@ -101,123 +73,98 @@ export const useOpenVidu = ({
     });
   }, [onError]);
 
-  const setupEventListeners = useCallback((sessionContext) => {
-    if (!sessionContext.session || sessionContext.hasEventListeners) return;
+  const leaveSession = useCallback(async () => {
+    if (session) {
+      await session.disconnect();
+    }
+    
+    OVRef.current = null;
+    setSession(null);
+    setPublisher(null);
+    setSubscribers([]);
+    setIsConnected(false);
+    setIsConnecting(false);
+    
+    endCall();
 
-    sessionContext.session.on("streamCreated", (event) => {
-      if (!sessionContext.isActive) return;
+    console.log("[leaveSession] 세션이 종료되었습니다.");
+  }, [session, endCall]);
 
-      try {
-        const subscriber = sessionContext.session.subscribe(event.stream, undefined);
-        const remoteStream = subscriber.stream.getMediaStream();
-        
-        // 🔥 수정: remoteStream을 스토어에 직접 설정합니다.
-        setRemoteStream(remoteStream);
 
-        sessionContext.subscribers.push(subscriber);
-      } catch (error) {
-        console.error("[streamCreated] 구독 중 오류:", error);
-      }
+  const joinSession = useCallback(async () => {
+    if (isConnecting || isConnected) return;
+    
+    setIsConnecting(true);
+    
+    OVRef.current = new OpenVidu();
+    const newSession = OVRef.current.initSession();
+
+    newSession.on("streamCreated", (event) => {
+      const subscriber = newSession.subscribe(event.stream, undefined);
+      console.log("[streamCreated] 새로운 스트림이 생성되었습니다.", event.stream);
+      // 'subscribers' 상태 배열을 업데이트하여 렌더링을 유발
+      setSubscribers(prev => [...prev, subscriber]);
     });
 
-    sessionContext.session.on("streamDestroyed", (event) => {
-      if (!sessionContext.isActive) return;
-      sessionContext.subscribers = sessionContext.subscribers.filter(
-        (sub) => sub.stream.streamId !== event.stream.streamId
-      );
-      // 🔥 수정: 상대방이 나가면 remoteStream을 null로 설정합니다.
-      setRemoteStream(null);
+    newSession.on("streamDestroyed", (event) => {
+      console.log("[streamDestroyed] 스트림이 종료되었습니다.", event.stream);
+      setSubscribers(prev => prev.filter(sub => sub.stream.streamId !== event.stream.streamId));
     });
 
-    sessionContext.session.on("exception", (exception) => {
-      if (!sessionContext.isActive) return;
+    newSession.on("exception", (exception) => {
+      console.warn("[exception] OpenVidu 예외 발생:", exception);
       handleError(new Error(`OpenVidu Exception: ${exception.message || 'Unknown error'}`));
     });
 
-    sessionContext.session.on("sessionDisconnected", async () => {
-      if (sessionContext.isActive) {
-        await sessionContext.cleanup();
-        setIsConnected(false);
-        setIsConnecting(false);
-        endCall();
-      }
+    newSession.on("sessionDisconnected", () => {
+      console.log("[sessionDisconnected] 세션 연결이 끊겼습니다.");
+      // 상태 초기화
+      setSession(null);
+      setPublisher(null);
+      setSubscribers([]);
+      setIsConnected(false);
+      setIsConnecting(false);
+      endCall();
     });
-
-    sessionContext.hasEventListeners = true;
-  }, [setRemoteStream, endCall, handleError]);
-
-  const joinSession = useCallback(async () => {
-    if (operationLockRef.current || isConnecting || isConnected) return;
-    operationLockRef.current = true;
-    setIsConnecting(true);
-
-    if (sessionContextRef.current) {
-      await sessionContextRef.current.cleanup();
-    }
-
-    const sessionContext = createSessionContext();
-    sessionContextRef.current = sessionContext;
-
+    
     try {
-      sessionContext.OV = new OpenVidu();
-      sessionContext.session = sessionContext.OV.initSession();
-      setupEventListeners(sessionContext);
-
       const token = await getToken();
-      await sessionContext.session.connect(token, { clientData: `${ambulanceNumber || hospitalId || ""}` });
+      await newSession.connect(token, { clientData: `${ambulanceNumber || hospitalId || ""}` });
 
-      if (!sessionContext.isActive) throw new Error("세션이 연결 중에 비활성화됨");
-
-      const publisher = await sessionContext.OV.initPublisherAsync(undefined, {
+      const newPublisher = await OVRef.current.initPublisherAsync(undefined, {
         audioSource: undefined, videoSource: undefined,
         publishAudio: true, publishVideo: true,
         resolution: "640x480", frameRate: 30,
         insertMode: "APPEND", mirror: false,
       });
+
+      await newSession.publish(newPublisher);
       
-      sessionContext.publisher = publisher;
-
-      // 🔥 수정: Local Stream을 Zustand 스토어에 직접 설정합니다.
-      const localStream = publisher.stream.getMediaStream();
-      setLocalStream(localStream);
-
-      await sessionContext.session.publish(publisher);
+      setLocalStream(newPublisher.stream.getMediaStream());
+      setPublisher(newPublisher);
+      setSession(newSession);
       setIsConnected(true);
+      console.log("[joinSession] 세션 참여 및 발행 성공");
 
     } catch (error) {
-      console.error("[joinSession] 연결 실패:", error);
-      if (sessionContextRef.current) {
-        await sessionContextRef.current.cleanup();
-        sessionContextRef.current = null;
-      }
-      setIsConnected(false);
-      endCall();
+      console.error("[joinSession] 세션 참여 실패:", error);
       handleError(error);
+      await leaveSession();
     } finally {
       setIsConnecting(false);
-      operationLockRef.current = false;
     }
-  }, [createSessionContext, setupEventListeners, getToken, setLocalStream, endCall, handleError, ambulanceNumber, hospitalId]);
+  }, [getToken, ambulanceNumber, hospitalId, handleError, setLocalStream, endCall, isConnecting, isConnected, leaveSession]);
 
-  const leaveSession = useCallback(async () => {
-    if (operationLockRef.current) return;
-    operationLockRef.current = true;
-
-    try {
-      const sessionContext = sessionContextRef.current;
-      if (sessionContext) {
-        await sessionContext.cleanup();
-        sessionContextRef.current = null;
-      }
-      endCall();
-      setIsConnected(false);
-      setIsConnecting(false);
-    } catch (error) {
-      console.error("[leaveSession] 종료 중 오류:", error);
-    } finally {
-      operationLockRef.current = false;
+  // 구독자(subscribers) 상태가 변경될 때마다 subscriber 객체를 스토어에 업데이트합니다.
+  useEffect(() => {
+    if (subscribers.length > 0) {
+      setSubscriber(subscribers[0]);
+      console.log("[useEffect] subscriber가 설정되었습니다.", subscribers[0]);
+    } else {
+      setSubscriber(null);
+      console.log("[useEffect] subscriber가 제거되었습니다.");
     }
-  }, [endCall]);
-
+  }, [subscribers, setSubscriber]);
+  
   return { joinSession, leaveSession, isConnecting, isConnected };
 };

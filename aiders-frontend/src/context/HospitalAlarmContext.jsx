@@ -60,15 +60,22 @@ export const HospitalAlarmProvider = ({ children }) => {
         
         // 알람 토픽 구독
         const alarmTopic = `/topic/alarm/${user.userId}`;
+        console.log('🔗 WebSocket 알람 토픽 구독:', alarmTopic);
         stomp.subscribe(alarmTopic, (message) => {
           try {
             const alarmData = JSON.parse(message.body);
-            console.log('🔔 수신:', alarmData.type);
+            console.log('🔔 [WebSocket] 알람 수신:', {
+              type: alarmData.type,
+              ambulanceKey: alarmData.ambulanceKey,
+              message: alarmData.message,
+              raw: alarmData
+            });
             
             // 무조건 토스트 큐에 추가
             addToastToQueue(alarmData);
             
             // 페이지 새로고침 이벤트 발생
+            console.log('📡 [WebSocket] hospitalAlarmReceived 이벤트 발생');
             window.dispatchEvent(new CustomEvent('hospitalAlarmReceived', { 
               detail: alarmData 
             }));
@@ -80,7 +87,7 @@ export const HospitalAlarmProvider = ({ children }) => {
               });
             }
           } catch (error) {
-            console.error('알람 파싱 오류:', error);
+            console.error('❌ [WebSocket] 알람 파싱 오류:', error);
           }
         });
 
@@ -121,6 +128,7 @@ export const HospitalAlarmProvider = ({ children }) => {
       case 'MATCHING': return '매칭 완료';
       case 'REQUEST': return '통화 요청';
       case 'EDIT': return '정보 수정';
+      case 'COMPLETE': return '이송 완료';
       default: return type;
     }
   };
@@ -131,6 +139,7 @@ export const HospitalAlarmProvider = ({ children }) => {
       case 'MATCHING': return '🎯';
       case 'REQUEST': return '📞';
       case 'EDIT': return '✏️';
+      case 'COMPLETE': return '✅';
       default: return '🔔';
     }
   };
@@ -141,6 +150,7 @@ export const HospitalAlarmProvider = ({ children }) => {
       case 'MATCHING': return '#10b981';
       case 'REQUEST': return '#f59e0b';
       case 'EDIT': return '#3b82f6';
+      case 'COMPLETE': return '#059669';
       default: return '#6b7280';
     }
   };

@@ -9,13 +9,9 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
   const { user } = useAuthStore();
   const [ambulanceDetails, setAmbulanceDetails] = useState({});
 
-  // 중복 제거된 구급차 목록 (sessionId 기준)
-  const uniqueAmbulances = useMemo(() => {
-    if (!ambulances || ambulances.length === 0) return [];
-    
-    return ambulances.filter((ambulance, index, arr) => 
-      arr.findIndex(a => a.sessionId === ambulance.sessionId) === index
-    );
+  // 서버에서 받은 구급차 목록을 그대로 사용
+  const displayAmbulances = useMemo(() => {
+    return ambulances || [];
   }, [ambulances]);
   
   const handleCallStart = (ambulance) => {
@@ -35,18 +31,18 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
     if (user?.userId) {
       fetchWaitingAmbulances(user.userId);
     }
-  }, ['MATCHING', 'REQUEST']); // 매칭 완료, 통화 요청 알람에만 반응
+  }, ['MATCHING', 'REQUEST', 'COMPLETE']); // 매칭 완료, 통화 요청, 이송 완료 알람에 반응
 
-  // 구급차 세부 정보 조회 (중복 제거된 목록 사용)
-  const fetchAmbulanceDetails = async (uniqueAmbulances) => {
-    if (!uniqueAmbulances || uniqueAmbulances.length === 0) {
+  // 구급차 세부 정보 조회
+  const fetchAmbulanceDetails = async (ambulances) => {
+    if (!ambulances || ambulances.length === 0) {
       setAmbulanceDetails({});
       return;
     }
 
     const details = {};
     
-    for (const ambulance of uniqueAmbulances) {
+    for (const ambulance of ambulances) {
       try {
         // sessionId를 ambulanceId로 사용해서 환자 정보 조회
         const patientInfo = await getPatientInfo(ambulance.sessionId);
@@ -72,18 +68,18 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
     if (user?.userId) {
       fetchWaitingAmbulances(user.userId);
 
-      const intervalId = setInterval(() => fetchWaitingAmbulances(user.userId), 30000);
+      const intervalId = setInterval(() => fetchWaitingAmbulances(user.userId), 15000);
 
       return () => clearInterval(intervalId);
     }
   }, [fetchWaitingAmbulances, user?.userId]);
 
-  // 중복 제거된 구급차 목록이 변경될 때마다 세부 정보 조회
+  // 구급차 목록이 변경될 때마다 세부 정보 조회
   useEffect(() => {
-    if (uniqueAmbulances.length > 0) {
-      fetchAmbulanceDetails(uniqueAmbulances);
+    if (displayAmbulances.length > 0) {
+      fetchAmbulanceDetails(displayAmbulances);
     }
-  }, [JSON.stringify(uniqueAmbulances?.map(amb => amb.sessionId))]);
+  }, [JSON.stringify(displayAmbulances?.map(amb => amb.sessionId))]);
 
   if (isLoading) {
     return <div>로딩 중...</div>;
@@ -147,14 +143,14 @@ const WaitingAmbulanceList = ({ onStartCall, showCallButton = false, compact = f
           >
             오류가 발생했습니다: {error}
           </div>
-        ) : uniqueAmbulances.length === 0 ? (
+        ) : displayAmbulances.length === 0 ? (
           <div
             style={{ textAlign: "center", padding: "20px", color: "#6b7280" }}
           >
             현재 이송중인 구급차가 없습니다.
           </div>
         ) : (
-          uniqueAmbulances.map((ambulance) => (
+          displayAmbulances.map((ambulance) => (
             <div
               key={ambulance.sessionId || ambulance.ambulanceId || ambulance.id}
               style={{

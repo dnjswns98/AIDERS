@@ -5,7 +5,7 @@ import AmbulanceHeader from '../AmbulanceHeader';
 import useLiveAmbulanceLocationSender from '../../../hooks/useLiveAmbulanceLocationSender';
 
 // showHeader prop을 받아서 헤더를 조건부로 렌더링합니다.
-const AmbulanceLayout = forwardRef(({ children, showHeader = true }, ref) => {
+const AmbulanceLayout = forwardRef(({ children, showHeader = true, disableHeaderInteraction = false }, ref) => {
   useLiveAmbulanceLocationSender();
 
   return (

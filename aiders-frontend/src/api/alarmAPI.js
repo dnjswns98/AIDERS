@@ -114,6 +114,21 @@ export const deleteAllAlarms = withErrorHandling(async (hospitalId) => {
   return { success: true, message: '모든 알림이 삭제되었습니다.' };
 }, 'deleteAllAlarms');
 
+/**
+ * 특정 구급차의 모든 알림 삭제
+ */
+export const deleteAlarmsByAmbulanceKey = withErrorHandling(async (ambulanceKey) => {
+  if (!ambulanceKey) {
+    throw new Error('구급차 키가 필요합니다.');
+  }
+  
+  console.log(`🗑️ [API] 구급차 알림 삭제 시작: ${ambulanceKey}`);
+  logger.info(`구급차 알림 삭제: ${ambulanceKey}`);
+  const response = await apiClient.delete(`/api/v1/alarm/all/${ambulanceKey}`);
+  console.log(`✅ [API] 구급차 알림 삭제 API 응답:`, response.data);
+  return { success: true, message: '구급차 알림이 삭제되었습니다.' };
+}, 'deleteAlarmsByAmbulanceKey');
+
 // ======================================================================
 // 📤 알람 전송 API
 // ======================================================================
@@ -167,6 +182,7 @@ export default {
   deleteRequestAlarm,
   deleteEditAlarm,
   deleteAllAlarms,
+  deleteAlarmsByAmbulanceKey,
   
   // 전송
   sendAlarmToHospital

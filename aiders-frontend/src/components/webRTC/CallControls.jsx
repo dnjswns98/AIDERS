@@ -50,6 +50,19 @@ const CallControls = ({
           </button>
         )}
         
+        {/* 통화 끊기 버튼 (병원 전용) */}
+        {canEndCall && onLeave && userRole === 'hospital' && (
+          <button
+            onClick={onLeave}
+            className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl min-w-[120px] justify-center"
+          >
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+            통화 종료
+          </button>
+        )}
+        
         {/* 전체화면 토글 버튼 */}
         <button
           onClick={onToggleFullScreen}

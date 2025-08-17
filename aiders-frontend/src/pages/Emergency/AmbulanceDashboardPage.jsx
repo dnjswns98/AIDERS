@@ -16,6 +16,7 @@ import useLiveAmbulanceLocation from "../../hooks/useLiveAmbulanceLocation";
 import useWebRtcStore from "../../store/useWebRtcStore";
 import Stomp from "stompjs";
 import SockJS from "sockjs-client";
+import { generateReport } from "../../api/api";
 import WebRtcCall from "../../components/webRTC/WebRtcCall";
 
 export default function AmbulanceDashboardPage() {
@@ -326,6 +327,18 @@ export default function AmbulanceDashboardPage() {
     callInfo,
     isRequestInProgress,
   ]);
+
+  const handleTransportComplete = async () => {
+    if (window.confirm('이송을 완료하고 보고서 작성으로 넘어가시겠습니까?')) {
+      try {
+        const report = await generateReport();
+        endCall();
+        navigate(`/emergency/report/write/${report.id}`);
+      } catch (error) {
+        alert('보고서 생성에 실패했습니다.');
+      }
+    }
+  };
 
   const forceEndCall = useCallback(() => {
     console.log("🔚 강제 통화 종료");
