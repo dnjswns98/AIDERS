@@ -312,7 +312,7 @@ export default function AmbulancePatientInputPage() {
             key={option.level}
             type="button"
             onClick={() =>
-              setFormData((prev) => ({ ...prev, ktasLevel: option.level }))
+              setFormData((prev) => ({ ...prev, ktasLevel: prev.ktasLevel === option.level ? "" : option.level }))
             }
             className={`
               p-6 rounded-xl border-2 transition-all duration-200 text-white font-bold
@@ -357,7 +357,7 @@ export default function AmbulancePatientInputPage() {
             key={dept}
             type="button"
             onClick={() =>
-              setFormData((prev) => ({ ...prev, department: dept }))
+              setFormData((prev) => ({ ...prev, department: prev.department === dept ? "" : dept }))
             }
             className={`
               p-4 rounded-lg border-2 transition-all duration-200 text-sm font-medium
@@ -420,7 +420,7 @@ export default function AmbulancePatientInputPage() {
                 key={option.value}
                 type="button"
                 onClick={() =>
-                  setFormData((prev) => ({ ...prev, gender: option.value }))
+                  setFormData((prev) => ({ ...prev, gender: prev.gender === option.value ? "" : option.value }))
                 }
                 className={`
                   p-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-center space-x-2
@@ -448,7 +448,7 @@ export default function AmbulancePatientInputPage() {
                 key={age}
                 type="button"
                 onClick={() =>
-                  setFormData((prev) => ({ ...prev, ageRange: age }))
+                  setFormData((prev) => ({ ...prev, ageRange: prev.ageRange === age ? "" : age }))
                 }
                 className={`
                   p-2 rounded-lg border transition-all duration-200 text-xs font-medium
