@@ -453,14 +453,6 @@ export default function AmbulanceDashboardPage() {
                 />
 
                 {/* 이송 완료 버튼 */}
-                <div className="absolute bottom-4 left-4 right-4">
-                  <button
-                    onClick={handleTransportComplete}
-                    className="w-full bg-red-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition-colors"
-                  >
-                    이송 완료
-                  </button>
-                </div>
               </div>
             ) : (
               // 화상통화가 비활성화된 경우 - 기존 버튼 표시

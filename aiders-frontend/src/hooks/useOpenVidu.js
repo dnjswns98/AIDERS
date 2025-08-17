@@ -12,7 +12,7 @@ export const useOpenVidu = ({
   patientName,
   onError,
 }) => {
-  const { setLocalStream, setRemoteStream, endCall } = useWebRtc();
+  const { setLocalStream, setSubscriber, endCall } = useWebRtc();
   const { user } = useAuthStore();
 
   // useRef 대신 useState를 사용하여 React가 상태 변화를 감지하도록 수정
@@ -155,17 +155,16 @@ export const useOpenVidu = ({
     }
   }, [getToken, ambulanceNumber, hospitalId, handleError, setLocalStream, endCall, isConnecting, isConnected, leaveSession]);
 
-  // 구독자(subscribers) 상태가 변경될 때마다 이 useEffect가 실행됨
+  // 구독자(subscribers) 상태가 변경될 때마다 subscriber 객체를 스토어에 업데이트합니다.
   useEffect(() => {
     if (subscribers.length > 0) {
-      const remoteStream = subscribers[0].stream.getMediaStream();
-      setRemoteStream(remoteStream);
-      console.log("[useEffect] 원격 스트림이 설정되었습니다.", remoteStream);
+      setSubscriber(subscribers[0]);
+      console.log("[useEffect] subscriber가 설정되었습니다.", subscribers[0]);
     } else {
-      setRemoteStream(null);
-      console.log("[useEffect] 원격 스트림이 제거되었습니다.");
+      setSubscriber(null);
+      console.log("[useEffect] subscriber가 제거되었습니다.");
     }
-  }, [subscribers, setRemoteStream]);
+  }, [subscribers, setSubscriber]);
   
   return { joinSession, leaveSession, isConnecting, isConnected };
 };

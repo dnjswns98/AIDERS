@@ -10,7 +10,7 @@ import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 const PipVideoCall = () => {
     const {
         localStream,
-        remoteStream,
+        subscriber,
         endCall,
         setPipMode
     } = useWebRtcStore();
@@ -27,10 +27,12 @@ const PipVideoCall = () => {
     }, [localStream]);
 
     React.useEffect(() => {
-        if (remoteStream && remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = remoteStream;
+        if (subscriber && remoteVideoRef.current) {
+            subscriber.addVideoElement(remoteVideoRef.current);
+        } else if (!subscriber && remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = null;
         }
-    }, [remoteStream]);
+    }, [subscriber]);
 
     const handleEndCall = () => {
         endCall();

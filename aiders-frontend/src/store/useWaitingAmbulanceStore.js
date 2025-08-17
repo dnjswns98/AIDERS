@@ -1,3 +1,5 @@
+// src/store/useWaitingAmbulanceStore.js
+
 import { create } from 'zustand';
 import { getWaitingAmbulances } from '../api/api';
 
@@ -18,14 +20,6 @@ const useWaitingAmbulanceStore = create((set, get) => ({
       console.error('[Store] Error fetching waiting ambulances:', error);
       set({ error: error.message, isLoading: false });
     }
-  },
-
-  updateAmbulanceCallStatus: (sessionId, isInCall) => {
-    set((state) => ({
-      ambulances: state.ambulances.map((ambulance) =>
-        ambulance.sessionId === sessionId ? { ...ambulance, isInCall } : ambulance
-      ),
-    }));
   },
 
   updateAmbulanceCallStatus: (sessionId, isInCall) => {
