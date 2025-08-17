@@ -81,7 +81,8 @@ const convertFormDataForApi = (formData) => {
     department: formData.department || null,
     sex: normalizedSex,
     ageRange: normalizedAgeRange,
-    medicalRecord: formData.chiefComplaint || null,
+    symptom: formData.symptom || null,
+    medicalRecord: formData.treatmentDetails  || null,
     familyHistory: formData.familyHistory || null,
     pastHistory: formData.pastHistory || null,
     medicine: formData.medications || null,
@@ -90,12 +91,6 @@ const convertFormDataForApi = (formData) => {
     nationality: formData.nationality || null,
     vitalSigns: formData.vitalSigns || null
   };
-
-  if (formData.treatmentDetails && formData.chiefComplaint) {
-    apiData.medicalRecord = `${formData.chiefComplaint}\n\n[현장처치] ${formData.treatmentDetails}`;
-  } else if (formData.treatmentDetails) {
-    apiData.medicalRecord = `[현장처치] ${formData.treatmentDetails}`;
-  }
 
   console.log('🔥🔥🔥 [convertFormDataForApi] 최종 데이터:', JSON.stringify(apiData, null, 2));
   return apiData;
@@ -231,7 +226,8 @@ const useEmergencyStore = create((set, get) => ({
         const patientDetails = {
           ktasLevel: dbPatientInfo.ktas ? String(dbPatientInfo.ktas) : '',
           department: dbPatientInfo.department || '',
-          chiefComplaint: dbPatientInfo.medicalRecord || '',
+          symptom: dbPatientInfo.symptom || '',
+          treatmentDetails: dbPatientInfo.medicalRecord || '',
           familyHistory: dbPatientInfo.familyHistory || '',
           pastHistory: dbPatientInfo.pastHistory || '',
           medications: dbPatientInfo.medicine || '',

@@ -113,7 +113,6 @@ export default function AmbulancePatientInfoPage() {
   const { selectedAmbulance, ambulanceDetails, patientInfo, patientDetails, setEditMode } = useEmergencyStore();
   const { setPipMode } = useWebRtcStore();
 
-  
 
   const dataSource = ambulanceDetails || selectedAmbulance;
   const isHospitalView = !!ambulanceDetails;
@@ -214,7 +213,7 @@ export default function AmbulancePatientInfoPage() {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500">바이탈 사인 (혈압)</label>
+                <label className="block text-sm font-medium text-gray-500">바이탈 사인</label>
                 {displayPatientDetails?.vitalSigns?.bloodPressure && displayPatientDetails.vitalSigns.bloodPressure.startsWith('data:image') ? (
                   <img src={displayPatientDetails.vitalSigns.bloodPressure} alt="바이탈 사인 필기" className="mt-1 w-full border rounded-md" />
                 ) : (
@@ -224,10 +223,10 @@ export default function AmbulancePatientInfoPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">주요 증상 (상세)</label>
-              {displayPatientDetails?.chiefComplaint && displayPatientDetails.chiefComplaint.startsWith('data:image') ? (
-                <img src={displayPatientDetails.chiefComplaint} alt="주요 증상 필기" className="mt-1 w-full border rounded-md" />
+              {displayPatientDetails?.symptom && typeof displayPatientDetails.symptom === 'string' && displayPatientDetails.symptom.startsWith('data:image') ? (
+                <img src={displayPatientDetails.symptom} alt="주요 증상 필기" className="mt-1 w-full border rounded-md" />
               ) : (
-                <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{displayPatientDetails?.chiefComplaint || displayPatientDetails?.medicalRecord || '-'}</p>
+                <p className="mt-1 text-lg text-gray-900 p-3 bg-gray-50 rounded-md">{displayPatientDetails?.symptom || '-'}</p>
               )}
             </div>
             <div>
