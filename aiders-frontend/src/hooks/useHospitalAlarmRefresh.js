@@ -26,33 +26,32 @@ const useHospitalAlarmRefresh = (refreshCallback, alarmTypes = [], debounceMs = 
   useEffect(() => {
     const handleAlarmReceived = async (event) => {
       const alarmData = event.detail;
-      console.log('🔔 알람 수신으로 인한 새로고침 체크:', alarmData.type);
+      console.log('🔔 [HOOK] 알람 수신으로 인한 새로고침 체크:', {
+        type: alarmData.type,
+        ambulanceKey: alarmData.ambulanceKey,
+        allowedTypes: alarmTypes
+      });
       
       // 특정 알람 타입만 처리하도록 설정된 경우
       if (alarmTypes.length > 0 && !alarmTypes.includes(alarmData.type)) {
-        console.log('🔕 무시된 알람 타입:', alarmData.type);
+        console.log('🔕 [HOOK] 무시된 알람 타입:', alarmData.type, '허용된 타입:', alarmTypes);
         return;
       }
       
-      // COMPLETE 알람인 경우 해당 구급차의 모든 알람 삭제
+      // COMPLETE 알람인 경우 즉시 새로고침 (삭제 API는 보안상 사용 불가)
       if (alarmData.type === 'COMPLETE' && alarmData.ambulanceKey) {
-        try {
-          console.log('🗑️ 이송완료로 인한 구급차 알람 삭제:', alarmData.ambulanceKey);
-          await deleteAlarmsByAmbulanceKey(alarmData.ambulanceKey);
-          console.log('✅ 구급차 알람 삭제 완료');
-        } catch (error) {
-          console.error('❌ 구급차 알람 삭제 실패:', error);
-        }
+        console.log('🚀 [HOOK] 이송완료 알람 수신 - 백엔드에서 알람 삭제됨, 새로고침 실행:', alarmData.ambulanceKey);
         
         // COMPLETE 알람은 즉시 새로고침 (디바운스 없음)
         if (typeof refreshCallback === 'function') {
-          console.log('🚀 이송완료 알람으로 인한 즉시 새로고침');
+          console.log('🔄 [HOOK] 이송완료로 인한 즉시 새로고침 실행');
           refreshCallback();
         }
         return;
       }
       
       // 다른 알람 타입들은 디바운스된 새로고침 실행
+      console.log('⏰ [HOOK] 디바운스된 새로고침 실행:', alarmData.type);
       debouncedRefresh();
     };
 
