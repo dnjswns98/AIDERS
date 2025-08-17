@@ -26,41 +26,44 @@ public class OpenViduService {
      */
     public TokenResponse createTokenAndRegister(TokenRequest request) {
         try {
-            // 세션 목록 최신화 (서버 기준)
+            // OpenVidu 서버 최신 세션 목록 가져오기
             openVidu.fetch();
 
-            // 세션이 존재하면 재사용, 없으면 생성
+            // 세션 존재 여부 확인
             Session session = openVidu.getActiveSessions().stream()
                     .filter(s -> s.getSessionId().equals(request.getSessionId()))
                     .findFirst()
                     .orElseGet(() -> {
                         try {
-                            log.info("세션이 존재하지 않아 새로 생성합니다: {}", request.getSessionId());
-                            return openVidu.createSession(new SessionProperties.Builder()
-                                    .customSessionId(request.getSessionId())
-                                    .build());
+                            log.info("session create: {}", request.getSessionId());
+                            Session newSession = openVidu.createSession(
+                                    new SessionProperties.Builder()
+                                            .customSessionId(request.getSessionId())
+                                            .build()
+                            );
+
+                            VideoSessionInfo sessionInfo = VideoSessionInfo.builder()
+                                    .sessionId(request.getSessionId())
+                                    .ambulanceNumber(request.getAmbulanceNumber())
+                                    .hospitalId(request.getHospitalId())
+                                    .ktas(request.getKtas())
+                                    .patientName(request.getPatientName())
+                                    .isInCall(false)
+                                    .createdAt(System.currentTimeMillis())
+                                    .build();
+
+                            redisService.registerSession(sessionInfo, SESSION_TTL_SECONDS);
+                            log.info("Redis에 세션 최초 등록 완료: {}", request.getSessionId());
+
+                            return newSession;
                         } catch (OpenViduJavaClientException | OpenViduHttpException e) {
                             log.error("OpenVidu 세션 생성 실패", e);
                             throw new RuntimeException("세션 생성 실패", e);
                         }
                     });
 
-            // 토큰 생성
             ConnectionProperties properties = new ConnectionProperties.Builder().build();
             String token = session.createConnection(properties).getToken();
-
-            // Redis 등록
-            VideoSessionInfo sessionInfo = VideoSessionInfo.builder()
-                    .sessionId(request.getSessionId())
-                    .ambulanceNumber(request.getAmbulanceNumber())
-                    .hospitalId(request.getHospitalId())
-                    .ktas(request.getKtas())
-                    .patientName(request.getPatientName())
-                    .isInCall(false)
-                    .createdAt(System.currentTimeMillis())
-                    .build();
-
-            redisService.registerSession(sessionInfo, SESSION_TTL_SECONDS);
 
             return new TokenResponse(token, session.getSessionId());
 
@@ -71,10 +74,12 @@ public class OpenViduService {
             log.error("OpenVidu 클라이언트 예외 발생", e);
             throw new RuntimeException("OpenVidu 클라이언트 오류", e);
         } catch (Exception e) {
-            log.error("토큰 생성 및 세션 등록 실패", e);
-            throw new RuntimeException("토큰 생성 및 세션 등록 실패", e);
+            log.error("토큰 생성 및 세션 처리 실패", e);
+            throw new RuntimeException("토큰 생성 및 세션 처리 실패", e);
         }
     }
+
+
 
     /**
      * 병원용: 기존 세션에서 토큰만 발급
