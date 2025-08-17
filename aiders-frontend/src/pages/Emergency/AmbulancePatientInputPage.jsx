@@ -18,13 +18,13 @@ import Stomp from "stompjs";
 import SockJS from "sockjs-client";
 
 const ageRangeMap = {
+  신생아: "NEWBORN",
   영아: "INFANT",
-  유아: "KIDS",
-  아동: "KIDS",
+  어린이: "KIDS",
   청소년: "TEENAGER",
   청년: "ADULT",
-  중년: "ADULT",
   노년: "ELDERLY",
+  미정: "UNDECIDED",
 };
 
 
@@ -624,26 +624,36 @@ export default function AmbulancePatientInputPage() {
             <div className="flex justify-between items-center">
               <div className="flex-grow flex justify-center">
                 <div className="flex space-x-4">
-                  {["KTAS", "진료과", "기본정보", "상세정보"].map(
-                    (step, index) => (
+                  {["KTAS", "진료과", "기본정보", "상세정보"].map((step, index) => {
+                    const isActive = index === currentStep;
+                    const isDone = index < currentStep;
+                    const containerClasses = isActive
+                      ? "bg-blue-600 text-white"
+                      : isDone
+                      ? "bg-green-600 text-white"
+                      : "bg-gray-200 text-gray-600";
+
+                    const bulletClasses =
+                      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold";
+                    const bulletStateClasses = isActive || isDone
+                      ? "bg-white/20 text-white ring-1 ring-white/30"
+                      : "bg-white text-gray-700 ring-1 ring-gray-300";
+
+                    return (
                       <div
                         key={step}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium ${
-                          index === currentStep
-                            ? "bg-blue-600 text-white"
-                            : index < currentStep
-                            ? "bg-green-600 text-white"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium ${containerClasses}`}
+                        aria-current={isActive ? "step" : undefined}
                       >
-                        <span className="w-6 h-6 rounded-full bg-white bg-opacity-20 flex items-center justify-center text-xs font-bold">
-                          {index + 1}
+                        <span className={`${bulletClasses} ${bulletStateClasses}`}>
+                          {isDone ? "✓" : index + 1}
                         </span>
                         <span>{step}</span>
                       </div>
-                    )
-                  )}
+                    );
+                  })}
                 </div>
+
               </div>
               {!isEditMode && (
                 <button
