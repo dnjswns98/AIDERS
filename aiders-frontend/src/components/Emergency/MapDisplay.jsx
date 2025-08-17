@@ -260,6 +260,7 @@ const MapDisplay = ({
                 </small>
               </div>
             `,
+            removable: true,
           });
 
           window.kakao.maps.event.addListener(ambulanceMarker.current, "click", () => {
@@ -329,6 +330,7 @@ const MapDisplay = ({
 
           const hospitalInfoWindow = new window.kakao.maps.InfoWindow({
             content: hospitalInfoContent(),
+            removable: true,
           });
 
           window.kakao.maps.event.addListener(hospitalMarker.current, "click", () => {
