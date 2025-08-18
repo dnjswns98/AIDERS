@@ -270,18 +270,7 @@ export default function LoginForm() {
             </div>
           </div>
         )}
-        <div className="login-test-account-info">
-          <div className="login-test-account-title">테스트 계정</div>
-          <div className="login-test-account-details">
-            <div>👮 관리자: admin / admin</div>
-            <div>🚒 소방서: 6110582 / f63f9527-a468-4fcb-bf4c-836a3313ecd6</div>
-            <div>🏥 병원: A1200028 / 3e9cf29d-93de-46b6-bbb1-a97ac1fac65f</div>
-            <div>
-              🚑 구급차: 998버4200 / 8dedb374-c0d8-4525-85ad-e48d4372bc0d
-              <span className="ambulance-ai-notice"> ← AI 모델 자동 다운로드</span>
-            </div>
-          </div>
-        </div>
+        
         <div className="login-signup-link-container">
           <button 
             type="button"
