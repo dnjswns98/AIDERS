@@ -241,4 +241,34 @@ aiders-frontend
 - **모니터링**: Prometheus, Grafana
 - **배포/네트워크**: Docker, Nginx 리버스 프록시
 ---
+## AIDERS 서비스 화면
 
+### 소방서 화면
+
+**소방서 앰뷸런스 배차**
+![firestation_dispatch](./image/firestation_dispatch.gif)
+
+**소방서 앰뷸런스 모니터링**
+![firestation_tracking](./image/firestation_tracking.gif)
+
+**응급환자 이송 후, AI 보고서 작성**
+![firestation_resport](./image/firestation_report.gif)
+
+### 병원 화면
+
+**환자 배정 시 알람**
+![hospital_alarm](./image/hospital_alarm.gif)
+
+**환자와 WebRTC 통화**
+![hospital_calling](./image/hospital_calling.gif)
+
+### 앰뷸런스 화면
+
+**앰뷸런스 대기 -> 배차 화면**
+![ambulance_waiting](./image/ambulance_waiting.gif)
+
+**앰뷸런스 입력화면**
+![ambulance_input](./image/ambulance_input.gif)
+
+**앰뷸런스 WebRTC 통화**
+![ambulance_webrtc](./image/ambulance_webrtc.gif)
