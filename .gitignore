@@ -1,0 +1,48 @@
+# =================================
+# Aiders 프로젝트 .gitignore
+# =================================
+
+# 환경변수 파일들 (보안상 중요!)
+.env
+.env.local
+.env.*.local
+
+# IDE 설정
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS 생성 파일
+.DS_Store
+Thumbs.db
+
+# 로그 파일
+*.log
+logs/
+
+# 임시 파일
+*.tmp
+*.temp
+
+# 백업 파일
+*.bak
+*.backup
+
+# 압축 파일
+*.zip
+*.tar.gz
+
+# 개발 중 테스트 파일
+test.*
+debug.*
+
+# .properties 파일
+aiders-backend/src/main/resources/application*.properties
+aiders-backend/src/test/resources/application*.properties
+
+# MySQL 임시 설정 폴더들 (docker-compose로 대체)
+mysql-config/
+mysql-init/
+mysql-data/
+mysql-logs/

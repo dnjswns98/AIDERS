@@ -4,6 +4,13 @@ import "./index.css";
 import App from "./App.jsx";
 import { BrowserRouter } from "react-router-dom";
 
+<<<<<<< HEAD
+ReactDOM.createRoot(document.getElementById('root')).render(
+  // <React.StrictMode>
+    <App />
+  // </React.StrictMode>
+);
+=======
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
@@ -11,3 +18,4 @@ createRoot(document.getElementById("root")).render(
     </BrowserRouter>
   </StrictMode>
 );
+>>>>>>> origin/master
